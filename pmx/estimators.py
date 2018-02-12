@@ -2,9 +2,8 @@ from __future__ import print_function, division
 import numpy as np
 import sys
 from scipy.optimize import fmin
-from scipy.special import erf
 import scipy.stats
-from copy import deepcopy
+from pmx.analysis import data2gauss
 
 # Constants
 kb = 0.00831447215   # kJ/(K*mol)
@@ -644,116 +643,3 @@ class BAR(object):
         sys.stdout.write('\n')
         err = np.std(conv_boots)
         return err
-
-
-# ==============================================================================
-#                               FUNCTIONS
-# ==============================================================================
-def ks_norm_test(data, alpha=0.05, refks=None):
-    '''Performs a Kolmogorov-Smirnov test of normality.
-
-    Parameters
-    ----------
-    data : array_like
-        a one-dimensional array of values. This is the distribution tested
-        for normality.
-    alpha : float
-        significance level of the statistics. Default if 0.05.
-    refks : ???
-        ???
-
-    Returns
-    -------
-    Q : float
-    lam0 : float
-    check : float
-    bOk : bool
-    '''
-
-    def ksref():
-        f = 1
-        potent = 10000
-        lamb = np.arange(0.25, 2.5, 0.001)
-        q = np.zeros(len(lamb), float)
-        res = []
-        for k in range(-potent, potent):
-            q = q + f*np.exp(-2.0*(k**2)*(lamb**2))
-            f = -f
-        for i in range(len(lamb)):
-            res.append((lamb[i], q[i]))
-        return res
-
-    def ksfunc(lamb):
-        f = 1
-        potent = 10000
-        q = 0
-        for k in range(-potent, potent):
-            q = q + f*np.exp(-2.0*(k**2)*(lamb**2))
-            f *= -1
-        return q
-
-    def edf(dg_data):
-        edf_ = []
-        ndata = []
-        data = deepcopy(dg_data)
-        data.sort()
-        N = float(len(data))
-        cnt = 0
-        for item in data:
-            cnt += 1
-            edf_.append(cnt/N)
-            ndata.append(item)
-        ndata = np.array(ndata)
-        edf_ = np.array(edf_)
-        return ndata, edf_
-
-    def cdf(dg_data):
-        data = deepcopy(dg_data)
-        data.sort()
-        mean = np.average(data)
-        sig = np.std(data)
-        cdf = 0.5*(1+erf((data-mean)/float(sig*np.sqrt(2))))
-        return cdf
-
-    N = len(data)
-    nd, ed = edf(data)
-    cd = cdf(data)
-    siglev = 1-alpha
-    dval = []
-    for i, val in enumerate(ed):
-        d = abs(val-cd[i])
-        dval.append(d)
-        if i:
-            d = abs(ed[i-1]-cd[i])
-            dval.append(d)
-    dmax = max(dval)
-    check = np.sqrt(N)*dmax
-    if not refks:
-        refks = ksref()
-    lst = filter(lambda x: x[1] > siglev, refks)
-    lam0 = lst[0][0]
-    if check >= lam0:
-        bOk = False
-    else:
-        bOk = True
-
-    q = ksfunc(check)
-    return (1-q), lam0, check, bOk
-
-
-def data2gauss(data):
-    '''Takes a one dimensional array and fits a Gaussian.
-
-    Returns
-    -------
-    float
-        mean of the distribution.
-    float
-        standard deviation of the distribution.
-    float
-        height of the curve's peak.
-    '''
-    m = np.average(data)
-    dev = np.std(data)
-    A = 1./(dev*np.sqrt(2*np.pi))
-    return m, dev, A

@@ -31,14 +31,13 @@
 
 from __future__ import print_function, division
 from pmx.parser import read_and_format
-from pmx.estimators import Jarz, Crooks, BAR, data2gauss, ks_norm_test
+from pmx.estimators import Jarz, Crooks, BAR, ks_norm_test
+from pmx.analysis import read_dgdl_files, make_cgi_plot
 import sys
 import os
 import time
 import re
-from matplotlib import pyplot as plt
 import numpy as np
-from scipy.integrate import simps
 import pickle
 import argparse
 
@@ -49,146 +48,6 @@ kb = 0.00831447215   # kJ/(K*mol)
 # ==============================================================================
 #                               FUNCTIONS
 # ==============================================================================
-def gauss_func(A, mean, dev, x):
-    '''Given the parameters of a Gaussian and a range of the x-values, returns
-    the y-values of the Gaussian function'''
-    x = np.array(x)
-    y = A*np.exp(-(((x-mean)**2.)/(2.0*(dev**2.))))
-    return y
-
-
-# -------------
-# Files Parsing
-# -------------
-def parse_dgdl_files(lst, lambda0=0, invert_values=False):
-    '''Takes a list of dgdl.xvg files and returns the integrated work values
-
-    Parameters
-    ----------
-    lst : list
-        list containing the paths to the dgdl.xvg files.
-    lambda0 : [0,1]
-        whether the simulations started from lambda 0 or 1. Default is 0.
-    invert_values : bool
-        whether to invert the sign of the returned work value.
-
-    Returns
-    -------
-    w : array
-        array of work values.
-    lst : list
-        sorted list of input dgdl.avg files corresponding to the work values
-        in w.
-    '''
-
-    # check lambda0 is either 0 or 1
-    assert lambda0 in [0, 1]
-
-    _check_dgdl(lst[0], lambda0)
-    first_w, ndata = integrate_dgdl(lst[0], lambda0=lambda0,
-                                    invert_values=invert_values)
-    w_list = [first_w]
-    for idx, f in enumerate(lst[1:]):
-        sys.stdout.write('\r    Reading %s' % f)
-        sys.stdout.flush()
-
-        w, _ = integrate_dgdl(f, ndata=ndata, lambda0=lambda0,
-                              invert_values=invert_values)
-        if w is not None:
-            w_list.append(w)
-
-    print('\n')
-
-    return w_list
-
-
-def integrate_dgdl(fn, ndata=-1, lambda0=0, invert_values=False):
-    '''Integrates the data in a dgdl.xvg file.
-
-    Parameters
-    ----------
-    fn : str
-        the inpur dgdl.xvg file from Gromacs.
-    ndata : int, optional
-        number of datapoints in file. If -1, then ??? default is -1.
-    lambda0 : [0,1]
-        whether the simulations started from lambda 0 or 1. Default is 0.
-    invert_values : bool
-        whether to invert the sign of the returned work value.
-
-    Returns
-    -------
-    integr : float
-        result of the integration performed using Simpson's rule.
-    ndata : int
-        number of data points in the input file.
-    '''
-
-    # check lambda0 is either 0 or 1
-    assert lambda0 in [0, 1]
-
-    lines = open(fn).readlines()
-    if not lines:
-        return None, None
-
-    # extract dgdl datapoints into r
-    # TODO: we removed the check for file integrity. We could have an
-    # optional files integrity check before calling this integration func
-
-    lines = [l for l in lines if l[0] not in '#@&']
-    r = map(lambda x: float(x.split()[1]), lines)
-
-    if ndata != -1 and len(r) != ndata:
-        try:
-            print(' !! Skipping %s ( read %d data points, should be %d )'
-                  % (fn, len(r), ndata))
-        except:
-            print(' !! Skipping %s ' % (fn))
-        return None, None
-    # convert time to lambda
-    ndata = len(r)
-    dlambda = 1./float(ndata)
-    if lambda0 == 1:
-        dlambda *= -1
-
-    # arrays for the integration
-    # --------------------------
-    # array of lambda values
-    x = [lambda0+i*dlambda for i, dgdl in enumerate(r)]
-    # array of dgdl
-    y = r
-
-    if lambda0 == 1:
-        x.reverse()
-        y.reverse()
-
-    if invert_values is True:
-        integr = simps(y, x) * (-1)
-        return integr, ndata
-    else:
-        integr = simps(y, x)
-        return integr, ndata
-
-
-def _check_dgdl(fn, lambda0):
-    '''Prints some info about a dgdl.xvg file.'''
-    l = open(fn).readlines()
-    if not l:
-        return None
-    r = []
-    for line in l:
-        if line[0] not in '#@&':
-            r.append([float(x) for x in line.split()])
-    ndata = len(r)
-    dlambda = 1./float(ndata)
-    if lambda0 == 1:
-        dlambda *= -1
-
-    print('    # data points: %d' % ndata)
-    print('    Length of trajectory: %8.3f ps' % r[-1][0])
-    print('    Delta lambda: %8.5f' % dlambda)
-
-
 def _dump_integ_file(outfn, f_lst, w_lst):
     with open(outfn, 'w') as f:
         for fn, w in zip(f_lst, w_lst):
@@ -200,107 +59,18 @@ def _data_from_file(fn):
     return map(lambda a: a[1], data)
 
 
-# ------------------
-# Plotting functions
-# ------------------
-def make_cgi_plot(fname, data1, data2, result, err, nbins, dpi=300):
-    '''Plots work distributions and results for Crooks Gaussian Intersection'''
-
-    def smooth(x, window_len=11, window='hanning'):
-
-        if x.ndim != 1:
-            raise ValueError("smooth only accepts 1 dimension arrays.")
-        if x.size < window_len:
-            raise ValueError("Input vector needs to be bigger than "
-                             "window size.")
-        if window_len < 3:
-            return x
-        if window not in ['flat', 'hanning', 'hamming',
-                          'bartlett', 'blackman']:
-            raise ValueError("Window is on of 'flat', 'hanning', 'hamming', "
-                             "'bartlett', 'blackman'")
-        s = np.r_[2*x[0]-x[window_len:1:-1], x, 2*x[-1]-x[-1:-window_len:-1]]
-        # moving average
-        if window == 'flat':
-            w = np.ones(window_len, 'd')
-        else:
-            w = eval('np.' + window + '(window_len)')
-        y = np.convolve(w/w.sum(), s, mode='same')
-        return y[window_len-1:-window_len+1]
-
-    plt.figure(figsize=(8, 6))
-    x1 = range(len(data1))
-    x2 = range(len(data2))
-    if x1 > x2:
-        x = x1
-    else:
-        x = x2
-    mf, devf, Af = data2gauss(data1)
-    mb, devb, Ab = data2gauss(data2)
-
-    maxi = max(data1+data2)
-    mini = min(data1+data2)
-
-    sm1 = smooth(np.array(data1))
-    sm2 = smooth(np.array(data2))
-    plt.subplot(1, 2, 1)
-    plt.plot(x1, data1, 'g-', linewidth=2, label="Forward (0->1)", alpha=.3)
-    plt.plot(x1, sm1, 'g-', linewidth=3)
-    plt.plot(x2, data2, 'b-', linewidth=2, label="Backward (1->0)", alpha=.3)
-    plt.plot(x2, sm2, 'b-', linewidth=3)
-    plt.legend(shadow=True, fancybox=True, loc='upper center',
-               prop={'size': 12})
-    plt.ylabel(r'W [kJ/mol]', fontsize=20)
-    plt.xlabel(r'# Snapshot', fontsize=20)
-    plt.grid(lw=2)
-    plt.xlim(0, x[-1]+1)
-    xl = plt.gca()
-    for val in xl.spines.values():
-        val.set_lw(2)
-    plt.subplot(1, 2, 2)
-    plt.hist(data1, bins=nbins, orientation='horizontal', facecolor='green',
-             alpha=.75, normed=True)
-    plt.hist(data2, bins=nbins, orientation='horizontal', facecolor='blue',
-             alpha=.75, normed=True)
-
-    x = np.arange(mini, maxi, .5)
-
-    y1 = gauss_func(Af, mf, devf, x)
-    y2 = gauss_func(Ab, mb, devb, x)
-
-    plt.plot(y1, x, 'g--', linewidth=2)
-    plt.plot(y2, x, 'b--', linewidth=2)
-    size = max([max(y1), max(y2)])
-    res_x = [result, result]
-    res_y = [0, size*1.2]
-    plt.plot(res_y, res_x, 'k--', linewidth=2,
-             label=r'$\Delta$G = %.2f $\pm$ %.2f kJ/mol' % (result, err))
-    plt.legend(shadow=True, fancybox=True, loc='upper center',
-               prop={'size': 12})
-    plt.xticks([])
-    plt.yticks([])
-    xl = plt.gca()
-    for val in xl.spines.values():
-        val.set_lw(2)
-    plt.subplots_adjust(wspace=0.0, hspace=0.1)
-    plt.savefig(fname, dpi=dpi)
-
-
-# ---------------------
-# Some helper functions
-# ---------------------
 def _tee(fp, s):
     print(s, file=fp)
     print(s)
 
 
-def natural_sort(l):
+def _natural_sort(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
     return sorted(l, key=alphanum_key)
 
 
-def time_stats(seconds):
+def _time_stats(seconds):
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
     return h, m, s
@@ -523,6 +293,9 @@ def parse_options():
     return args
 
 
+# ==============================================================================
+#                               FUNCTIONS
+# ==============================================================================
 def main(args):
     """Run the main script.
 
@@ -537,8 +310,8 @@ def main(args):
 
     # input arguments
     out = open(args.outfn, 'w')
-    filesAB = natural_sort(args.filesAB)
-    filesBA = natural_sort(args.filesBA)
+    filesAB = _natural_sort(args.filesAB)
+    filesBA = _natural_sort(args.filesBA)
     T = args.temperature
     skip = args.skip
     prec = args.precision
@@ -625,11 +398,11 @@ def main(args):
         print('                   PROCESSING THE DATA')
         print(' ========================================================')
         print('  Forward Data')
-        res_ab = parse_dgdl_files(filesAB, lambda0=0,
-                                  invert_values=False)
+        res_ab = read_dgdl_files(filesAB, lambda0=0,
+                                 invert_values=False)
         print('  Reverse Data')
-        res_ba = parse_dgdl_files(filesBA, lambda0=1,
-                                  invert_values=reverseB)
+        res_ba = read_dgdl_files(filesBA, lambda0=1,
+                                 invert_values=reverseB)
 
         _dump_integ_file(args.oA, filesAB, res_ab)
         _dump_integ_file(args.oB, filesBA, res_ba)
@@ -797,7 +570,7 @@ def main(args):
               '   in kJ/mol when using dgdl.xvg files from Gromacs.\n')
     # execution time
     etime = time.time()
-    h, m, s = time_stats(etime-stime)
+    h, m, s = _time_stats(etime-stime)
     print("   Execution time = %02d:%02d:%02d\n" % (h, m, s))
 
 
