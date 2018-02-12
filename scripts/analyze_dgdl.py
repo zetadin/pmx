@@ -31,8 +31,8 @@
 
 from __future__ import print_function, division
 from pmx.parser import read_and_format
-from pmx.estimators import Jarz, Crooks, BAR, ks_norm_test
-from pmx.analysis import read_dgdl_files, make_cgi_plot
+from pmx.estimators import Jarz, Crooks, BAR
+from pmx.analysis import read_dgdl_files, make_cgi_plot, ks_norm_test
 import sys
 import os
 import time
