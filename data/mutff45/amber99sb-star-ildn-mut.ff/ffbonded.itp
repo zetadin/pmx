@@ -581,7 +581,3 @@ X   X   CA  H5       4      180.00     4.60240     2	; bsd.on C6H6 nmodes
 #define torsion_ASN_CA_CB_CG_ND2_mult5         0.0         0.543920        5  ; Proteins 78, 1950 (2010)
 #define torsion_ASN_CA_CB_CG_ND2_mult6         0.0        -0.443504        6  ; Proteins 78, 1950 (2010)
 
-
- 
-
-
