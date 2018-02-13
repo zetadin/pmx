@@ -42,7 +42,7 @@ import sys
 import copy
 import library
 import chain
-from molecule import *
+from molecule import Molecule
 from atom import Atom
 import _pmx as _p
 
