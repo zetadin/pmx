@@ -27,16 +27,15 @@
 # CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 # CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 # ----------------------------------------------------------------------
-__doc__="""
-pmx is a collection of classes and functions to deal with
+
+"""pmx is a collection of classes and functions to deal with
 molecular structure files. It makes use of some functions
 from the GROMACS molecular dynamics package to read and write
 structure files, e.g. trajectory data, but also to allow fast
 neighborsearching from a python script.
 Quite fancy is the interface to the GROMACS command line parsing
-functionality. Take a look at the example scripts.
+functionality. Take a look at the example scripts."""
 
-"""
 __version__ = '1.1.0dev'
 
 PMX_VERSION = __version__
