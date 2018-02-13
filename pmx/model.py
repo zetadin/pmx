@@ -467,7 +467,7 @@ class Model(Atomselection):
 
     def get_nterms(self):
         nter = []
-        for ch in model.chains:  # BUG: is this supposed to be self.chains?
+        for ch in self.chains:
             first = ch.residues[0]      # first residue
             if first.resname in library._one_letter.keys():
                 nter.append(first)
@@ -475,7 +475,7 @@ class Model(Atomselection):
 
     def get_cterms(self):
         cter = []
-        for ch in model.chains:  # BUG: is this supposed to be self.chains?
+        for ch in self.chains:
             last = ch.residues[-1]      # last residue
             if last.resname in library._one_letter.keys():
                 cter.append(last)
