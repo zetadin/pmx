@@ -14,20 +14,30 @@ def readme():
     with open('README.md') as f:
         return f.read()
 
-pmx = Extension('pmx/_pmx',
+# ----------
+# Extensions
+# ----------
+pmx = Extension('pmx._pmx',
                 libraries=['m'],
-                include_dirs=['src/pmx'],
-                sources=['src/pmx/Geometry.c', 'src/pmx/wrap_Geometry.c',
-                         'src/pmx/init.c', 'src/pmx/Energy.c']
+                include_dirs=['pmx/extensions/pmx'],
+                sources=['pmx/extensions/pmx/Geometry.c',
+                         'pmx/extensions/pmx/wrap_Geometry.c',
+                         'pmx/extensions/pmx/init.c',
+                         'pmx/extensions/pmx/Energy.c']
                 )
 
-xdrio = Extension('pmx/_xdrio',
+xdrio = Extension('pmx._xdrio',
                   libraries=['m'],
-                  include_dirs=['src/xdr'],
-                  sources=['src/xdr/xdrfile.c', 'src/xdr/xdrfile_trr.c',
-                           'src/xdr/xdrfile_xtc.c']
+                  include_dirs=['pmx/extensions/xdr'],
+                  sources=['pmx/extensions/xdr/xdrfile.c',
+                           'pmx/extensions/xdr/xdrfile_trr.c',
+                           'pmx/extensions/xdr/xdrfile_xtc.c']
                   )
+extensions = [pmx, xdrio]
 
+# -----
+# Setup
+# -----
 setup(name='pmx',
       version='1.1.0dev',
       description='Toolkit for free-energy calculation setup/analysis '
@@ -49,6 +59,6 @@ setup(name='pmx',
       include_package_data=True,
       package_data={'pmx': ['data/*', 'data/*/*', 'data/*/*/*']},
       zip_safe=False,
-      ext_modules=[pmx, xdrio],
+      ext_modules=extensions,
       install_requires=['numpy', 'scipy', 'matplotlib']
       )
