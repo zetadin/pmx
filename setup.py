@@ -57,7 +57,6 @@ setup(name='pmx',
       packages=['pmx'],
       package_dir={'pmx': 'pmx'},
       include_package_data=True,
-      package_data={'pmx': ['data/*', 'data/*/*', 'data/*/*/*']},
       zip_safe=False,
       ext_modules=extensions,
       install_requires=['numpy', 'scipy', 'matplotlib']
