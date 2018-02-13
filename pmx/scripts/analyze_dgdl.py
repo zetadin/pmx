@@ -574,6 +574,9 @@ def main(args):
     print("   Execution time = %02d:%02d:%02d\n" % (h, m, s))
 
 
-if __name__ == '__main__':
+def entry_point():
     args = parse_options()
     main(args)
+
+if __name__ == '__main__':
+    entry_point()
