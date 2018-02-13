@@ -4,9 +4,8 @@ Take a look there for details...
 """
 
 import sys
-from numpy import *
 import random
-from atom import *
+from atom import Atom
 from geometry import Rotation
 import library
 import copy as cp

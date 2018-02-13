@@ -37,11 +37,13 @@ Basic Usage:
     >>> model.write(args['-o']) write new structure file
 """
 
-from atomselection import *
-import sys, copy, library
+from atomselection import Atomselection
+import sys
+import copy
+import library
 import chain
 from molecule import *
-from atom import *
+from atom import Atom
 import _pmx as _p
 
 
@@ -465,7 +467,7 @@ class Model(Atomselection):
 
     def get_nterms(self):
         nter = []
-        for ch in model.chains:
+        for ch in model.chains:  # BUG: is this supposed to be self.chains?
             first = ch.residues[0]      # first residue
             if first.resname in library._one_letter.keys():
                 nter.append(first)
@@ -473,7 +475,7 @@ class Model(Atomselection):
 
     def get_cterms(self):
         cter = []
-        for ch in model.chains:
+        for ch in model.chains:  # BUG: is this supposed to be self.chains?
             last = ch.residues[-1]      # last residue
             if last.resname in library._one_letter.keys():
                 cter.append(last)
