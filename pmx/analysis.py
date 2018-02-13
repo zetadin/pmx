@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from __future__ import print_function, division
 from scipy.integrate import simps
 import sys
@@ -7,6 +5,9 @@ from matplotlib import pyplot as plt
 import numpy as np
 from copy import deepcopy
 from scipy.special import erf
+
+__all__ = ['read_dgdl_files', 'integrate_dgdl',
+           'ks_norm_test', 'make_cgi_plot']
 
 
 def read_dgdl_files(lst, lambda0=0, invert_values=False):

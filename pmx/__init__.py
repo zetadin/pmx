@@ -42,16 +42,15 @@ __version__ = '1.1.0dev'
 PMX_VERSION = __version__
 
 import os
-from atom import *
-from molecule import *
-from chain import *
-from model import *
-from options import *
+from .atom import *
+from .molecule import *
+from .chain import *
+from .model import *
+from .options import *
+from .estimators import *
+from .analysis import *
 
-
-XX       =  0             
-YY       =  1             
+# TODO: remove these from here. they are used in modules model and atomselection
+XX       =  0
+YY       =  1
 ZZ       =  2
-
-
-
