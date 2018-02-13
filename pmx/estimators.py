@@ -3,7 +3,7 @@ import numpy as np
 import sys
 from scipy.optimize import fmin
 import scipy.stats
-from pmx.analysis import data2gauss
+from analysis import data2gauss
 
 # Constants
 kb = 0.00831447215   # kJ/(K*mol)
