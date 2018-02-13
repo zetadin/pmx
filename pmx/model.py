@@ -43,9 +43,6 @@ import chain
 from molecule import *
 from atom import *
 import _pmx as _p
-XX = 0
-YY = 1
-ZZ = 2
 
 
 class Model(Atomselection):
@@ -328,23 +325,23 @@ class Model(Atomselection):
         box_line = [float(i) for i in l[-1].split()]
         assert len(box_line) in [3, 9]
         box = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-        box[XX][XX] = box_line[0]
-        box[YY][YY] = box_line[1]
-        box[ZZ][ZZ] = box_line[2]
+        box[0][0] = box_line[0]
+        box[1][1] = box_line[1]
+        box[2][2] = box_line[2]
         if len(box_line) == 3:
-            box[XX][YY] = 0
-            box[XX][ZZ] = 0
-            box[YY][XX] = 0
-            box[YY][ZZ] = 0
-            box[ZZ][XX] = 0
-            box[ZZ][YY] = 0
+            box[0][1] = 0
+            box[0][2] = 0
+            box[1][0] = 0
+            box[1][2] = 0
+            box[2][0] = 0
+            box[2][1] = 0
         else:
-            box[XX][YY] = box_line[3]
-            box[XX][ZZ] = box_line[4]
-            box[YY][XX] = box_line[5]
-            box[YY][ZZ] = box_line[6]
-            box[ZZ][XX] = box_line[7]
-            box[ZZ][YY] = box_line[8]
+            box[0][1] = box_line[3]
+            box[0][2] = box_line[4]
+            box[1][0] = box_line[5]
+            box[1][2] = box_line[6]
+            box[2][0] = box_line[7]
+            box[2][1] = box_line[8]
         self.box = box
         self.make_chains()
         self.make_residues()

@@ -49,8 +49,3 @@ from .model import *
 from .options import *
 from .estimators import *
 from .analysis import *
-
-# TODO: remove these from here. they are used in modules model and atomselection
-XX       =  0
-YY       =  1
-ZZ       =  2

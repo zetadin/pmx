@@ -12,10 +12,6 @@ import library
 import copy as cp
 import _pmx
 
-XX = 0
-YY = 1
-ZZ = 2
-
 
 class Atomselection:
     """ Basic class to handle sets of atoms. Atoms are stored
@@ -44,7 +40,7 @@ class Atomselection:
         print >>fp, 'MODEL%5d' % nr
         if not hasattr(self, "box"):
             self.box = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-        if self.box[XX][XX]*self.box[YY][YY]*self.box[ZZ][ZZ] != 0:
+        if self.box[0][0]*self.box[1][1]*self.box[2][2] != 0:
             box_line = _pmx.box_as_cryst1(self.box)
             print >>fp, box_line
 
@@ -95,33 +91,33 @@ class Atomselection:
             at_id = (atom.id) % 100000
             ff = "%5d%-5.5s%5.5s%5d" % (resid, atom.resname, atom.name, at_id)
             if bVel:
-                ff += gro_format % (atom.x[XX]*fac,
-                                    atom.x[YY]*fac,
-                                    atom.x[ZZ]*fac,
-                                    atom.v[XX],
-                                    atom.v[YY],
-                                    atom.v[ZZ])
+                ff += gro_format % (atom.x[0]*fac,
+                                    atom.x[1]*fac,
+                                    atom.x[2]*fac,
+                                    atom.v[0],
+                                    atom.v[1],
+                                    atom.v[2])
             else:
-                ff += gro_format % (atom.x[XX]*fac,
-                                    atom.x[YY]*fac,
-                                    atom.x[ZZ]*fac)
+                ff += gro_format % (atom.x[0]*fac,
+                                    atom.x[1]*fac,
+                                    atom.x[2]*fac)
             print >>fp, ff
 
         if not hasattr(self, "box"):
             self.box = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-        if self.box[XX][YY] or self.box[XX][ZZ] or self.box[YY][XX] or \
-           self.box[YY][ZZ] or self.box[ZZ][XX] or self.box[ZZ][YY]:
+        if self.box[0][1] or self.box[0][2] or self.box[1][0] or \
+           self.box[1][2] or self.box[2][0] or self.box[2][1]:
             bTric = False
             ff = "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f"
         else:
             bTric = True
             ff = "%10.5f%10.5f%10.5f"
         if bTric:
-            print >>fp, ff % (self.box[XX][XX], self.box[YY][YY], self.box[ZZ][ZZ])
+            print >>fp, ff % (self.box[0][0], self.box[1][1], self.box[2][2])
         else:
-            print >>fp, ff % (self.box[XX][XX], self.box[YY][YY], self.box[ZZ][ZZ],
-                              self.box[XX][YY], self.box[XX][ZZ], self.box[YY][XX],
-                              self.box[YY][ZZ], self.box[ZZ][XX], self.box[ZZ][YY])
+            print >>fp, ff % (self.box[0][0], self.box[1][1], self.box[2][2],
+                              self.box[0][1], self.box[0][2], self.box[1][0],
+                              self.box[1][2], self.box[2][0], self.box[2][1])
         fp.close()
 
     def write(self, fn, title='', nr=1):
