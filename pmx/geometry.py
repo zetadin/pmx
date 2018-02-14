@@ -12,6 +12,7 @@ from numpy import array, linalg, arccos, inner, sin, matrix, dot, cos
 import _pmx as _p
 
 
+# TODO: deprecate either Rotation or Rotation2
 class Rotation2:
 
     def __init__(self, v1, v2):
