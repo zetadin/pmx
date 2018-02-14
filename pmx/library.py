@@ -1,64 +1,34 @@
-# pmx  Copyright Notice
-# ============================
-#
-# The pmx source code is copyrighted, but you can freely use and
-# copy it as long as you don't change or remove any of the copyright
-# notices.
-#
-# ----------------------------------------------------------------------
-# pmx is Copyright (C) 2006-2013 by Daniel Seeliger
-#
-#                        All Rights Reserved
-#
-# Permission to use, copy, modify, distribute, and distribute modified
-# versions of this software and its documentation for any purpose and
-# without fee is hereby granted, provided that the above copyright
-# notice appear in all copies and that both the copyright notice and
-# this permission notice appear in supporting documentation, and that
-# the name of Daniel Seeliger not be used in advertising or publicity
-# pertaining to distribution of the software without specific, written
-# prior permission.
-#
-# DANIEL SEELIGER DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
-# SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-# FITNESS.  IN NO EVENT SHALL DANIEL SEELIGER BE LIABLE FOR ANY
-# SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
-# RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
-# CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-# CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-# ----------------------------------------------------------------------
-__doc__="""
-Library for useful and less useful things needed by the pmx packages.
+"""Library for useful and less useful things needed by the pmx packages.
 """
 
-import sys, os, cPickle
-
-#pdb_format="%6s%5d %-4s%1s%3s%2s%4d %11.3f %7.3f %7.3f %5.2f %5.2f\n"
+import sys
+import os
+import cPickle
 
 pdb_format = "%6s%5d %-4s%1s%4s%1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f"
 pdb_format2 = "%6s%5d %-4s%1s%4s%1s%4s    %8.3f%8.3f%8.3f%6.2f%6.2f"
 
-_extended = (-139.,135.,180.)
-_helix = (-57.,-47.,180.)
-_anti_beta = (-119.,113.,180.)
+_extended = (-139., 135., 180.)
+_helix = (-57., -47., 180.)
+_anti_beta = (-119., 113., 180.)
 
-PMX_DATA = os.path.join(os.path.dirname(__file__),'data')
+PMX_DATA = os.path.join(os.path.dirname(__file__), 'data')
 
-def pmx_data_file( filename ):
+
+def pmx_data_file(filename):
     if os.path.isfile(filename):
         data_file = filename
     else:
         pth = PMX_DATA
-        data_file = os.path.join(pth,filename)
+        data_file = os.path.join(pth, filename)
     if not os.path.isfile(data_file):
         print >>sys.stderr, "pmx_ERROR> data file \"%s\" not found " % data_file
         sys.exit(1)
-    print >>sys.stderr,"pmx__> Loading data file \"%s\"" % data_file
+    print >>sys.stderr, "pmx__> Loading data file \"%s\"" % data_file
     if data_file.split('.')[-1] == 'pkl':
         return cPickle.load(open(data_file))
-    else: return data_file
-        
-
+    else:
+        return data_file
 
 _aacids_dic = {
     'A':'ALA',
@@ -168,9 +138,6 @@ _aacids_ext_oplsaa = {
     'Y':'TYR',
     'V':'VAL'
     }
-
-
-
 
 _protein_residues = (
     'ALA','ARG','ASN','ASP','ASPH','ASH','ASPP','GLH','CYS','CYS2','CYN','CYX','CYM','CYSH',
@@ -284,7 +251,6 @@ _water = (
     'SOL','HOH','HO4'
     )
 
-
 _atommass = {
     'H'  :   1.00794,
     'He' :   4.002602,
@@ -345,7 +311,7 @@ _atommass = {
     'Se' :  78.96,
     'SE' :  78.96,
     'Br' :  79.904,
-    'BR' :  79.904,   
+    'BR' :  79.904,
     'Kr' :  83.80,
     'KR' :  83.80,
     'Rb' :  85.4678,
@@ -492,7 +458,6 @@ _atommass = {
     'MT' : 268.14,
     }
 
-
 _bond_contr = {
     'C':0.9,
     'H':0.35,
@@ -507,10 +472,9 @@ _bond_contr = {
     'BR':1.25
     }
 
-
 _aacids = {
-    
-    'ALA' : 
+
+    'ALA' :
     (
     ('N', [   -2.983,  -4.446,   6.956 ]),
     ('H', [   -3.447,  -5.331,   7.094 ]),
@@ -523,7 +487,7 @@ _aacids = {
     ('C', [   -1.219,  -2.972,   7.862 ]),
     ('O', [   -1.895,  -2.016,   7.478 ])
     ),
-    'ARG' : 
+    'ARG' :
     (
     ('N', [   -0.095,  -2.820,   8.564 ]),
     ('H', [    0.440,  -3.638,   8.837 ]),
@@ -550,7 +514,7 @@ _aacids = {
     ('C', [    1.922,  -1.920,   9.531 ]),
     ('O', [    2.133,  -3.070,   9.916 ])
     ),
-    'ASP' : 
+    'ASP' :
     (
     ('N', [    2.810,  -0.929,   9.643 ]),
     ('H', [    2.577,   0.002,   9.335 ]),
@@ -565,7 +529,7 @@ _aacids = {
     ('C', [    4.529,   0.498,  10.585 ]),
     ('O', [    3.960,   1.407,   9.962 ])
     ),
-    'ASH' : 
+    'ASH' :
     (
     ('N', [    2.810,  -0.929,   9.643 ]),
     ('H', [    2.577,   0.002,   9.335 ]),
@@ -598,7 +562,7 @@ _aacids = {
     ('C', [    7.478,   1.762,  12.495 ]),
     ('O', [    7.772,   0.654,  12.925 ])
     ),
-    'CYS' : 
+    'CYS' :
     (
     ('N', [    8.330,   2.791,  12.593 ]),
     ('H', [    8.046,   3.726,  12.336 ]),
@@ -612,7 +576,7 @@ _aacids = {
     ('C', [   10.094,   4.200,  13.474 ]),
     ('O', [    9.519,   5.126,  12.895 ])
     ),
-    'CYN' : 
+    'CYN' :
     (
     ('N', [    8.330,   2.791,  12.593 ]),
     ('H', [    8.046,   3.726,  12.336 ]),
@@ -626,7 +590,7 @@ _aacids = {
     ('C', [   10.094,   4.200,  13.474 ]),
     ('O', [    9.519,   5.126,  12.895 ])
     ),
-    'GLU' : 
+    'GLU' :
     (
     ('N', [   11.129,   4.390,  14.297 ]),
     ('H', [   11.607,   3.575,  14.666 ]),
@@ -644,7 +608,7 @@ _aacids = {
     ('C', [   13.184,   5.345,  15.197 ]),
     ('O', [   13.544,   4.179,  15.372 ])
     ),
-    'GLH' : 
+    'GLH' :
     (
     ('N', [   11.129,   4.390,  14.297 ]),
     ('H', [   11.607,   3.575,  14.666 ]),
@@ -663,7 +627,7 @@ _aacids = {
     ('C', [   13.184,   5.345,  15.197 ]),
     ('O', [   13.544,   4.179,  15.372 ])
     ),
-    'GLN' : 
+    'GLN' :
     (
     ('N', [   13.984,   6.387,  15.452 ]),
     ('H', [   13.607,   7.322,  15.344 ]),
@@ -683,7 +647,7 @@ _aacids = {
     ('C', [   15.697,   7.807,  16.404 ]),
     ('O', [   15.147,   8.743,  15.823 ])
     ),
-    'GLY' : 
+    'GLY' :
     (
     ('N', [   16.653,   8.006,  17.314 ]),
     ('H', [   17.133,   7.204,  17.704 ]),
@@ -693,7 +657,7 @@ _aacids = {
     ('C', [   18.739,   8.968,  18.109 ]),
     ('O', [   19.039,   7.810,  18.406 ])
     ),
-    'HIS' : 
+    'HIS' :
     (
     ('N', [   19.586,   9.994,  18.257 ]),
     ('H', [   19.289,  10.931,  18.012 ]),
@@ -713,7 +677,7 @@ _aacids = {
     ('C', [   21.459,  11.379,  18.941 ]),
     ('O', [   21.037,  12.255,  18.185 ])
     ),
-    'HIE' : 
+    'HIE' :
     (
     ('N', [   19.586,   9.994,  18.257 ]),
     ('H', [   19.289,  10.931,  18.012 ]),
@@ -733,7 +697,7 @@ _aacids = {
     ('C', [   21.459,  11.379,  18.941 ]),
     ('O', [   21.037,  12.255,  18.185 ])
     ),
-    'HID' : 
+    'HID' :
     (
     ('N', [   19.586,   9.994,  18.257 ]),
     ('H', [   19.289,  10.931,  18.012 ]),
@@ -753,7 +717,7 @@ _aacids = {
     ('C', [   21.459,  11.379,  18.941 ]),
     ('O', [   21.037,  12.255,  18.185 ])
     ),
-    'HIP' : 
+    'HIP' :
     (
     ('N', [   19.586,   9.994,  18.257 ]),
     ('H', [   19.289,  10.931,  18.012 ]),
@@ -774,7 +738,7 @@ _aacids = {
     ('C', [   21.459,  11.379,  18.941 ]),
     ('O', [   21.037,  12.255,  18.185 ])
     ),
-    'ILE' : 
+    'ILE' :
     (
     ('N', [   22.324,  11.629,  19.931 ]),
     ('H', [   22.723,  10.840,  20.429 ]),
@@ -796,7 +760,7 @@ _aacids = {
     ('C', [   24.267,  12.571,  20.995 ]),
     ('O', [   24.368,  11.498,  21.586 ])
     ),
-    'LEU' : 
+    'LEU' :
     (
     ('N', [   25.254,  13.482,  20.971 ]),
     ('H', [   25.045,  14.387,  20.571 ]),
@@ -818,7 +782,7 @@ _aacids = {
     ('C', [   26.945,  14.893,  22.048 ]),
     ('O', [   26.307,  15.843,  21.593 ])
     ),
-    'LYS' : 
+    'LYS' :
     (
     ('N', [   28.024,  15.069,  22.828 ]),
     ('H', [   28.522,  14.250,  23.158 ]),
@@ -843,7 +807,7 @@ _aacids = {
     ('C', [   30.019,  16.018,  23.866 ]),
     ('O', [   30.171,  14.936,  24.428 ])
     ),
-    'LYP' : 
+    'LYP' :
     (
     ('N', [   28.024,  15.069,  22.828 ]),
     ('H', [   28.522,  14.250,  23.158 ]),
@@ -868,7 +832,7 @@ _aacids = {
     ('C', [   30.019,  16.018,  23.866 ]),
     ('O', [   30.171,  14.936,  24.428 ])
     ),
-    'LYN' : 
+    'LYN' :
     (
     ('N', [   28.024,  15.069,  22.828 ]),
     ('H', [   28.522,  14.250,  23.158 ]),
@@ -892,7 +856,7 @@ _aacids = {
     ('C', [   30.019,  16.018,  23.866 ]),
     ('O', [   30.171,  14.936,  24.428 ])
     ),
-    'MET' : 
+    'MET' :
     (
     ('N', [   30.974,  16.962,  23.847 ]),
     ('H', [   30.754,  17.857,  23.430 ]),
@@ -912,7 +876,7 @@ _aacids = {
     ('C', [   32.632,  18.436,  24.873 ]),
     ('O', [   31.926,  19.328,  24.407 ])
     ),
-    'PHE' : 
+    'PHE' :
     (
     ('N', [   33.691,  18.694,  25.659 ]),
     ('H', [   34.285,  17.921,  25.946 ]),
@@ -935,7 +899,7 @@ _aacids = {
     ('C', [   35.732,  19.747,  26.542 ]),
     ('O', [   36.101,  18.575,  26.655 ])
     ),
-    'PRO' : 
+    'PRO' :
     (
     ('N', [   36.562,  20.776,  26.860 ]),
     ('CA', [   37.872,  20.686,  27.534 ]),
@@ -952,7 +916,7 @@ _aacids = {
     ('C', [   37.694,  20.372,  29.037 ]),
     ('O', [   36.575,  20.369,  29.556 ])
     ),
-    'SER' : 
+    'SER' :
     (
     ('N', [   38.802,  20.160,  29.750 ]),
     ('H', [   39.715,  20.217,  29.317 ]),
@@ -966,7 +930,7 @@ _aacids = {
     ('C', [   40.346,  20.078,  31.621 ]),
     ('O', [   41.224,  20.117,  30.758 ])
     ),
-    'THR' : 
+    'THR' :
     (
     ('N', [   40.597,  20.176,  32.935 ]),
     ('H', [   39.835,  20.071,  33.591 ]),
@@ -983,7 +947,7 @@ _aacids = {
     ('C', [   41.662,  19.864,  35.077 ]),
     ('O', [   40.564,  20.090,  35.587 ])
     ),
-    'TRP' : 
+    'TRP' :
     (
     ('N', [   42.684,  19.332,  35.765 ]),
     ('H', [   43.592,  19.274,  35.320 ]),
@@ -1010,7 +974,7 @@ _aacids = {
     ('C', [   44.158,  19.093,  37.693 ]),
     ('O', [   45.085,  19.012,  36.890 ])
     ),
-    'TYR' : 
+    'TYR' :
     (
     ('N', [   44.347,  19.255,  39.010 ]),
     ('H', [   43.549,  19.215,  39.631 ]),
@@ -1034,7 +998,7 @@ _aacids = {
     ('C', [   45.385,  18.925,  41.173 ]),
     ('O', [   44.263,  19.064,  41.661 ])
     ),
-    'VAL' : 
+    'VAL' :
     (
     ('N', [   46.436,  18.490,  41.874 ]),
     ('H', [   47.353,  18.513,  41.443 ]),
@@ -1054,7 +1018,6 @@ _aacids = {
     ('O', [   48.801,  18.766,  43.043 ])
     )
     }
-
 
 _bonds = {
 	'ALA' : (
@@ -1531,8 +1494,6 @@ _bonds = {
 	),
 }
 
-
-
 _aliases = {
 	'ALA': {
 		'HB1':'1HB',
@@ -1843,7 +1804,7 @@ _aliases = {
 		'HB2':'2HB',
 	},
 	'ILE': {
-                 'CD':'CD1',    
+                 'CD':'CD1',
 		'HD1':'1HD1',
 		'HD2':'2HD1',
 		'HD3':'3HD1',
@@ -1860,7 +1821,7 @@ _aliases = {
                  'H1':'1H',
                  'H2':'2H',
                  'H3':'3H',
-                 'CD':'CD1',    
+                 'CD':'CD1',
 		'HD1':'1HD1',
 		'HD2':'2HD1',
 		'HD3':'3HD1',
@@ -1874,7 +1835,7 @@ _aliases = {
                 'HD13':'3HD1',
 	},
 	'CILE': {
-                 'CD':'CD1',    
+                 'CD':'CD1',
                 'HG11':'1HG1',
                 'HG12':'2HG1',
                 'HG21':'1HG2',
@@ -2301,7 +2262,6 @@ _aliases = {
                 '2H2\'':'H2\'2',
 	},
 }
-
 
 _atom_types = {
 	'GENERIC': {
@@ -4100,8 +4060,6 @@ _atom_types = {
 	},
 }
 
-
-
 _aa_dihedrals = {
         'PRO' : (
                 ['N', 'CA', 'CB', 'HB1', 0, -1] ,
@@ -4668,7 +4626,7 @@ _aa_dihedrals = {
 		['CB', 'OG', 'P', 'O1P', 1, 3] ,
 		['CB', 'OG', 'P', 'O2P', 1, -1] ,
 		['CB', 'OG', 'P', 'O3P', 1, -1] ,
-                
+
 	     ),
 	'THR' : (
 		['N', 'CA', 'CB', 'HB', 1, -1] ,
@@ -5328,8 +5286,6 @@ _mol2_types = {
     },
     }
 
-
-
 _mol2_bondtypes = [
     ('N.4', 'C.3', '1') ,
     ('N.4', 'H', '1') ,
@@ -5365,5 +5321,3 @@ _mol2_bondtypes = [
     ('S.3', 'C.3', '1') ,
     ('C.ar', 'O.3', '1') ,
     ]
-
-
