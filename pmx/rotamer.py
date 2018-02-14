@@ -1,41 +1,11 @@
-# pmx  Copyright Notice
-# ============================
-#
-# The pmx source code is copyrighted, but you can freely use and
-# copy it as long as you don't change or remove any of the copyright
-# notices.
-#
-# ----------------------------------------------------------------------
-# pmx is Copyright (C) 2006-2013 by Daniel Seeliger
-#
-#                        All Rights Reserved
-#
-# Permission to use, copy, modify, distribute, and distribute modified
-# versions of this software and its documentation for any purpose and
-# without fee is hereby granted, provided that the above copyright
-# notice appear in all copies and that both the copyright notice and
-# this permission notice appear in supporting documentation, and that
-# the name of Daniel Seeliger not be used in advertising or publicity
-# pertaining to distribution of the software without specific, written
-# prior permission.
-#
-# DANIEL SEELIGER DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
-# SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-# FITNESS.  IN NO EVENT SHALL DANIEL SEELIGER BE LIABLE FOR ANY
-# SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
-# RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
-# CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-# CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-# ----------------------------------------------------------------------
-__doc__="""
-This file contains stuff to deal with the Dunbrack rotamer
+"""This file contains stuff to deal with the Dunbrack rotamer
 library"""
-import os, sys
+
 from library import pmx_data_file, _aacids_dic
 
-import molecule 
+import molecule
 import cPickle
-from geometry import *
+from geometry import fit
 
 
 _aa_chi = { 'CYS' :
@@ -46,7 +16,7 @@ _aa_chi = { 'CYS' :
           2: [('CA' , 'CB' , 'CG' , 'OD1'), ['OD1','OD2','HD2']]},
         'GLU' :
         { 1: [('N'  , 'CA' , 'CB' , 'CG' ),['1HB','2HB','CG','1HG','2HG','CD','OE1','OE2','HE2']],
-          2: [('CA' , 'CB' , 'CG' , 'CD' ),['1HG','2HG','CD','OE1','OE2','HE2']], 
+          2: [('CA' , 'CB' , 'CG' , 'CD' ),['1HG','2HG','CD','OE1','OE2','HE2']],
           3: [('CB' , 'CG' , 'CD' , 'OE1'),['OE1','OE2','HE2']] },
         'PHE' :
         { 1: [('N'  , 'CA' , 'CB' , 'CG' ),['1HB', '2HB', 'CG' ,'CD1', 'HD1', 'CD2', 'HD2', 'CE1', 'HE1', 'CE2', 'HE2', 'CZ', 'HZ']],
@@ -65,8 +35,8 @@ _aa_chi = { 'CYS' :
           2: [('CA' , 'CB' , 'CG' , 'ND1'),['CD2',  'ND1',  'HD2',  'HD1',  'NE2',  'CE1',  'HE2', 'HE1']] },
         'ILE' :
         { 1: [('N'  , 'CA' , 'CB' , 'CG1'),['HB','CG1','1HG1','2HG1','CG2','1HG2','2HG2','3HG2','CD1','1HD1','2HD1','3HD1']],
-#          2: [('CA' , 'CB' , 'CG1', 'CD1'),['1HG1','1HG2','CG2','1HG2','2HG2','3HG2','CD1','1HD1','2HD1','3HD1']] }, 
-          2: [('CA' , 'CB' , 'CG1', 'CD1'),['1HG1','2HG1','CD1','1HD1','2HD1','3HD1']] }, 
+#          2: [('CA' , 'CB' , 'CG1', 'CD1'),['1HG1','1HG2','CG2','1HG2','2HG2','3HG2','CD1','1HD1','2HD1','3HD1']] },
+          2: [('CA' , 'CB' , 'CG1', 'CD1'),['1HG1','2HG1','CD1','1HD1','2HD1','3HD1']] },
         'LYS' :
         { 1: [('N'  , 'CA' , 'CB'  ,'CG' ),['1HB','2HB','CG','1HG','2HG','CD','1HD','2HD','CE','1HE','2HE','NZ','1HZ','2HZ','3HZ']],
           2: [('CA' , 'CB' , 'CG'  ,'CD' ),['1HG','2HG','CD','1HD','2HD','CE','1HE','2HE','NZ','1HZ','2HZ','3HZ']],
@@ -79,7 +49,7 @@ _aa_chi = { 'CYS' :
           4: [('CG' , 'CD' , 'CE'  ,'NZ' ),['1HE','2HE','NZ','1HZ','2HZ']] },
         'LEU' :
         { 1: [('N'  , 'CA' , 'CB' , 'CG' ),['1HB','2HB','CG', 'HG','CD1','1HD1','2HD1','3HD1','CD2','1HD2','2HD2','3HD2']],
-          2: [('CA' , 'CB' , 'CG' , 'CD1'), ['HG','CD1','1HD1','2HD1','3HD1','CD2','1HD2','2HD2','3HD2']]}, 
+          2: [('CA' , 'CB' , 'CG' , 'CD1'), ['HG','CD1','1HD1','2HD1','3HD1','CD2','1HD2','2HD2','3HD2']]},
         'MET' :
         { 1: [('N'  , 'CA' , 'CB'  ,'CG' ),['1HB', '2HB', 'CG', '1HG', '2HG', 'SD', 'CE', '1HE', '2HE', '3HE']],
           2: [('CA' , 'CB' , 'CG'  ,'SD' ),['1HG', '2HG', 'SD', 'CE', '1HE', '2HE', '3HE']],
@@ -89,7 +59,7 @@ _aa_chi = { 'CYS' :
           2: [('CA' , 'CB' , 'CG' , 'OD1'), ['OD1','ND2','1HD2','2HD2']]},
         'PRO' :
         { 1: [('N'  , 'CA' , 'CB' , 'CG' ),[]],
-          2: [('CA' , 'CB' , 'CG' , 'CD' ), []]}, 
+          2: [('CA' , 'CB' , 'CG' , 'CD' ), []]},
         'GLN' :
         { 1: [('N'  , 'CA' , 'CB' , 'CG' ),['1HB','2HB','CG','1HG','2HG','CD','OE1','NE2','1HE2','2HE2']],
           2: [('CA' , 'CB' , 'CG' , 'CD' ), ['1HG','2HG','CD','OE1','NE2','1HE2','2HE2']],
@@ -114,7 +84,7 @@ _aa_chi = { 'CYS' :
         }
 
 
-def make_bbdep(min_val = .01):
+def make_bbdep(min_val=.01):
     l = open('bbdep02.May.lib').readlines()
     dic = {}
     for line in l:
@@ -127,53 +97,44 @@ def make_bbdep(min_val = .01):
         chi2 = float(entr[10])
         chi3 = float(entr[11])
         chi4 = float(entr[12])
-        key = (round(phi,0),round(psi,0))
+        key = (round(phi, 0), round(psi, 0))
         if freq >= min_val:
-            if dic.has_key(resn):
-                if dic[resn].has_key(key):
+            if resn in dic:
+                if key in dic[resn]:
                     dic[resn][key].append([freq, chi1, chi2, chi3, chi4])
                 else:
                     dic[resn][key] = [[freq, chi1, chi2, chi3, chi4]]
             else:
-                dic[resn] = {key:[[freq, chi1, chi2, chi3, chi4]]}
+                dic[resn] = {key: [[freq, chi1, chi2, chi3, chi4]]}
     for key, val in dic.items():
         for bb, lst in val.items():
-            lst.sort(lambda a,b: cmp(float(a[0]),float(b[0])))
+            lst.sort(lambda a, b: cmp(float(a[0]), float(b[0])))
             lst.reverse()
-    fp = open('bbdep.pkl','w')
-    cPickle.dump(dic,fp)
-
-
-
-## def set_chi(mol, Chi, phi):
-##     resn = mol.resname
-##     dih_atoms = mol.fetchm(_aa_chi[resn][Chi][0])
-##     rot_atoms = mol.fetch_atoms(_aa_chi[resn][Chi][1])
-##     dih = dih_atoms[0].dihedral(dih_atoms[1], dih_atoms[2], dih_atoms[3]) - pi
-##     if dih < -pi: dih = 2*pi+dih
-##     phi = pi/180.*phi
-##     delta = phi-dih
-##     r = Rotation(dih_atoms[1].x, dih_atoms[2].x)
-##     for atom in rot_atoms:
-##         atom.x = r.apply(atom.x, delta)
+    fp = open('bbdep.pkl', 'w')
+    cPickle.dump(dic, fp)
 
 
 def load_bbdep():
     return pmx_data_file('bbdep.pkl')
 
+
 def real_resname(r):
     dic = {'LYP':'LYS','LYSH':'LYS','LYN':'LYS','LSN':'LYS','CYM':'CYS',
            'CYS2':'CYS','CYN':'CYS','HIE':'HIS','HIP':'HIS',
            'HID':'HIS','HISA':'HIS','HISB':'HIS','HSE':'HIS','HSP':'HIS',
-           'HSD':'HIS','HISH':'HIS','HISD':'HIS','ASH':'ASP','ASPP':'ASP','ASPH':'ASP',
-           'GLH':'GLU','GLUH':'GLU','GLUP':'GLU',
+           'HSD':'HIS','HISH':'HIS','HISD':'HIS','ASH':'ASP','ASPP':'ASP',
+           'ASPH':'ASP','GLH':'GLU','GLUH':'GLU','GLUP':'GLU',
            }
-    if dic.has_key(r): return dic[r]
-    else: return r
+    if r in dic:
+        return dic[r]
+    else:
+        return r
 
-def get_rotamers(bbdep, resname, phi, psi, residue = False, hydrogens = True, full = False):
-    key = (round(phi*.1,0)*10, round(psi*.1,0)*10)
-    if resname not in ['ALA','GLY']:
+
+def get_rotamers(bbdep, resname, phi, psi, residue=False,
+                 hydrogens=True, full=False):
+    key = (round(phi*.1, 0)*10, round(psi*.1, 0)*10)
+    if resname not in ['ALA', 'GLY']:
         real_res = real_resname(resname)
         rotamers = bbdep[real_res][key]
         if not full:
@@ -181,32 +142,34 @@ def get_rotamers(bbdep, resname, phi, psi, residue = False, hydrogens = True, fu
         nrot = len(rotamers)
         nchi = len(_aa_chi[real_res])
         res_list = []
-        fp = open('rot.pdb','w')
+        fp = open('rot.pdb', 'w')  # FIXME: fp does not seem to be used
         for i in range(nrot):
-            r = molecule.Molecule().new_aa(resname, hydrogens = hydrogens)
+            r = molecule.Molecule().new_aa(resname, hydrogens=hydrogens)
             r.get_long_name()
             for atom in r.atoms:
                 atom.name = atom.long_name.strip()
             r.freq = rotamers[i][0]
             r.set_resname(real_res)
             for chi in range(nchi):
-                r.set_chi(chi+1,rotamers[i][chi+1])
+                r.set_chi(chi+1, rotamers[i][chi+1])
             res_list.append(r.copy())
 
     else:
-        r = molecule.Molecule().new_aa(resname, hydrogens = hydrogens)
-        res_list = [ r.copy() ]
+        r = molecule.Molecule().new_aa(resname, hydrogens=hydrogens)
+        res_list = [r.copy()]
     if residue:
         for r in res_list:
-            fit( residue, r, atom_names = ['N','CA','C'] )
+            fit(residue, r, atom_names=['N', 'CA', 'C'])
     return res_list
+
 
 def mini_nb(model, mol, cutoff):
     # center of mass of residue
-    c = mol.com(vector_only = True)
+    c = mol.com(vector_only=True)
     nb_list = []
     for atom in model.atoms:
-        if atom.resname not in ['SOL','NaS','ClS','NA','CL','NaJ','ClJ'] and atom not in mol.atoms and \
+        if atom.resname not in ['SOL','NaS','ClS','NA','CL','NaJ','ClJ'] and \
+           atom not in mol.atoms and \
            atom.x[0] >= c[0] - cutoff and atom.x[0] <= c[0]+cutoff and \
            atom.x[1] >= c[1] - cutoff and atom.x[1] <= c[1]+cutoff and \
            atom.x[2] >= c[2] - cutoff and atom.x[2] <= c[2]+cutoff:
@@ -219,22 +182,22 @@ def check_overlaps(model, mol, nb_list):
     nat = 0
     for atom in mol.atoms:
         if atom.name not in ['N','CA','C','O','H','CB','HA'] and atom.symbol !='H':
-            nat+=1
+            nat += 1
             for at in nb_list:
-                if at.symbol!='H':
+                if at.symbol != 'H':
                     d = atom-at
-                    dd = 3.2 #model.vdwtab[atom.ptype][at.ptype]
+                    dd = 3.2  # model.vdwtab[atom.ptype][at.ptype]
                     if dd > d:
-#                        print atom.name, at.name, at.resname, at.resnr, d
-                        score+=(dd-d)
+                        score += (dd-d)
     return score/float(nat)
 
+
 def select_best_rotamer(model, rotamers):
-    if len(rotamers) == 1: return rotamers[0]
+    if len(rotamers) == 1:
+        return rotamers[0]
     nb_list = mini_nb(model, rotamers[0], 6)
     min_score = 999.
     rot_idx = 0
-#    print 'Checking %d rotamers....' % len(rotamers)
     for i, r in enumerate(rotamers):
         score = check_overlaps(model, r, nb_list)
         print i, score
@@ -246,15 +209,13 @@ def select_best_rotamer(model, rotamers):
     return rotamers[rot_idx]
 
 
-def mutate( residue, new_aa, bbdep):
-    if len( new_aa ) == 1:
+def mutate(residue, new_aa, bbdep):
+    if len(new_aa) == 1:
         new_aa = _aacids_dic[new_aa]
     phi = residue.get_phi()
     psi = residue.get_psi()
     m = residue.model
-    rotamers = get_rotamers( bbdep, new_aa, phi, psi, residue=residue, full = True, hydrogens = False)
+    rotamers = get_rotamers(bbdep, new_aa, phi, psi, residue=residue,
+                            full=True, hydrogens=False)
     new_r = select_best_rotamer(m, rotamers)
-    m.replace_residue( residue, new_r )
-    
-
-
+    m.replace_residue(residue, new_r)
