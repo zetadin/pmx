@@ -38,13 +38,13 @@ from parser import *
 import cpp
 from atom import Atom
 from molecule import Molecule
-from odict import *
+from collections import OrderedDict
 from library import _aliases
 from ffparser import *
 import _pmx as _p
 
 def TR ( s ):
-    print "pmx.forcefield_> " + s 
+    print "pmx.forcefield_> " + s
 
 #def cpp_parse_file(fn,cpp_defs=[],cpp_path=[os.environ.get('GMXDATA')+'/top'] ):
 def cpp_parse_file(fn,cpp_defs=[],cpp_path=[os.environ.get('GMXLIB')], itp=False, ffpath=None ):
@@ -107,7 +107,7 @@ class TopolBase:
         self.read()
     #===============================================================================
     # read functions
-    
+
     def read( self ):
         lines = open(self.filename).readlines()
         lines = kickOutComments(lines,';')
@@ -134,7 +134,7 @@ class TopolBase:
         if not self.is_itp:
             self.read_system(lines)
             self.read_molecules(lines)
-            
+
     def __atom_from_top_line(self, line):
         entr = line.split()
         idx = int(entr[0])
@@ -190,7 +190,7 @@ class TopolBase:
         self.residues.append( mol )
         for r in self.residues:
             atom.molecule = r
-            
+
 
 
     def read_system(self,lines):
@@ -259,14 +259,14 @@ class TopolBase:
                 lB = float(entries[5])
                 kB = float(entries[6])
                 self.bonds.append([self.atoms[idx[0]-1], self.atoms[idx[1]-1], idx[2], [idx[2],lA,kA],[idx[2],lB,kB]])
-            
+
     def read_pairs(self,lines):
         lst = readSection(lines,'[ pairs ]','[')
         self.pairs = []
         for line in lst:
             idx = [int(x) for x in line.split()]
             self.pairs.append([self.atoms[idx[0]-1], self.atoms[idx[1]-1], idx[2]])
-        
+
     def read_constraints(self,lines):
         lst = readSection(lines,'[ constraints ]','[')
         self.constraints = []
@@ -275,7 +275,7 @@ class TopolBase:
             self.constraints.append([self.atoms[idx[0]-1], self.atoms[idx[1]-1], idx[2]])
         if self.constraints:
             self.have_constraints = True
-            
+
     def read_angles(self, lines):
         lst = readSection(lines,'[ angles ]','[')
         angles = []
@@ -320,7 +320,7 @@ class TopolBase:
                 self.angles.append([self.atoms[idx[0]-1], self.atoms[idx[1]-1], \
                                     self.atoms[idx[2]-1], idx[3],\
 				    [idx[3],lA1,kA1,lA2,kA2],[idx[3],lB1,kB1,lB2,kB2]])
-                
+
     def read_dihedrals(self, lines):
         starts = []
         dih = []
@@ -332,7 +332,7 @@ class TopolBase:
             for line in lst:
                 entr = line.split()
                 idx = [int(x) for x in entr[:4]]
-                
+
                 func = int(entr[4])
                 try:
                     rest = ' '.join(entr[5:])
@@ -356,7 +356,7 @@ class TopolBase:
             for line in lst:
                 entr = line.split()
                 idx = [int(x) for x in entr[:5]]
-                
+
                 func = int(entr[5])
                 try:
                     rest = ' '.join(entr[6:])
@@ -384,7 +384,7 @@ class TopolBase:
             for line in lst:
                 entr = line.split()
                 idx = [int(x) for x in entr[:3]]
-                
+
                 func = int(entr[3])
                 try:
                     rest = ' '.join(entr[4:])
@@ -408,7 +408,7 @@ class TopolBase:
             for line in lst:
                 entr = line.split()
                 idx = [int(x) for x in entr[:4]]
-                
+
                 func = int(entr[4])
                 try:
                     rest = ' '.join(entr[5:])
@@ -433,7 +433,7 @@ class TopolBase:
             for line in lst:
                 entr = line.split()
                 idx = [int(x) for x in entr[:5]]
-                
+
                 func = int(entr[5])
                 try:
                     rest = ' '.join(entr[6:])
@@ -477,7 +477,7 @@ class TopolBase:
             for line in lst:
                 entr = line.split()
 		idx = int(entr[0])
-                
+
                 func = int(entr[1])
                 try:
                     rest = ' '.join(entr[2:])
@@ -710,7 +710,7 @@ class TopolBase:
                 print >>fp, '%6d %6d %6d %8s' % (p[0].id, p[1].id, p[2], p[3])
 
     def write_angles(self,fp, state='AB'):
-        print >>fp,'\n [ angles ]'    
+        print >>fp,'\n [ angles ]'
         print >>fp, ';  ai    aj    ak funct            c0            c1            c2            c3'
         for ang in self.angles:
             if len(ang) == 4:
@@ -775,13 +775,13 @@ class TopolBase:
 		        exit()
 
     def write_cmap(self, fp):
-        print >>fp,'\n [ cmap ]'    
+        print >>fp,'\n [ cmap ]'
         print >>fp,';  ai    aj    ak    al    am funct'
         for d in self.cmap:
             print >>fp, "%6d %6d %6d %6d %6d %4d" % ( d[0].id, d[1].id, d[2].id,d[3].id,d[4].id,d[5])
 
     def write_dihedrals(self, fp, state='AB'):
-        print >>fp,'\n [ dihedrals ]'    
+        print >>fp,'\n [ dihedrals ]'
         print >>fp,';  ai    aj    ak    al funct            c0            c1            c2            c3            c4            c5'
         for d in self.dihedrals:
             if len(d) == 5:
@@ -804,19 +804,19 @@ class TopolBase:
                         ast = ' '.join(["%g" % x for x in [0,0,0]])
                     elif d[4] == 2:
                         ast = ' '.join(["%g" % x for x in [0,0]])
-                        
+
                 elif ast != 'NULL' and hasattr(ast,"append"):
                     ast = ' '.join(["%.10g" % x for x in d[5][1:]])
                 if bs == 'NULL':
                     if d[4] == 3:
-                        bs = ' '.join(["%g" % x for x in [0,0,0,0,0,0]]) 
+                        bs = ' '.join(["%g" % x for x in [0,0,0,0,0,0]])
                     elif d[4] == 1 or d[4] == 4:
                         bs = ' '.join(["%g" % x for x in [0,0,0]])
                     elif d[4] == 9:
                         bs = ' '.join(["%g" % x for x in [0,0,0]])
                     elif d[4] == 2:
                         bs = ' '.join(["%g" % x for x in [0,0]])
-                    
+
                 elif bs !='NULL' and hasattr(bs,"append"):
                     bs = ' '.join(["%.10g" % x for x in d[6][1:]])
                 if state == 'AB':
@@ -833,7 +833,7 @@ class TopolBase:
                             d[0].type,d[1].type,d[2].type,d[3].type, A,B)
 
     def write_vsites2(self, fp):
-        print >>fp,'\n [ virtual_sites2 ]'    
+        print >>fp,'\n [ virtual_sites2 ]'
         print >>fp,';  ai    aj    ak  funct            c0            c1'
         for vs in self.virtual_sites2:
             if len(vs) == 4:
@@ -847,7 +847,7 @@ class TopolBase:
 
 
     def write_vsites3(self, fp):
-        print >>fp,'\n [ virtual_sites3 ]'    
+        print >>fp,'\n [ virtual_sites3 ]'
         print >>fp,';  ai    aj    ak    al funct            c0            c1'
         for vs in self.virtual_sites3:
             if len(vs) == 5:
@@ -860,7 +860,7 @@ class TopolBase:
                 sys.exit(1)
 
     def write_vsites4(self, fp):
-        print >>fp,'\n [ virtual_sites4 ]'    
+        print >>fp,'\n [ virtual_sites4 ]'
         print >>fp,';  ai    aj    ak    al    am  funct            c0            c1          c2'
         for vs in self.virtual_sites4:
             if len(vs) == 6:
@@ -873,7 +873,7 @@ class TopolBase:
                 sys.exit(1)
 
     def write_posre(self, fp):
-        print >>fp,'\n [ position_restraints ]'    
+        print >>fp,'\n [ position_restraints ]'
         print >>fp,';  ai    funct            c0            c1          c2'
         for pr in self.posre:
             if len(pr) == 3:
@@ -918,11 +918,11 @@ class TopolBase:
         for atom in atoms:
             if atom.atomtypeB is not None and atom.atomtype != atom.atomtypeB: return True
         return False
-    
+
     def __is_perturbed_residue( self, residue ):
         if self.__atoms_morphe(residue.atoms): return True
         return False
-        
+
     def __last_perturbed_atom(self, r):
 
         max_order = 0
@@ -989,7 +989,7 @@ class Topology( TopolBase ):
                 mol_exists = True
         if not mol_exists:
             self.molecules.append([molname,n])
-            
+
     def del_molecule(self, molname):
         if not hasattr(molname,"append"):
             molname = [molname]
@@ -1007,7 +1007,7 @@ class Topology( TopolBase ):
                 atom.typeB = self.NBParams.atomtypes[atom.atomtypeB]['bond_type']
             else:
                 atom.typeB = atom.type
-            
+
     def make_bond_params(self):
         for i, (at1,at2,func) in enumerate(self.bonds):
             param = self.BondedParams.get_bond_param(at1.type,at2.type)
@@ -1025,7 +1025,7 @@ class Topology( TopolBase ):
                       (at1.type, at2.type, at3.type)
                 sys.exit(1)
             self.angles[i].append(param[1:])
-            
+
     def make_dihedral_params(self):
         for i, d in enumerate(self.dihedrals):
             if d[5]!='': # we have a prefefined dihedral
@@ -1045,7 +1045,7 @@ class Topology( TopolBase ):
 
 
 #=================================================================================
-            
+
 class GAFFTopology( TopolBase ):
 
     def __init__(self, filename):
@@ -1063,11 +1063,11 @@ class GAFFTopology( TopolBase ):
         self.name = name
         for atom in self.atoms:
             atom.name = name
-            
-#=================================================================================
-        
 
-    
+#=================================================================================
+
+
+
 class MDPError(Exception):
     def __init__(self, s):
         self.s = s
@@ -1075,7 +1075,7 @@ class MDPError(Exception):
         return repr(self.s)
 
 #=================================================================================
-    
+
 class MDP:
 
     def __init__(self):
@@ -1253,13 +1253,13 @@ class MDP:
                 s = str(val)
             line+="%-25s = %s\n" % (key, s)
         return line
-            
+
     def __setitem__(self,item,value):
         if not self.parameters.has_key(item):
             raise MDPError, "No such option %s" % item
-        
+
         self.parameters[item] = value
-        
+
     def write(self, fp = None):
 
         if fp is None:
@@ -1314,7 +1314,7 @@ def make_amber_residue_names(model):
                 res.set_resname(rr)
             else:
                 res.set_resname('CYM')
-            
+
         else:
             res.set_resname('CYN')
     lysl = model.fetch_residues('LYS')
@@ -1383,7 +1383,7 @@ def assign_ffamber99sb_params(m):
     m.rename_atoms()
     for c in m.chains:
         c.make_residue_tree()
-        
+
     make_amber_residue_names( m)
     rtp = RTPParser('ffamber99sb.rtp')
     rtp.assign_params(m)
@@ -1392,7 +1392,7 @@ def assign_ffamber99sb_params(m):
     nb.assign_params( m )
     bo.assign_params( m )
     rtp.assign_dihedral_params( m, bo.directives )
-    
+
 
 #=================================================================================
 
@@ -1418,7 +1418,7 @@ def nb_energy( m ):
 
 def energy(m):
 
-    bond_ene = bond_energy( m ) 
+    bond_ene = bond_energy( m )
     angle_ene = angle_energy( m )
     dihedral_ene = dihedral_energy( m )
     improper_ene = improper_energy ( m )
@@ -1426,6 +1426,3 @@ def energy(m):
     coul14_ene = coul14_energy( m )
     nb_ene = nb_energy( m )
     return bond_ene + angle_ene + dihedral_ene + improper_ene + nb_ene + lj14_ene + coul14_ene
-
-
-

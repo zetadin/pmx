@@ -12,7 +12,7 @@ Usage:
 [ begin ] and [ end ]
 """
 
-from odict import OrderedDict
+from collections import OrderedDict
 
 
 class ParserError(Exception):
