@@ -5,7 +5,7 @@ import os
 from glob import glob
 import types
 import numpy as np
-from re import slit as resplit
+from re import split as resplit
 
 
 # =============
