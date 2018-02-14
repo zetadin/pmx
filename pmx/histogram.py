@@ -1,43 +1,18 @@
-# pmx  Copyright Notice
-# ============================
-#
-# The pmx source code is copyrighted, but you can freely use and
-# copy it as long as you don't change or remove any of the copyright
-# notices.
-#
-# ----------------------------------------------------------------------
-# pmx is Copyright (C) 2006-2013 by Daniel Seeliger
-#
-#                        All Rights Reserved
-#
-# Permission to use, copy, modify, distribute, and distribute modified
-# versions of this software and its documentation for any purpose and
-# without fee is hereby granted, provided that the above copyright
-# notice appear in all copies and that both the copyright notice and
-# this permission notice appear in supporting documentation, and that
-# the name of Daniel Seeliger not be used in advertising or publicity
-# pertaining to distribution of the software without specific, written
-# prior permission.
-#
-# DANIEL SEELIGER DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
-# SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
-# FITNESS.  IN NO EVENT SHALL DANIEL SEELIGER BE LIABLE FOR ANY
-# SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
-# RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
-# CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
-# CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-# ----------------------------------------------------------------------
-__doc__="""
-This file contains the Histogram class. I wrote it before realising
+"""This file contains the Histogram class. I wrote it before realising
 that numpy has a much fancier way to generate histograms.
 I recommand to use the numpy histogram.
 """
+
+#
+# TODO: should we remove this? Histogram does not seem to be used anywhere.
+#       plus, see above docs
+
 import sys,os
 from numpy import *
 
 class Histogram:
     """ class to store data as histogram """
-    
+
     def __init__(self,begin,end,incr):
         """ initialize histogram (start, end, increment)"""
         self.values=arange(begin,end,incr)
@@ -56,7 +31,7 @@ class Histogram:
                        x<self.values[i+1]:
                     self.counter[self.values[i]]+=weight
                     break
-            
+
     def write(self,filename=None):
         """ write histogram data to stdout or file"""
         if not filename:
@@ -98,9 +73,9 @@ class Histogram:
                     elif value > min_val:
                         list.append(self.counter[value])
                         x.append( value)
-                        
+
         return trapz(list,x=x)
-        
+
 
     def mean(self):
         """ calculate the mean value"""
@@ -143,6 +118,3 @@ if __name__=='__main__':
     print 'norming histogram....'
     h.norm()
     print 'new integral', h.integ()
-    
-
-
