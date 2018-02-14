@@ -14,14 +14,14 @@ Usage:
     build chain with defined dihedral angles
 """
 
-import sys
-import library
 from geometry import Rotation
 from chain import Chain
 from atom import Atom
 from model import Model
+from molecule import Molecule
+import sys
+import library
 from numpy import array, pi, linalg, cross
-from .molecule import Molecule
 
 
 def add_bp(m, strand=None, bRNA=False):
