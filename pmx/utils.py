@@ -4,11 +4,12 @@
 import os
 from glob import glob
 import types
+import numpy as np
 
 
-# ==============================================================================
+# =============
 # File IO utils
-# ==============================================================================
+# =============
 def ffopen(filename, mode='r', backup=True):
 
     if mode == 'w':
@@ -125,3 +126,37 @@ def removeBackups(dir, check=True):
     dir = os.path.abspath(dir)+os.sep
 
     os.path.walk(dir, killBackups, (False, True, True, check))
+
+
+# ======
+# Others
+# ======
+def data2gauss(data):
+    '''Takes a one dimensional array and fits a Gaussian.
+
+    Parameters
+    ----------
+    data : list
+        1D array of values
+
+    Returns
+    -------
+    float
+        mean of the distribution.
+    float
+        standard deviation of the distribution.
+    float
+        height of the curve's peak.
+    '''
+    m = np.average(data)
+    dev = np.std(data)
+    A = 1./(dev*np.sqrt(2*np.pi))
+    return m, dev, A
+
+
+def gauss_func(A, mean, dev, x):
+    '''Given the parameters of a Gaussian and a range of the x-values, returns
+    the y-values of the Gaussian function'''
+    x = np.array(x)
+    y = A*np.exp(-(((x-mean)**2.)/(2.0*(dev**2.))))
+    return y

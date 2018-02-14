@@ -1,10 +1,11 @@
 from __future__ import print_function, division
-from scipy.integrate import simps
 import sys
-from matplotlib import pyplot as plt
 import numpy as np
+from scipy.integrate import simps
+from matplotlib import pyplot as plt
 from copy import deepcopy
 from scipy.special import erf
+from utils import data2gauss, gauss_func
 
 __all__ = ['read_dgdl_files', 'integrate_dgdl',
            'ks_norm_test', 'make_cgi_plot']
@@ -117,29 +118,6 @@ def integrate_dgdl(fn, ndata=-1, lambda0=0, invert_values=False):
     else:
         integr = simps(y, x)
         return integr, ndata
-
-
-def data2gauss(data):
-    '''Takes a one dimensional array and fits a Gaussian.
-
-    Parameters
-    ----------
-    data : list
-        1D array of values
-
-    Returns
-    -------
-    float
-        mean of the distribution.
-    float
-        standard deviation of the distribution.
-    float
-        height of the curve's peak.
-    '''
-    m = np.average(data)
-    dev = np.std(data)
-    A = 1./(dev*np.sqrt(2*np.pi))
-    return m, dev, A
 
 
 def ks_norm_test(data, alpha=0.05, refks=None):
@@ -296,8 +274,8 @@ def make_cgi_plot(fname, data1, data2, result, err, nbins, dpi=300):
 
     x = np.arange(mini, maxi, .5)
 
-    y1 = _gauss_func(Af, mf, devf, x)
-    y2 = _gauss_func(Ab, mb, devb, x)
+    y1 = gauss_func(Af, mf, devf, x)
+    y2 = gauss_func(Ab, mb, devb, x)
 
     plt.plot(y1, x, 'g--', linewidth=2)
     plt.plot(y2, x, 'b--', linewidth=2)
@@ -334,11 +312,3 @@ def _check_dgdl(fn, lambda0):
     print('    # data points: %d' % ndata)
     print('    Length of trajectory: %8.3f ps' % r[-1][0])
     print('    Delta lambda: %8.5f' % dlambda)
-
-
-def _gauss_func(A, mean, dev, x):
-    '''Given the parameters of a Gaussian and a range of the x-values, returns
-    the y-values of the Gaussian function'''
-    x = np.array(x)
-    y = A*np.exp(-(((x-mean)**2.)/(2.0*(dev**2.))))
-    return y
