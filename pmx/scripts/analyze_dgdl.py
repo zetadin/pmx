@@ -34,6 +34,7 @@ from pmx.parser import read_and_format
 from pmx.estimators import Jarz, Crooks, BAR
 from pmx.analysis import read_dgdl_files, make_cgi_plot, ks_norm_test
 from pmx.utils import natural_sort
+from pmx import __version__
 import sys
 import os
 import time
@@ -279,10 +280,7 @@ def parse_options():
                         help='Resolution of the plot. Default is 300.',
                         default=300)
 
-    args = parser.parse_args()
-
-    from pmx import __version__
-    args.pmx_version = __version__
+    args, unknown = parser.parse_known_args()
 
     return args
 
@@ -333,7 +331,7 @@ def main(args):
     else:
         exit('No unit type \'%s\' available' % units)
 
-    print("# analyze_crooks.py, pmx version = %s" % args.pmx_version, file=out)
+    print("# analyze_dgdl.py, pmx version = %s" % __version__, file=out)
     print("# pwd = %s" % os.getcwd(), file=out)
     print("# %s (%s)" % (time.asctime(), os.environ.get('USER')), file=out)
     print("# command = %s" % ' '.join(sys.argv), file=out)
