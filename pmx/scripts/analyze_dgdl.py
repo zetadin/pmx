@@ -379,11 +379,11 @@ def main(args):
             filesBA = [filesBA[i] for i in args.index if i < len(filesBA)]
             # ...but warn if this happens
             if any(i > (len(filesAB) - 1) for i in args.index):
-                warnings.warn('\nWARNING: index out of range for some of your chosen '
+                warnings.warn('\nindex out of range for some of your chosen '
                               '\nindices for the forward work values. This means you are'
                               '\ntrying to select input files that are not present.')
             if any(i > (len(filesBA) - 1) for i in args.index):
-                warnings.warn('\nWARNING: index out of range for some of your chosen'
+                warnings.warn('\nindex out of range for some of your chosen'
                               '\nindices for the reverse work values. This means you are'
                               '\ntrying to select input files that are not present.')
 
@@ -423,8 +423,8 @@ def main(args):
             print('\t\tReading integrated values (B->A) from ', fn)
             res_ba.extend(_data_from_file(fn))
     else:
-        exit('\nERROR: you need to provide either none of both sets of '
-             'integrated work values.')
+        raise ValueError('you need to provide either none of both sets of '
+                         'integrated work values.')
 
     # If asked to only do the integration of dhdl.xvg, exit
     if integ_only and quiet is False:
