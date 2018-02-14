@@ -41,6 +41,7 @@ import time
 import numpy as np
 import pickle
 import argparse
+import warnings
 
 # Constants
 kb = 0.00831447215   # kJ/(K*mol)
@@ -60,9 +61,10 @@ def _data_from_file(fn):
     return map(lambda a: a[1], data)
 
 
-def _tee(fp, s):
+def _tee(fp, s, quiet=False):
     print(s, file=fp)
-    print(s)
+    if quiet is False:
+        print(s)
 
 
 def _time_stats(seconds):
@@ -279,6 +281,11 @@ def parse_options():
                         type=int,
                         help='Resolution of the plot. Default is 300.',
                         default=300)
+    parser.add_argument('--quiet',
+                        dest='quiet',
+                        help='Minimal screen output.',
+                        default=False,
+                        action='store_true')
 
     args, unknown = parser.parse_known_args()
 
@@ -313,6 +320,7 @@ def main(args):
     nboots = args.nboots
     nblocks = args.nblocks
     do_ks_test = args.do_ks_test
+    quiet = args.quiet
 
     # -------------------
     # Select output units
@@ -335,7 +343,7 @@ def main(args):
     print("# pwd = %s" % os.getcwd(), file=out)
     print("# %s (%s)" % (time.asctime(), os.environ.get('USER')), file=out)
     print("# command = %s" % ' '.join(sys.argv), file=out)
-    _tee(out, "\n")
+    _tee(out, "\n", quiet=quiet)
 
     # ==========
     # Parse Data
@@ -348,7 +356,8 @@ def main(args):
         if args.rand is not None:
             filesAB = np.random.choice(filesAB, size=args.rand, replace=False)
             filesBA = np.random.choice(filesBA, size=args.rand, replace=False)
-            _tee(out, 'Selected random subset of %d trajectories.' % args.rand)
+            _tee(out, 'Selected random subset of %d trajectories.' % args.rand,
+                 quiet=quiet)
 
         # If slice values provided, select the files needed. Again before
         # reading files so speed up the process
@@ -356,10 +365,10 @@ def main(args):
             first = args.slice[0]
             last = args.slice[1]
             _tee(out, ' First trajectories read: %s and %s'
-                 % (filesAB[first], filesBA[first]))
+                 % (filesAB[first], filesBA[first]), quiet=quiet)
             _tee(out, ' Last trajectories  read: %s and %s'
-                 % (filesAB[last-1], filesBA[last-1]))
-            _tee(out, '')
+                 % (filesAB[last-1], filesBA[last-1]), quiet=quiet)
+            _tee(out, '', quiet=quiet)
             filesAB = filesAB[first:last]
             filesBA = filesBA[first:last]
 
@@ -386,15 +395,19 @@ def main(args):
         # --------------------
         # Now read in the data
         # --------------------
-        print(' ========================================================')
-        print('                   PROCESSING THE DATA')
-        print(' ========================================================')
-        print('  Forward Data')
+        if quiet is True:
+            print('Processing the input data...')
+        elif quiet is False:
+            print(' ========================================================')
+            print('                   PROCESSING THE DATA')
+            print(' ========================================================')
+            print('  Forward Data')
         res_ab = read_dgdl_files(filesAB, lambda0=0,
-                                 invert_values=False)
-        print('  Reverse Data')
+                                 invert_values=False, verbose=not quiet)
+        if quiet is False:
+            print('  Reverse Data')
         res_ba = read_dgdl_files(filesBA, lambda0=1,
-                                 invert_values=reverseB)
+                                 invert_values=reverseB, verbose=not quiet)
 
         _dump_integ_file(args.oA, filesAB, res_ab)
         _dump_integ_file(args.oB, filesBA, res_ba)
@@ -404,17 +417,17 @@ def main(args):
         res_ab = []
         res_ba = []
         for fn in args.iA:
-            print('\t\tReading integrated values (A->B) from', fn)
+            print('\t\tReading integrated values (A->B) from ', fn)
             res_ab.extend(_data_from_file(fn))
         for fn in args.iB:
-            print('\t\tReading integrated values (B->A) from', fn)
+            print('\t\tReading integrated values (B->A) from ', fn)
             res_ba.extend(_data_from_file(fn))
     else:
         exit('\nERROR: you need to provide either none of both sets of '
              'integrated work values.')
 
     # If asked to only do the integration of dhdl.xvg, exit
-    if integ_only:
+    if integ_only and quiet is False:
         print('\n    Integration done. Skipping analysis.')
         print('\n    ......done........\n')
         sys.exit(0)
@@ -422,22 +435,26 @@ def main(args):
     # ==============
     # Begin Analysis
     # ==============
-    _tee(out, ' ========================================================')
-    _tee(out, '                       ANALYSIS')
-    _tee(out, ' ========================================================')
-    _tee(out, '  Number of forward (0->1) trajectories: %d' % len(res_ab))
-    _tee(out, '  Number of reverse (1->0) trajectories: %d' % len(res_ba))
-    _tee(out, '  Temperature : %.2f K' % T)
+    _tee(out, ' ========================================================', quiet=quiet)
+    _tee(out, '                       ANALYSIS', quiet=quiet)
+    _tee(out, ' ========================================================', quiet=quiet)
+    _tee(out, '  Number of forward (0->1) trajectories: %d' % len(res_ab), quiet=quiet)
+    _tee(out, '  Number of reverse (1->0) trajectories: %d' % len(res_ba), quiet=quiet)
+    _tee(out, '  Temperature : %.2f K' % T, quiet=quiet)
 
     # ============================
     # Crooks Gaussian Intersection
     # ============================
     if 'cgi' in methods:
-        _tee(out, '\n --------------------------------------------------------')
-        _tee(out, '             Crooks Gaussian Intersection     ')
-        _tee(out, ' --------------------------------------------------------')
+        _tee(out, '\n --------------------------------------------------------', quiet=quiet)
+        _tee(out, '             Crooks Gaussian Intersection     ', quiet=quiet)
+        _tee(out, ' --------------------------------------------------------', quiet=quiet)
 
-        print('  Calculating Intersection...')
+        if quiet is True:
+            print('Running CGI analysis...')
+        elif quiet is False:
+            print('  Calculating Intersection...')
+
         cgi = Crooks(wf=res_ab, wr=res_ba, nboots=nboots, nblocks=nblocks)
         if args.pickle is True:
             pickle.dump(cgi, open("cgi_results.pkl", "wb"))
@@ -445,125 +462,138 @@ def main(args):
         _tee(out, '  CGI: Forward Gauss mean = {m:8.{p}f} {u} '
                   'std = {s:8.{p}f} {u}'.format(m=cgi.mf*unit_fact,
                                                 s=cgi.devf*unit_fact,
-                                                p=prec, u=units))
+                                                p=prec, u=units),
+             quiet=quiet)
         _tee(out, '  CGI: Reverse Gauss mean = {m:8.{p}f} {u} '
                   'std = {s:8.{p}f} {u}'.format(m=cgi.mr*unit_fact,
                                                 s=cgi.devr*unit_fact,
-                                                p=prec, u=units))
+                                                p=prec, u=units),
+             quiet=quiet)
 
         if cgi.inters_bool is False:
-            _tee(out, '\n  Gaussians too close for intersection calculation')
-            _tee(out, '   --> Taking difference of mean values')
+            _tee(out, '\n  Gaussians too close for intersection calculation', quiet=quiet)
+            _tee(out, '   --> Taking difference of mean values', quiet=quiet)
 
         _tee(out, '  CGI: dG = {dg:8.{p}f} {u}'.format(dg=cgi.dg*unit_fact,
-                                                       p=prec, u=units))
+                                                       p=prec, u=units), quiet=quiet)
         _tee(out, '  CGI: Std Err (bootstrap:parametric) = {e:8.{p}f} {u}'.format(e=cgi.err_boot1*unit_fact,
-                                                                                  p=prec, u=units))
+                                                                                  p=prec, u=units), quiet=quiet)
 
         if nboots > 0:
             _tee(out, '  CGI: Std Err (bootstrap) = {e:8.{p}f} {u}'.format(e=cgi.err_boot2*unit_fact,
-                                                                           p=prec, u=units))
+                                                                           p=prec, u=units), quiet=quiet)
 
         if nblocks > 1:
             _tee(out, '  CGI: Std Err (blocks) = {e:8.{p}f} {u}'.format(e=cgi.err_blocks*unit_fact,
-                                                                        p=prec, u=units))
+                                                                        p=prec, u=units), quiet=quiet)
 
     # --------------
     # Normality test
     # --------------
     if do_ks_test:
-        print('\n  Running KS-test...')
+        if quiet is False:
+            print('\n  Running KS-test...')
         q0, lam00, check0, bOk0 = ks_norm_test(res_ab)
         q1, lam01, check1, bOk1 = ks_norm_test(res_ba)
 
-        _tee(out, '    Forward: gaussian quality = %3.2f' % q0)
+        _tee(out, '    Forward: gaussian quality = %3.2f' % q0, quiet=quiet)
         if bOk0:
-            _tee(out, '             ---> KS-Test Ok')
+            _tee(out, '             ---> KS-Test Ok', quiet=quiet)
         else:
             _tee(out, '             ---> KS-Test Failed. sqrt(N)*Dmax = %4.2f,'
-                      ' lambda0 = %4.2f' % (q0, check0))
-        _tee(out, '    Reverse: gaussian quality = %3.2f' % q1)
+                      ' lambda0 = %4.2f' % (q0, check0), quiet=quiet)
+        _tee(out, '    Reverse: gaussian quality = %3.2f' % q1, quiet=quiet)
         if bOk1:
-            _tee(out, '             ---> KS-Test Ok')
+            _tee(out, '             ---> KS-Test Ok', quiet=quiet)
         else:
             _tee(out, '             ---> KS-Test Failed. sqrt(N)*Dmax = %4.2f,'
-                      ' lambda0 = %4.2f' % (q1, check1))
+                      ' lambda0 = %4.2f' % (q1, check1), quiet=quiet)
 
     # ========================
     # Bennett Acceptance Ratio
     # ========================
     if 'bar' in methods:
-        _tee(out, '\n --------------------------------------------------------')
-        _tee(out, '             Bennett Acceptance Ratio     ')
-        _tee(out, ' --------------------------------------------------------')
+        _tee(out, '\n --------------------------------------------------------', quiet=quiet)
+        _tee(out, '             Bennett Acceptance Ratio     ', quiet=quiet)
+        _tee(out, ' --------------------------------------------------------', quiet=quiet)
 
-        print('  Running Nelder-Mead Simplex algorithm... ')
+        if quiet is True:
+            print('Running BAR analysis...')
+        elif quiet is False:
+            print('  Running Nelder-Mead Simplex algorithm... ')
 
         bar = BAR(res_ab, res_ba, T=T, nboots=nboots, nblocks=nblocks)
         if args.pickle:
             pickle.dump(bar, open("bar_results.pkl", "wb"))
 
-        _tee(out, '  BAR: dG = {dg:8.{p}f} {u}'.format(dg=bar.dg*unit_fact, p=prec, u=units))
-        _tee(out, '  BAR: Std Err (analytical) = {e:8.{p}f} {u}'.format(e=bar.err*unit_fact, p=prec, u=units))
+        _tee(out, '  BAR: dG = {dg:8.{p}f} {u}'.format(dg=bar.dg*unit_fact, p=prec, u=units), quiet=quiet)
+        _tee(out, '  BAR: Std Err (analytical) = {e:8.{p}f} {u}'.format(e=bar.err*unit_fact, p=prec, u=units), quiet=quiet)
 
         if nboots > 0:
-            _tee(out, '  BAR: Std Err (bootstrap)  = {e:8.{p}f} {u}'.format(e=bar.err_boot*unit_fact, p=prec, u=units))
+            _tee(out, '  BAR: Std Err (bootstrap)  = {e:8.{p}f} {u}'.format(e=bar.err_boot*unit_fact, p=prec, u=units), quiet=quiet)
         if nblocks > 1:
-            _tee(out, '  BAR: Std Err (blocks)  = {e:8.{p}f} {u}'.format(e=bar.err_blocks*unit_fact, p=prec, u=units))
+            _tee(out, '  BAR: Std Err (blocks)  = {e:8.{p}f} {u}'.format(e=bar.err_blocks*unit_fact, p=prec, u=units), quiet=quiet)
 
-        _tee(out, '  BAR: Conv = %8.2f' % bar.conv)
+        _tee(out, '  BAR: Conv = %8.2f' % bar.conv, quiet=quiet)
 
         if nboots > 0:
-            _tee(out, '  BAR: Conv Std Err (bootstrap) = %8.2f' % bar.conv_err_boot)
+            _tee(out, '  BAR: Conv Std Err (bootstrap) = %8.2f' % bar.conv_err_boot, quiet=quiet)
 
     # =========
     # Jarzynski
     # =========
     if 'jarz' in methods:
-        _tee(out, '\n --------------------------------------------------------')
-        _tee(out, '             Jarzynski estimator     ')
-        _tee(out, ' --------------------------------------------------------')
+        _tee(out, '\n --------------------------------------------------------', quiet=quiet)
+        _tee(out, '             Jarzynski estimator     ', quiet=quiet)
+        _tee(out, ' --------------------------------------------------------', quiet=quiet)
 
-        jarz = Jarz(wf=res_ab, wr=res_ba, T=T, nboots=nboots, nblocks=nblocks)
+        if quiet is True:
+            print('Running Jarz analysis...')
+        jarz = Jarz(wf=res_ab, wr=res_ba, T=T, nboots=nboots, nblocks=nblocks, quiet=quiet)
         if args.pickle:
             pickle.dump(jarz, open("jarz_results.pkl", "wb"))
 
         _tee(out, '  JARZ: dG Forward = {dg:8.{p}f} {u}'.format(dg=jarz.dg_for*unit_fact,
-                                                                p=prec, u=units))
+                                                                p=prec, u=units), quiet=quiet)
         _tee(out, '  JARZ: dG Reverse = {dg:8.{p}f} {u}'.format(dg=jarz.dg_rev*unit_fact,
-                                                                p=prec, u=units))
+                                                                p=prec, u=units), quiet=quiet)
         _tee(out, '  JARZ: dG Mean    = {dg:8.{p}f} {u}'.format(dg=jarz.dg_mean*unit_fact,
-                                                                p=prec, u=units))
+                                                                p=prec, u=units), quiet=quiet)
         if nboots > 0:
             _tee(out, '  JARZ: Std Err Forward (bootstrap) = {e:8.{p}f} {u}'.format(e=jarz.err_boot_for*unit_fact,
-                                                                                    p=prec, u=units))
+                                                                                    p=prec, u=units), quiet=quiet)
             _tee(out, '  JARZ: Std Err Reverse (bootstrap) = {e:8.{p}f} {u}'.format(e=jarz.err_boot_rev*unit_fact,
-                                                                                    p=prec, u=units))
+                                                                                    p=prec, u=units), quiet=quiet)
 
         if nblocks > 1:
             _tee(out, '  JARZ: Std Err Forward (blocks) = {e:8.{p}f} {u}'.format(e=jarz.err_blocks_for*unit_fact,
-                                                                                 p=prec, u=units))
+                                                                                 p=prec, u=units), quiet=quiet)
             _tee(out, '  JARZ: Std Err Reverse (blocks) = {e:8.{p}f} {u}'.format(e=jarz.err_blocks_rev*unit_fact,
-                                                                                 p=prec, u=units))
+                                                                                 p=prec, u=units), quiet=quiet)
 
 
-    _tee(out, ' ========================================================')
+    _tee(out, ' ========================================================', quiet=quiet)
 
-    print('\n   Plotting histograms......')
     if 'cgi' in methods and args.cgi_plot is not None:
+        if quiet is False:
+            print('\n   Plotting histograms......')
         make_cgi_plot(args.cgi_plot, res_ab, res_ba, cgi.dg, cgi.err_boot1,
                       args.nbins, args.dpi)
 
-    print('\n   ......done...........\n')
+    if quiet is True:
+        print('Done')
+    if quiet is False:
+        print('\n   ......done...........\n')
 
-    if args.pickle:
+    if args.pickle and quiet is False:
         print('   NOTE: units of results in pickled files are as in the\n'
               '   provided dgdl.xvg or integ.dat files. These are typically\n'
               '   in kJ/mol when using dgdl.xvg files from Gromacs.\n')
     # execution time
     etime = time.time()
     h, m, s = _time_stats(etime-stime)
-    print("   Execution time = %02d:%02d:%02d\n" % (h, m, s))
+    if quiet is False:
+        print("   Execution time = %02d:%02d:%02d\n" % (h, m, s))
 
 
 def entry_point():

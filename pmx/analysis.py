@@ -11,7 +11,7 @@ __all__ = ['read_dgdl_files', 'integrate_dgdl',
            'ks_norm_test', 'make_cgi_plot']
 
 
-def read_dgdl_files(lst, lambda0=0, invert_values=False):
+def read_dgdl_files(lst, lambda0=0, invert_values=False, verbose=True):
     '''Takes a list of dgdl.xvg files and returns the integrated work values.
 
     Parameters
@@ -35,20 +35,22 @@ def read_dgdl_files(lst, lambda0=0, invert_values=False):
     # check lambda0 is either 0 or 1
     assert lambda0 in [0, 1]
 
-    _check_dgdl(lst[0], lambda0)
+    _check_dgdl(lst[0], lambda0, verbose=verbose)
     first_w, ndata = integrate_dgdl(lst[0], lambda0=lambda0,
                                     invert_values=invert_values)
     w_list = [first_w]
     for idx, f in enumerate(lst[1:]):
-        sys.stdout.write('\r    Reading %s' % f)
-        sys.stdout.flush()
+        if verbose is True:
+            sys.stdout.write('\r    Reading %s' % f)
+            sys.stdout.flush()
 
         w, _ = integrate_dgdl(f, ndata=ndata, lambda0=lambda0,
                               invert_values=invert_values)
         if w is not None:
             w_list.append(w)
 
-    print('\n')
+    if verbose is True:
+        print('\n')
     return w_list
 
 
@@ -295,7 +297,7 @@ def make_cgi_plot(fname, data1, data2, result, err, nbins, dpi=300):
     plt.savefig(fname, dpi=dpi)
 
 
-def _check_dgdl(fn, lambda0):
+def _check_dgdl(fn, lambda0, verbose=True):
     '''Prints some info about a dgdl.xvg file.'''
     l = open(fn).readlines()
     if not l:
@@ -309,6 +311,7 @@ def _check_dgdl(fn, lambda0):
     if lambda0 == 1:
         dlambda *= -1
 
-    print('    # data points: %d' % ndata)
-    print('    Length of trajectory: %8.3f ps' % r[-1][0])
-    print('    Delta lambda: %8.5f' % dlambda)
+    if verbose is True:
+        print('    # data points: %d' % ndata)
+        print('    Length of trajectory: %8.3f ps' % r[-1][0])
+        print('    Delta lambda: %8.5f' % dlambda)
