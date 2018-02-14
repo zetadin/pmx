@@ -1,11 +1,81 @@
 #!/usr/bin/env python
+# pmx  Copyright Notice
+# ============================
+#
+# The pmx source code is copyrighted, but you can freely use and
+# copy it as long as you don't change or remove any of the copyright
+# notices.
+#
+# ----------------------------------------------------------------------
+# pmx is Copyright (C) 2006-2017 by Daniel Seeliger
+#
+#                        All Rights Reserved
+#
+# Permission to use, copy, modify, distribute, and distribute modified
+# versions of this software and its documentation for any purpose and
+# without fee is hereby granted, provided that the above copyright
+# notice appear in all copies and that both the copyright notice and
+# this permission notice appear in supporting documentation, and that
+# the name of Daniel Seeliger not be used in advertising or publicity
+# pertaining to distribution of the software without specific, written
+# prior permission.
+#
+# DANIEL SEELIGER DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+# SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+# FITNESS.  IN NO EVENT SHALL DANIEL SEELIGER BE LIABLE FOR ANY
+# SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
+# RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
+# CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+# CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+# ----------------------------------------------------------------------
 
-from pmx.analysis import analyse_dgdl
+from __future__ import print_function, division
+from pmx.parser import read_and_format
+from pmx.estimators import Jarz, Crooks, BAR
+from pmx.analysis import read_dgdl_files, make_cgi_plot, ks_norm_test
+from pmx.utils import natural_sort
+from pmx import __version__
+import sys
+import os
+import time
+import numpy as np
+import pickle
 import argparse
+import warnings
 
-# =======
-# Options
-# =======
+# Constants
+kb = 0.00831447215   # kJ/(K*mol)
+
+
+# ==============================================================================
+#                               FUNCTIONS
+# ==============================================================================
+def _dump_integ_file(outfn, f_lst, w_lst):
+    with open(outfn, 'w') as f:
+        for fn, w in zip(f_lst, w_lst):
+            f.write('{dhdl} {work}\n'.format(dhdl=fn, work=w))
+
+
+def _data_from_file(fn):
+    data = read_and_format(fn, 'sf')
+    return map(lambda a: a[1], data)
+
+
+def _tee(fp, s, quiet=False):
+    print(s, file=fp)
+    if quiet is False:
+        print(s)
+
+
+def _time_stats(seconds):
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    return h, m, s
+
+
+# ==============================================================================
+#                      COMMAND LINE OPTIONS AND MAIN
+# ==============================================================================
 def parse_options():
 
     parser = argparse.ArgumentParser(description='Calculates free energies '
@@ -45,7 +115,7 @@ def parse_options():
                         nargs='+')
     parser.add_argument('-t',
                         metavar='temperature',
-                        dest='T',
+                        dest='temperature',
                         type=float,
                         help='Temperature in Kelvin. Default is 298.15.',
                         default=298.15)
@@ -136,7 +206,7 @@ def parse_options():
                         default=1)
     exclus.add_argument('--slice',
                         metavar='',
-                        dest='sliceit',
+                        dest='slice',
                         type=int,
                         help='Subset of trajectories to analyze.'
                         'Provide list slice, e.g. "10 50" will'
@@ -164,7 +234,7 @@ def parse_options():
                         nargs='+')
     parser.add_argument('--prec',
                         metavar='',
-                        dest='prec',
+                        dest='precision',
                         type=int,
                         help='The decimal precision of the screen/file output.'
                         ' Default is 2.',
@@ -178,7 +248,7 @@ def parse_options():
                         default='kJ',
                         choices=['kj', 'kcal', 'kt'])
     parser.add_argument('--pickle',
-                        dest='do_pickle',
+                        dest='pickle',
                         help='Whether to save the free energy results from '
                         'the estimators in pickled files. Default is False.',
                         default=False,
@@ -222,12 +292,313 @@ def parse_options():
     return args
 
 
-# ====
-# MAIN
-# ====
+# ==============================================================================
+#                               FUNCTIONS
+# ==============================================================================
+def main(args):
+    """Run the main script.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The command line arguments
+    """
+
+    # start timing
+    stime = time.time()
+
+    # input arguments
+    out = open(args.outfn, 'w')
+    filesAB = natural_sort(args.filesAB)
+    filesBA = natural_sort(args.filesBA)
+    T = args.temperature
+    skip = args.skip
+    prec = args.precision
+    methods = args.methods
+    reverseB = args.reverseB
+    integ_only = args.integ_only
+    nboots = args.nboots
+    nblocks = args.nblocks
+    do_ks_test = args.do_ks_test
+    quiet = args.quiet
+
+    # -------------------
+    # Select output units
+    # -------------------
+    units = args.units
+    if units.lower() == 'kj':
+        # kJ is the input from GMX
+        unit_fact = 1.
+        units = 'kJ/mol'
+    elif units == 'kcal':
+        unit_fact = 1./4.184
+        units = 'kcal/mol'
+    elif units.lower() == 'kt':
+        unit_fact = 1./(kb*T)
+        units = 'kT'
+    else:
+        exit('No unit type \'%s\' available' % units)
+
+    print("# analyze_dgdl.py, pmx version = %s" % __version__, file=out)
+    print("# pwd = %s" % os.getcwd(), file=out)
+    print("# %s (%s)" % (time.asctime(), os.environ.get('USER')), file=out)
+    print("# command = %s" % ' '.join(sys.argv), file=out)
+    _tee(out, "\n", quiet=quiet)
+
+    # ==========
+    # Parse Data
+    # ==========
+
+    # If list of dgdl.xvg files are provided, parse dgdl
+    if args.iA is None and args.iB is None:
+        # If random selection is chosen, do this before reading files and
+        # calculating the work values.
+        if args.rand is not None:
+            filesAB = np.random.choice(filesAB, size=args.rand, replace=False)
+            filesBA = np.random.choice(filesBA, size=args.rand, replace=False)
+            _tee(out, 'Selected random subset of %d trajectories.' % args.rand,
+                 quiet=quiet)
+
+        # If slice values provided, select the files needed. Again before
+        # reading files so speed up the process
+        if args.slice is not None:
+            first = args.slice[0]
+            last = args.slice[1]
+            _tee(out, ' First trajectories read: %s and %s'
+                 % (filesAB[first], filesBA[first]), quiet=quiet)
+            _tee(out, ' Last trajectories  read: %s and %s'
+                 % (filesAB[last-1], filesBA[last-1]), quiet=quiet)
+            _tee(out, '', quiet=quiet)
+            filesAB = filesAB[first:last]
+            filesBA = filesBA[first:last]
+
+        # If index values provided, select the files needed
+        if args.index is not None:
+            # Avoid index out of range error if "wrong" indices are provided
+            filesAB = [filesAB[i] for i in args.index if i < len(filesAB)]
+            filesBA = [filesBA[i] for i in args.index if i < len(filesBA)]
+            # ...but warn if this happens
+            if any(i > (len(filesAB) - 1) for i in args.index):
+                warnings.warn('\nindex out of range for some of your chosen '
+                              '\nindices for the forward work values. This means you are'
+                              '\ntrying to select input files that are not present.')
+            if any(i > (len(filesBA) - 1) for i in args.index):
+                warnings.warn('\nindex out of range for some of your chosen'
+                              '\nindices for the reverse work values. This means you are'
+                              '\ntrying to select input files that are not present.')
+
+        # when skipping start count from end: in this way the last frame is
+        # always included, and what can change is the first one
+        filesAB = list(reversed(filesAB[::-skip]))
+        filesBA = list(reversed(filesBA[::-skip]))
+
+        # --------------------
+        # Now read in the data
+        # --------------------
+        if quiet is True:
+            print('Processing the input data...')
+        elif quiet is False:
+            print(' ========================================================')
+            print('                   PROCESSING THE DATA')
+            print(' ========================================================')
+            print('  Forward Data')
+        res_ab = read_dgdl_files(filesAB, lambda0=0,
+                                 invert_values=False, verbose=not quiet)
+        if quiet is False:
+            print('  Reverse Data')
+        res_ba = read_dgdl_files(filesBA, lambda0=1,
+                                 invert_values=reverseB, verbose=not quiet)
+
+        _dump_integ_file(args.oA, filesAB, res_ab)
+        _dump_integ_file(args.oB, filesBA, res_ba)
+
+    # If work values are given as input instead, read those
+    elif args.iA is not None and args.iB is not None:
+        res_ab = []
+        res_ba = []
+        for fn in args.iA:
+            print('\t\tReading integrated values (A->B) from ', fn)
+            res_ab.extend(_data_from_file(fn))
+        for fn in args.iB:
+            print('\t\tReading integrated values (B->A) from ', fn)
+            res_ba.extend(_data_from_file(fn))
+    else:
+        raise ValueError('you need to provide either none of both sets of '
+                         'integrated work values.')
+
+    # If asked to only do the integration of dhdl.xvg, exit
+    if integ_only and quiet is False:
+        print('\n    Integration done. Skipping analysis.')
+        print('\n    ......done........\n')
+        sys.exit(0)
+
+    # ==============
+    # Begin Analysis
+    # ==============
+    _tee(out, ' ========================================================', quiet=quiet)
+    _tee(out, '                       ANALYSIS', quiet=quiet)
+    _tee(out, ' ========================================================', quiet=quiet)
+    _tee(out, '  Number of forward (0->1) trajectories: %d' % len(res_ab), quiet=quiet)
+    _tee(out, '  Number of reverse (1->0) trajectories: %d' % len(res_ba), quiet=quiet)
+    _tee(out, '  Temperature : %.2f K' % T, quiet=quiet)
+
+    # ============================
+    # Crooks Gaussian Intersection
+    # ============================
+    if 'cgi' in methods:
+        _tee(out, '\n --------------------------------------------------------', quiet=quiet)
+        _tee(out, '             Crooks Gaussian Intersection     ', quiet=quiet)
+        _tee(out, ' --------------------------------------------------------', quiet=quiet)
+
+        if quiet is True:
+            print('Running CGI analysis...')
+        elif quiet is False:
+            print('  Calculating Intersection...')
+
+        cgi = Crooks(wf=res_ab, wr=res_ba, nboots=nboots, nblocks=nblocks)
+        if args.pickle is True:
+            pickle.dump(cgi, open("cgi_results.pkl", "wb"))
+
+        _tee(out, '  CGI: Forward Gauss mean = {m:8.{p}f} {u} '
+                  'std = {s:8.{p}f} {u}'.format(m=cgi.mf*unit_fact,
+                                                s=cgi.devf*unit_fact,
+                                                p=prec, u=units),
+             quiet=quiet)
+        _tee(out, '  CGI: Reverse Gauss mean = {m:8.{p}f} {u} '
+                  'std = {s:8.{p}f} {u}'.format(m=cgi.mr*unit_fact,
+                                                s=cgi.devr*unit_fact,
+                                                p=prec, u=units),
+             quiet=quiet)
+
+        if cgi.inters_bool is False:
+            _tee(out, '\n  Gaussians too close for intersection calculation', quiet=quiet)
+            _tee(out, '   --> Taking difference of mean values', quiet=quiet)
+
+        _tee(out, '  CGI: dG = {dg:8.{p}f} {u}'.format(dg=cgi.dg*unit_fact,
+                                                       p=prec, u=units), quiet=quiet)
+        _tee(out, '  CGI: Std Err (bootstrap:parametric) = {e:8.{p}f} {u}'.format(e=cgi.err_boot1*unit_fact,
+                                                                                  p=prec, u=units), quiet=quiet)
+
+        if nboots > 0:
+            _tee(out, '  CGI: Std Err (bootstrap) = {e:8.{p}f} {u}'.format(e=cgi.err_boot2*unit_fact,
+                                                                           p=prec, u=units), quiet=quiet)
+
+        if nblocks > 1:
+            _tee(out, '  CGI: Std Err (blocks) = {e:8.{p}f} {u}'.format(e=cgi.err_blocks*unit_fact,
+                                                                        p=prec, u=units), quiet=quiet)
+
+    # --------------
+    # Normality test
+    # --------------
+    if do_ks_test:
+        if quiet is False:
+            print('\n  Running KS-test...')
+        q0, lam00, check0, bOk0 = ks_norm_test(res_ab)
+        q1, lam01, check1, bOk1 = ks_norm_test(res_ba)
+
+        _tee(out, '    Forward: gaussian quality = %3.2f' % q0, quiet=quiet)
+        if bOk0:
+            _tee(out, '             ---> KS-Test Ok', quiet=quiet)
+        else:
+            _tee(out, '             ---> KS-Test Failed. sqrt(N)*Dmax = %4.2f,'
+                      ' lambda0 = %4.2f' % (q0, check0), quiet=quiet)
+        _tee(out, '    Reverse: gaussian quality = %3.2f' % q1, quiet=quiet)
+        if bOk1:
+            _tee(out, '             ---> KS-Test Ok', quiet=quiet)
+        else:
+            _tee(out, '             ---> KS-Test Failed. sqrt(N)*Dmax = %4.2f,'
+                      ' lambda0 = %4.2f' % (q1, check1), quiet=quiet)
+
+    # ========================
+    # Bennett Acceptance Ratio
+    # ========================
+    if 'bar' in methods:
+        _tee(out, '\n --------------------------------------------------------', quiet=quiet)
+        _tee(out, '             Bennett Acceptance Ratio     ', quiet=quiet)
+        _tee(out, ' --------------------------------------------------------', quiet=quiet)
+
+        if quiet is True:
+            print('Running BAR analysis...')
+        elif quiet is False:
+            print('  Running Nelder-Mead Simplex algorithm... ')
+
+        bar = BAR(res_ab, res_ba, T=T, nboots=nboots, nblocks=nblocks)
+        if args.pickle:
+            pickle.dump(bar, open("bar_results.pkl", "wb"))
+
+        _tee(out, '  BAR: dG = {dg:8.{p}f} {u}'.format(dg=bar.dg*unit_fact, p=prec, u=units), quiet=quiet)
+        _tee(out, '  BAR: Std Err (analytical) = {e:8.{p}f} {u}'.format(e=bar.err*unit_fact, p=prec, u=units), quiet=quiet)
+
+        if nboots > 0:
+            _tee(out, '  BAR: Std Err (bootstrap)  = {e:8.{p}f} {u}'.format(e=bar.err_boot*unit_fact, p=prec, u=units), quiet=quiet)
+        if nblocks > 1:
+            _tee(out, '  BAR: Std Err (blocks)  = {e:8.{p}f} {u}'.format(e=bar.err_blocks*unit_fact, p=prec, u=units), quiet=quiet)
+
+        _tee(out, '  BAR: Conv = %8.2f' % bar.conv, quiet=quiet)
+
+        if nboots > 0:
+            _tee(out, '  BAR: Conv Std Err (bootstrap) = %8.2f' % bar.conv_err_boot, quiet=quiet)
+
+    # =========
+    # Jarzynski
+    # =========
+    if 'jarz' in methods:
+        _tee(out, '\n --------------------------------------------------------', quiet=quiet)
+        _tee(out, '             Jarzynski estimator     ', quiet=quiet)
+        _tee(out, ' --------------------------------------------------------', quiet=quiet)
+
+        if quiet is True:
+            print('Running Jarz analysis...')
+        jarz = Jarz(wf=res_ab, wr=res_ba, T=T, nboots=nboots, nblocks=nblocks, quiet=quiet)
+        if args.pickle:
+            pickle.dump(jarz, open("jarz_results.pkl", "wb"))
+
+        _tee(out, '  JARZ: dG Forward = {dg:8.{p}f} {u}'.format(dg=jarz.dg_for*unit_fact,
+                                                                p=prec, u=units), quiet=quiet)
+        _tee(out, '  JARZ: dG Reverse = {dg:8.{p}f} {u}'.format(dg=jarz.dg_rev*unit_fact,
+                                                                p=prec, u=units), quiet=quiet)
+        _tee(out, '  JARZ: dG Mean    = {dg:8.{p}f} {u}'.format(dg=jarz.dg_mean*unit_fact,
+                                                                p=prec, u=units), quiet=quiet)
+        if nboots > 0:
+            _tee(out, '  JARZ: Std Err Forward (bootstrap) = {e:8.{p}f} {u}'.format(e=jarz.err_boot_for*unit_fact,
+                                                                                    p=prec, u=units), quiet=quiet)
+            _tee(out, '  JARZ: Std Err Reverse (bootstrap) = {e:8.{p}f} {u}'.format(e=jarz.err_boot_rev*unit_fact,
+                                                                                    p=prec, u=units), quiet=quiet)
+
+        if nblocks > 1:
+            _tee(out, '  JARZ: Std Err Forward (blocks) = {e:8.{p}f} {u}'.format(e=jarz.err_blocks_for*unit_fact,
+                                                                                 p=prec, u=units), quiet=quiet)
+            _tee(out, '  JARZ: Std Err Reverse (blocks) = {e:8.{p}f} {u}'.format(e=jarz.err_blocks_rev*unit_fact,
+                                                                                 p=prec, u=units), quiet=quiet)
+
+
+    _tee(out, ' ========================================================', quiet=quiet)
+
+    if 'cgi' in methods and args.cgi_plot is not None:
+        if quiet is False:
+            print('\n   Plotting histograms......')
+        make_cgi_plot(args.cgi_plot, res_ab, res_ba, cgi.dg, cgi.err_boot1,
+                      args.nbins, args.dpi)
+
+    if quiet is True:
+        print('Done')
+    if quiet is False:
+        print('\n   ......done...........\n')
+
+    if args.pickle and quiet is False:
+        print('   NOTE: units of results in pickled files are as in the\n'
+              '   provided dgdl.xvg or integ.dat files. These are typically\n'
+              '   in kJ/mol when using dgdl.xvg files from Gromacs.\n')
+    # execution time
+    etime = time.time()
+    h, m, s = _time_stats(etime-stime)
+    if quiet is False:
+        print("   Execution time = %02d:%02d:%02d\n" % (h, m, s))
+
+
 def entry_point():
     args = parse_options()
-    analyse_dgdl(**vars(args))
+    main(args)
 
 if __name__ == '__main__':
     entry_point()
