@@ -334,7 +334,7 @@ class Chain(Atomselection):
             changed = False
 
         cterm = self.residues[-1]
-        ch = builder.attach_chain(cterm, newchain, phi=phi, psi=psi)  # BUG? builder moddule does not contain func new_chain
+        ch = builder.attach_chain(cterm, newchain, phi=phi, psi=psi)  # BUG? builder moddule does not contain func attach_chain
         self.insert_chain(len(self.residues), ch)
         if changed:
             self.a2nm()
