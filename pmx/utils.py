@@ -5,6 +5,7 @@ import os
 from glob import glob
 import types
 import numpy as np
+from re import slit as resplit
 
 
 # =============
@@ -160,3 +161,9 @@ def gauss_func(A, mean, dev, x):
     x = np.array(x)
     y = A*np.exp(-(((x-mean)**2.)/(2.0*(dev**2.))))
     return y
+
+
+def natural_sort(l):
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [convert(c) for c in resplit('([0-9]+)', key)]
+    return sorted(l, key=alphanum_key)

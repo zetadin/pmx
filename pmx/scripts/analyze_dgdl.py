@@ -33,10 +33,10 @@ from __future__ import print_function, division
 from pmx.parser import read_and_format
 from pmx.estimators import Jarz, Crooks, BAR
 from pmx.analysis import read_dgdl_files, make_cgi_plot, ks_norm_test
+from pmx.utils import natural_sort
 import sys
 import os
 import time
-import re
 import numpy as np
 import pickle
 import argparse
@@ -62,12 +62,6 @@ def _data_from_file(fn):
 def _tee(fp, s):
     print(s, file=fp)
     print(s)
-
-
-def _natural_sort(l):
-    convert = lambda text: int(text) if text.isdigit() else text.lower()
-    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
-    return sorted(l, key=alphanum_key)
 
 
 def _time_stats(seconds):
@@ -310,8 +304,8 @@ def main(args):
 
     # input arguments
     out = open(args.outfn, 'w')
-    filesAB = _natural_sort(args.filesAB)
-    filesBA = _natural_sort(args.filesBA)
+    filesAB = natural_sort(args.filesAB)
+    filesBA = natural_sort(args.filesBA)
     T = args.temperature
     skip = args.skip
     prec = args.precision
