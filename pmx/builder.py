@@ -20,18 +20,8 @@ from geometry import Rotation
 from chain import Chain
 from atom import Atom
 from model import Model
-from numpy import array, pi, linalg
+from numpy import array, pi, linalg, cross
 from .molecule import Molecule
-
-
-# TODO: remove, this is the same as numpy.cross
-def cross(x, y):
-    return array([x[1]*y[2]
-                  -x[2]*y[1],
-                  x[2]*y[0]
-                  -x[0]*y[2],
-                  x[0]*y[1]
-                  -x[1]*y[0]])
 
 
 def add_bp(m, strand=None, bRNA=False):
