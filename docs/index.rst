@@ -1,16 +1,20 @@
-.. pmx documentation master file, created by
-   sphinx-quickstart on Fri Feb 16 10:14:23 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to pmx's documentation!
-===============================
+pmx
+===
+Toolkit for free-energy calculation setup/analysis and biomolecular structure handling.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
 
+   installation
+   examples/index
 
+API Reference
+-------------
+
+.. toctree::
+   :maxdepth: 1
+
+   api/pmx
 
 Indices and tables
 ==================
