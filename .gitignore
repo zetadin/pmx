@@ -4,3 +4,6 @@
 build.sh
 .localhistory
 build
+
+# docs
+docs/build
