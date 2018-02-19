@@ -12,8 +12,8 @@ calculations for protein, nucleic acid, and small molecule mutations.
    :maxdepth: 1
 
    installation
-   examples/index
    scripts/index
+   examples/index
 
 API Reference
 -------------
@@ -21,7 +21,8 @@ API Reference
 .. toctree::
    :maxdepth: 1
 
-   api/pmx
+   api/modules
+   api/classes
 
 Citations
 ---------

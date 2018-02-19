@@ -1,5 +1,5 @@
-pmx package
-===========
+Modules
+=======
 
 .. automodule:: pmx
     :members:
