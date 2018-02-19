@@ -1,8 +1,10 @@
 pmx package
 ===========
 
-Submodules
-----------
+.. automodule:: pmx
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 pmx.analysis module
 -------------------
@@ -192,15 +194,6 @@ pmx.xtc module
 --------------
 
 .. automodule:: pmx.xtc
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: pmx
     :members:
     :undoc-members:
     :show-inheritance:

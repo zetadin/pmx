@@ -1,5 +1,4 @@
-.. _examples:
-
+========
 Examples
 ========
 
@@ -15,7 +14,7 @@ e.g. code:
 list of examples:
 
 .. toctree::
-   :maxdepth: 3
-   :glob:
+   :maxdepth: 1
 
-   *
+   mutate
+   analysis

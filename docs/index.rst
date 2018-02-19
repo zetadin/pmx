@@ -13,6 +13,7 @@ calculations for protein, nucleic acid, and small molecule mutations.
 
    installation
    examples/index
+   scripts/index
 
 API Reference
 -------------
