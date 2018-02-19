@@ -1,20 +1,21 @@
-"""This module contains the Atom class. It basically stores Atom
-properties but also has some methods for fast calculations.
-Basic Usage:
-      >>> model = Model().read(args['-f']) # read structure file
-      >>> atom = model.atoms[0]     # the first atom
-      >>> a = Atom(name='DUM',x = [1,2,3], bfac = 20.) # create atom
+"""This module contains the Atom class.
 
-      Some methods:
-      - distance calculation:
-      >>> d = atom1 - atom2    # fast distance calculation
-      - angle calculation
-      >>> a = atom1.angle(atom2,atom3) # angle calculation
-      - dihedral calculation
-      >>> dih = atom1.dihedral(atom2,atom3,atom4)
+Examples
+--------
 
-      - output
-      >>> print atom   # prints atom in pdb format
+Basic usage:
+
+    >>> model = Model().read(args['-f'])             # read structure file
+    >>> atom = model.atoms[0]                        # the first atom
+    >>> a = Atom(name='DUM',x = [1,2,3], bfac = 20.) # create an atom
+
+Geometric measurements:
+
+    >>> d = atom1 - atom2                       # calculate distance
+    >>> a = atom1.angle(atom2,atom3)            # calculate angle
+    >>> dih = atom1.dihedral(atom2,atom3,atom4) # calculate dihedral
+    >>> print atom                              # print atom in PDB format
+
 """
 
 import _pmx as _p

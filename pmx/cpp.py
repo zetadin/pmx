@@ -550,8 +550,9 @@ class PreProcessor:
 
         This handles recursive expansion of values without "" or <>
         surrounding the name until an initial " or < is found, to handle
-                #include FILE
+        #include FILE
         where FILE is a #define somewhere else.
+
         """
         s = t[1]
         while not s[0] in '<"':

@@ -1,26 +1,30 @@
 """This module contains the Molecule class. It allows modifications
-of structure files on the residue level:
-Basic Usage:
-     >>> model = Model().read(args['-f']) # read structure file
-     >>> res = model.residues[0]   # pick first residue
+of structure files on the residue level.
 
-     The Molecule instance contains:
-     - res.atoms   -> list of atoms
-     - res.chain   -> the chain the residue belongs to
-     .
-     .
-     Some methods:
-     >>> res.set_resname('CALA')  # change residue name
-     >>> a = Atom(name = 'DUM', x=[1,2,3])  # create dummy atom
-     >>> res.insert_atom(0,a)    # insert atom in residue at pos 0
-     >>> res.append(a)           # append atom at the end
-     >>> phi = res.get_phi()     # calculate phi angle
-     >>> al = res.fetchm(['CA','C','N']) select multiple atoms (in that order)
-     >>> res.remove_atom(al[0]) delete atom
-     >>> del res['CA']   delete CA atom
-     >>> del res[-1]     delete last atom
-     .
-     .
+The Molecule instance contains:
+
+* res.atoms   (*list of atoms*)
+* res.chain   (*the chain the residue belongs to*)
+
+Examples
+--------
+    Basic usage:
+
+    >>> model = Model().read(args['-f'])   # read structure file
+    >>> res = model.residues[0]            # pick first residue
+
+    Some methods:
+
+    >>> res.set_resname('CALA')            # change residue name
+    >>> a = Atom(name = 'DUM', x=[1,2,3])  # create dummy atom
+    >>> res.insert_atom(0,a)               # insert atom in residue at pos 0
+    >>> res.append(a)                      # append atom at the end
+    >>> phi = res.get_phi()                # calculate phi angle
+    >>> al = res.fetchm(['CA','C','N'])    # select multiple atoms (in that order)
+    >>> res.remove_atom(al[0])             # delete atom
+    >>> del res['CA']                      # delete CA atom
+    >>> del res[-1]                        # delete last atom
+
 """
 
 import sys

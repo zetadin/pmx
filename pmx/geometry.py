@@ -1,11 +1,15 @@
 """This file contains the Rotation class.
 A Rotation instance is built with two vectors.
-Usage:
-     >>> v1 = [1,2,3]
-     >>> v2 = [2,3,4]
-     >>> r = Rotation(v1,v2)  # create rotation object around v2-v1
-     >>> v3 = [4,5,6]
-     >>> v3 = r.apply(v3)    # rotate v3 around v2-v1
+
+Examples
+--------
+
+    >>> v1 = [1,2,3]
+    >>> v2 = [2,3,4]
+    >>> r = Rotation(v1,v2)  # create rotation object around v2-v1
+    >>> v3 = [4,5,6]
+    >>> v3 = r.apply(v3)     # rotate v3 around v2-v1
+
 """
 
 from numpy import array, linalg, arccos, inner, sin, matrix, dot, cos

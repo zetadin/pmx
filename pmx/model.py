@@ -1,40 +1,46 @@
 """This module contains the Model class. It can use
 GROMACS routines to read and write structure files. Moreover it
-allows to modify structure files in various ways.
+allows to modify structure files in various ways. E.g.:
 
-1) Rename atoms, residues, chains
-2) Delete or add atoms, residues and chains
+1. Rename atoms, residues, chains
+2. Delete or add atoms, residues and chains
 
-Basic Usage:
-    >>> model = Model().read(args['-f'])
-    where args is the dictionary returned from
-    parse_common_args (see gmx module).
-    The Model instance contains:
-    - model.atoms       -> list of atoms
-    - model.residues    -> list of residues
-    - model.chains      -> list of chains
-    - model.chdic       -> chain dictionary (chdic['A'] returns chain A)
+The Model instance contains:
 
-    Some useful methods:
-    - model.fetch_atoms (inherited from atomselection):
-    >>> model.fetch_atoms(['CA','N','C']) returns all backbone atoms
-    >>> model.fetch_atoms('C',how='byelem') returns all carbon atoms
-    >>> model.fetch_atoms('H',how='byelem',inv=True) return all atoms
-    except hydrogens
+* model.atoms       -> list of atoms
+* model.residues    -> list of residues
+* model.chains      -> list of chains
+* model.chdic       -> chain dictionary (chdic['A'] returns chain A)
 
-    - model.fetch_residues
-    >>> model.fetch_residues(['ALA','TRP','CYS']) return all ALA,TRP and
-    CYS residues
+Examples
+--------
+Basic usage:
 
-    - some selection examples:
-    >>> rl = model.residues[:10] returns the first 10 residues
-    >>> rl = model.chdic['A'].residues[-1] return the last residue
-    from chain A
+    >>> model = Model().read('input.pdb')
+
+Some useful methods:
+
+    >>> # returns all backbone atoms
+    >>> model.fetch_atoms(['CA','N','C']) 
+    >>> # returns all carbon atoms
+    >>> model.fetch_atoms('C',how='byelem') 
+    >>> # return all atoms except hydrogens
+    >>> model.fetch_atoms('H',how='byelem',inv=True) 
+
+    >>> # return all ALA,TRP and CYS residues
+    >>> model.fetch_residues(['ALA','TRP','CYS']) 
+
+    >>> # returns the first 10 residues
+    >>> rl = model.residues[:10] 
+    >>> # return the last residue from chain A
+    >>> rl = model.chdic['A'].residues[-1] 
+    >>> # returns a list with the first residues of each chain
     >>> rl = map(lamda m: m.residues[0], model.chains)
-    returns a list with the first residues of each chain
-    >>> del model['A']
-    remove chain A
-    >>> model.write(args['-o']) write new structure file
+    >>> # remove chain A
+    >>> del model['A'] 
+    >>> # write new structure file
+    >>> model.write('output.pdb') 
+
 """
 
 from atomselection import Atomselection

@@ -1,22 +1,26 @@
 """This module contains the Chain class. It allows modifications
-of structure files on the chain level:
+of structure files on the chain level.
+
+The Chain instance contains:
+
+* ch.residues  (*list of residues*)
+* ch.atoms     (*list of atoms*)
+
+Examples
+--------
+
 Basic Usage:
-     >>> model = Model().read(args['-f']) # read model
-     >>> ch = model.chdic['A'] # select chain A
 
-     The Chain instance contains:
-     - ch.residues  -> list of residues
-     - ch.atoms     -> list of atoms
-     .
-     .
+    >>> model = Model().read(args['-f'])  # read model
+    >>> ch = model.chdic['A']             # select chain A
 
-     Some methods:
-     >>> ch.get_sequence()    # return sequence in one-letter code
-     >>> first_res = ch.residues[0].copy() # copy first residue
-     >>> ch.append(first_res)    # attach residue at the end
-     >>> ch.insert(5,first_res)  # insert residue at position 5
-     .
-     .
+Some methods:
+
+    >>> ch.get_sequence()                  # return sequence in one-letter code
+    >>> first_res = ch.residues[0].copy()  # copy first residue
+    >>> ch.append(first_res)               # attach residue at the end
+    >>> ch.insert(5,first_res)             # insert residue at position 5
+
 """
 
 from atomselection import Atomselection
