@@ -42,36 +42,7 @@ from pmx.model import Model
 from pmx.parser import read_and_format
 from pmx.geometry import Rotation, nuc_super, bb_super
 from pmx.mutdb import read_mtp_entry
-
-
-class UnknownResidueError(Exception):
-    """Class for unknown residue Exceptions.
-    """
-    def __init__(self, s):
-        self.s = s
-
-    def __str__(self):
-        return repr(self.s)
-
-
-class RangeCheckError(Exception):
-    """Exceptions class for ...
-    """
-    def __init__(self, s):
-        self.s = s
-
-    def __str__(self):
-        return repr(self.s)
-
-
-class mtpError(Exception):
-    """Exceptions class for ...
-    """
-    def __init__(self, s):
-        self.s = s
-
-    def __str__(self):
-        return repr(self.s)
+from pmx.utils import UnknownResidueError, RangeCheckError, mtpError
 
 
 ext_one_letter = {

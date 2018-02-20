@@ -30,7 +30,7 @@
 # CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 # ----------------------------------------------------------------------
 
-"""Various utility functions
+"""Various utility functions and classes
 """
 
 import os
@@ -199,3 +199,36 @@ def natural_sort(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [convert(c) for c in resplit('([0-9]+)', key)]
     return sorted(l, key=alphanum_key)
+
+
+# ========================
+# Custom Exception Classes
+# ========================
+class UnknownResidueError(Exception):
+    """Class for unknown residue Exceptions.
+    """
+    def __init__(self, s):
+        self.s = s
+
+    def __str__(self):
+        return repr(self.s)
+
+
+class RangeCheckError(Exception):
+    """Exceptions class for ...
+    """
+    def __init__(self, s):
+        self.s = s
+
+    def __str__(self):
+        return repr(self.s)
+
+
+class mtpError(Exception):
+    """Exceptions class for ...
+    """
+    def __init__(self, s):
+        self.s = s
+
+    def __str__(self):
+        return repr(self.s)
