@@ -86,7 +86,11 @@ import _pmx as _p
 
 
 class Model(Atomselection):
+    """Model Class.
 
+    Attributes
+    ----------
+    """
     def __init__(self, filename=None, pdbline=None, renumber_atoms=True,
                  renumber_residues=True, bPDBTER=False, bNoNewID=True,
                  **kwargs):
@@ -132,9 +136,12 @@ class Model(Atomselection):
         if renumber_residues:
             self.renumber_residues()
 
+        self.assign_moltype()
+
     def __str__(self):
-        s = '< Model: nchain = %d nres = %d natom = %d >' %\
-            (len(self.chains), len(self.residues), len(self.atoms))
+        s = '< Model: moltype=%s, nchain=%d, nres=%d, natom=%d >' %\
+            (self.moltype, len(self.chains), len(self.residues),
+             len(self.atoms))
         return s
 
     def writePIR(self, filename, title=""):
@@ -387,6 +394,21 @@ class Model(Atomselection):
         self.make_residues()
         self.unity = 'nm'
         return self
+
+    def assign_moltype(self):
+        """Identifies what type of molecule the Model is:
+        protein, dna, or rna.
+        """
+        residues = set([r.resname for r in self.residues])
+
+        if residues.issubset(library._protein_residues):
+            self.moltype = 'protein'
+        elif residues.issubset(library._dna_residues):
+            self.moltype = 'dna'
+        elif residues.issubset(library._rna_residues):
+            self.moltype = 'rna'
+        else:
+            self.moltype = 'unknown'
 
     def read(self, filename, bPDBTER=False, bNoNewID=True):
         ext = filename.split('.')[-1]
