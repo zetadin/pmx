@@ -566,8 +566,8 @@ def get_ff_path(ff):
 def parse_options():
     parser = argparse.ArgumentParser(description='''
 This script applies mutations of residues in a structure file for subsequent
-free energy calculations. By default it assumes a protein is being mutated, but
-DNA and RNA mutations can also be chosen via the --type flag.
+free energy calculations. It supports mutations to protein, DNA, and RNA
+molecules.
 
 The mutation information and dummy placements are taken from the hybrid residue
 database "mutres.mtp". The best way to use this script is to take a pdb/gro file
@@ -584,8 +584,8 @@ Currently available force fields:
     - charmm36m-mut (Best et al, 2012)
 ''', formatter_class=argparse.RawTextHelpFormatter)
 
-    ff_choices = ['amber99sb-star-ildn-mut', 'charmm36m-mut.ff']
-    type_choices = ['protein', 'dna', 'rna']
+    ff_choices = ['amber99sb-star-ildn-mut', 'charmm36m-mut.ff',
+                  'amber99sb-star-ildn-bsc1-mut']
 
     parser.add_argument('-f',
                         metavar='infile',
@@ -616,15 +616,6 @@ Currently available force fields:
                         'Default is "amber99sb-star-ildn-mut"',
                         choices=ff_choices,
                         default='amber99sb-star-ildn-mut')
-    parser.add_argument('--type',
-                        metavar='muttype',
-                        dest='muttype',
-                        type=str.lower,
-                        help='Type of molecule being mutated: protein, dna, '
-                        'or rna. Default is "protein".',
-                        choices=type_choices,
-                        default='protein',
-                        nargs=1)
     parser.add_argument('--script',
                         metavar='script',
                         dest='script',
@@ -658,49 +649,57 @@ def main(args):
     infileB = args.infileB
     outfile = args.outfile
     ff = args.ff
-    muttype = args.muttype
     script = args.script
 
     # figure out the force field and type of mutation
     ffpath = get_ff_path(ff=ff)
 
-    bStrB = False
     bDNA = False
     bRNA = False
     if infileB is not None:
         bStrB = True
-
-    # DNA mutation
-    if muttype == 'dna':
-        mtp_file = os.path.join(ffpath, 'mutres_dna.mtp')
-        bDNA = True  # FIXME: is bDNA not used?
-    # RNA mutation
-    elif muttype == 'rna':
-        mtp_file = os.path.join(ffpath, 'mutres_rna.mtp')
-        bRNA = True
-    # Protein mutation
-    elif muttype == 'protein':
-        mtp_file = os.path.join(ffpath, 'mutres.mtp')
     else:
-        raise(ValueError, 'Cannot undertand mutation type provided')
+        bStrB = False
 
     # initialise Model
     m = Model(infile, bPDBTER=True)
     rename_atoms_to_gromacs(m)
     m.nm2a()
 
+    # DNA mutation
+    if m.moltype == 'dna':
+        mtp_file = os.path.join(ffpath, 'mutres_dna.mtp')
+        bDNA = True  # FIXME: is bDNA not used?
+    # RNA mutation
+    elif m.moltype == 'rna':
+        mtp_file = os.path.join(ffpath, 'mutres_rna.mtp')
+        bRNA = True
+    # Protein mutation
+    elif m.moltype == 'protein':
+        mtp_file = os.path.join(ffpath, 'mutres.mtp')
+    else:
+        raise(ValueError, 'Cannot undertand mutation type provided')
+
     # if script is provided, do the mutations in that file
     if script is not None:
         mutations_to_make = read_and_format(script, "is")
         for mut in mutations_to_make:
             check_residue_name(m.residues[mut[0]-1])
-            apply_mutation(m, mut, mtp_file, bStrB, infileB, bRNA)  # FIXME: what about bDNA?
+            apply_mutation(m=m, mut=mut, mtp_file=mtp_file,
+                           bStrB=bStrB, infileB=infileB, bRNA=bRNA)  # FIXME: what about bDNA?
     # if not provided, interactive selection
     else:
         do_more = True
         while do_more:
             mutation = interactive_selection(m, ffpath)
-            apply_mutation(m, mutation, mtp_file, bStrB, infileB, bRNA)
+            #print "m: ", m
+            #print "mut: ", mutation
+            #print "mtp_file: ", mtp_file
+            #print "bStrB: ", bStrB
+            #print "infileB: ", infileB
+            #print "bRNA: ", bRNA
+            apply_mutation(m=m, mut=mutation, mtp_file=mtp_file,
+                           bStrB=bStrB, infileB=infileB, bRNA=bRNA)
             if not ask_next():
                 do_more = False
 
