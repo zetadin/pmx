@@ -44,6 +44,11 @@ from pmx.geometry import Rotation, nuc_super, bb_super
 from pmx.mutdb import read_mtp_entry
 from pmx.utils import UnknownResidueError, RangeCheckError, mtpError
 
+# set GMXLIB
+path = os.path.abspath(library.__file__)
+dir_path = os.path.dirname(path)
+data_path = dir_path + '/data/mutff45dna'
+os.environ['GMXLIB'] = data_path
 
 ext_one_letter = {
     'ALA':  'A',
@@ -665,7 +670,7 @@ def main(args):
     m = Model(infile, bPDBTER=True)
     rename_atoms_to_gromacs(m)
     m.nm2a()
-
+    print m.moltype
     # DNA mutation
     if m.moltype == 'dna':
         mtp_file = os.path.join(ffpath, 'mutres_dna.mtp')
@@ -692,12 +697,12 @@ def main(args):
         do_more = True
         while do_more:
             mutation = interactive_selection(m, ffpath)
-            #print "m: ", m
-            #print "mut: ", mutation
-            #print "mtp_file: ", mtp_file
-            #print "bStrB: ", bStrB
-            #print "infileB: ", infileB
-            #print "bRNA: ", bRNA
+            print "m: ", m
+            print "mut: ", mutation
+            print "mtp_file: ", mtp_file
+            print "bStrB: ", bStrB
+            print "infileB: ", infileB
+            print "bRNA: ", bRNA
             apply_mutation(m=m, mut=mutation, mtp_file=mtp_file,
                            bStrB=bStrB, infileB=infileB, bRNA=bRNA)
             if not ask_next():
