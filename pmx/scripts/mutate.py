@@ -679,7 +679,6 @@ def main(argv):
 
     rename_atoms_to_gromacs(m)
     m.nm2a()
-    mutation_list = []
     if cmdl.opt['-script'].is_set:
         mutations_to_make = read_script(cmdl['-script'])
         for mut in mutations_to_make:
