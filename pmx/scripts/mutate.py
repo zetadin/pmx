@@ -50,6 +50,7 @@ dir_path = os.path.dirname(path)
 data_path = dir_path + '/data/mutff45dna'
 os.environ['GMXLIB'] = data_path
 
+# TODO: move dicts to library
 ext_one_letter = {
     'ALA':  'A',
     'ARG':  'R',
@@ -568,6 +569,11 @@ def get_ff_path(ff):
     return ff_path
 
 
+def print_sorted_dict(d):
+    for key in sorted(d.iterkeys()):
+        print("{0:>10}{1:>5}".format(key, d[key]))
+
+
 def parse_options():
     parser = argparse.ArgumentParser(description='''
 This script applies mutations of residues in a structure file for subsequent
@@ -635,14 +641,32 @@ Currently available force fields:
 
     args, unknown = parser.parse_known_args()
 
-    # TODO: residue dictionary also for DNA and RNA
+    # residue dictionary
+    # ------------------
     if args.resinfo is True:
-        print 'Residue dictionary:'
-        lst = ext_one_letter.items()
-        lst.sort(lambda a, b: cmp(a, b))
-        for key, val in lst:
-            print "%5s %4s" % (key, val)
-        sys.exit(0)
+        moltype = Model(args.infile).moltype
+        if moltype == 'protein':
+            print('\n ---------------------------')
+            print(' Protein residues dictionary')
+            print(' ---------------------------')
+            print_sorted_dict(ext_one_letter)
+            print(' ---------------------------\n')
+        elif moltype == 'dna':
+            print('\n ---------------------------')
+            print(' Protein residues dictionary')
+            print(' ---------------------------')
+            print_sorted_dict(dna_names)
+            print(' ---------------------------\n')
+        elif moltype == 'rna':
+            print('\n ---------------------------')
+            print(' Protein residues dictionary')
+            print(' ---------------------------')
+            print_sorted_dict(rna_names)
+            print(' ---------------------------\n')
+        else:
+            raise(ValueError, 'Cannot undertand mutation type needed '
+                              'from the input strcture provided')
+        exit()
     else:
         return args
 
@@ -683,7 +707,8 @@ def main(args):
     elif m.moltype == 'protein':
         mtp_file = os.path.join(ffpath, 'mutres.mtp')
     else:
-        raise(ValueError, 'Cannot undertand mutation type provided')
+        raise(ValueError, 'Cannot undertand mutation type needed '
+                          'from the input strcture provided')
 
     # if script is provided, do the mutations in that file
     if script is not None:
