@@ -53,25 +53,25 @@ Basic usage:
 Some useful methods:
 
     >>> # returns all backbone atoms
-    >>> model.fetch_atoms(['CA','N','C']) 
+    >>> model.fetch_atoms(['CA','N','C'])
     >>> # returns all carbon atoms
-    >>> model.fetch_atoms('C',how='byelem') 
+    >>> model.fetch_atoms('C',how='byelem')
     >>> # return all atoms except hydrogens
-    >>> model.fetch_atoms('H',how='byelem',inv=True) 
+    >>> model.fetch_atoms('H',how='byelem',inv=True)
 
     >>> # return all ALA,TRP and CYS residues
-    >>> model.fetch_residues(['ALA','TRP','CYS']) 
+    >>> model.fetch_residues(['ALA','TRP','CYS'])
 
     >>> # returns the first 10 residues
-    >>> rl = model.residues[:10] 
+    >>> rl = model.residues[:10]
     >>> # return the last residue from chain A
-    >>> rl = model.chdic['A'].residues[-1] 
+    >>> rl = model.chdic['A'].residues[-1]
     >>> # returns a list with the first residues of each chain
     >>> rl = map(lamda m: m.residues[0], model.chains)
     >>> # remove chain A
-    >>> del model['A'] 
+    >>> del model['A']
     >>> # write new structure file
-    >>> model.write('output.pdb') 
+    >>> model.write('output.pdb')
 
 """
 
