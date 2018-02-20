@@ -6,70 +6,49 @@ Here we list the main classes in pmx...
 Atom
 ----
 
-.. autoclass:: pmx.atom.Atom     
-   :members: 
+.. autoclass:: pmx.atom.Atom
+   :members:
    :noindex:
 
 Molecule
 --------
 
 .. autoclass:: pmx.molecule.Molecule
-   :members: 
+   :members:
    :noindex:
 
 Chain
 -----
 
 .. autoclass:: pmx.chain.Chain
-   :members: 
+   :members:
    :noindex:
 
 Model
 -----
 
 .. autoclass:: pmx.model.Model
-   :members: 
+   :members:
    :noindex:
 
 Trajectory
 ----------
 
 .. autoclass:: pmx.xtc.Trajectory
-   :members: 
+   :members:
    :noindex:
 
 Topology
 --------
 
 .. autoclass:: pmx.forcefield.Topology
-   :members: 
+   :members:
    :noindex:
 
 IndexFile
 ---------
 
 .. autoclass:: pmx.ndx.IndexFile
-   :members: 
+   :members:
    :noindex:
-
-BAR
----
-
-.. autoclass:: pmx.estimators.BAR
-   :members: 
-   :noindex:
-
-Crooks
-------
-
-.. autoclass:: pmx.estimators.Crooks
-   :members: 
-   :noindex:
-
-Jarz
-----
-
-.. autoclass:: pmx.estimators.Jarz
-   :members: 
-   :noindex:
-
+   
