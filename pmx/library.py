@@ -287,6 +287,8 @@ _ions = set([
 
 _water = set(['SOL', 'HOH', 'HO4'])
 
+_water_and_ions = _water.union(_ions)
+
 _atommass = {
     'H'  :   1.00794,
     'He' :   4.002602,

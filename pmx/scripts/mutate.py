@@ -220,7 +220,7 @@ def select_residue(m):
     valid_ids = range(1, len(m.residues)+1)
     print '\nSelect residue to mutate:'
     for i, r in enumerate(m.residues):
-        if r.resname not in library._ions+library._water:
+        if r.resname not in library._water_and_ions:
             sys.stdout.write('%6d-%s-%s' % (r.id, r.resname, r.chain_id))
             if r.id % 6 == 0:
                 print("")
