@@ -1047,7 +1047,7 @@ class Topology(TopolBase):
 
     def make_bond_params(self):
         for i, (at1, at2, func) in enumerate(self.bonds):
-            param = self.BondedParams.get_bond_param(at1.type,at2.type)
+            param = self.BondedParams.get_bond_param(at1.type, at2.type)
             if param is None:
                 print 'Error! No bonded parameters found! (%s-%s)' % \
                       (at1.type, at2.type)
