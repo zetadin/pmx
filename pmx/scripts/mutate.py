@@ -652,15 +652,15 @@ Currently available force fields:
             print_sorted_dict(ext_one_letter)
             print(' ---------------------------\n')
         elif moltype == 'dna':
-            print('\n ---------------------------')
-            print(' Protein residues dictionary')
-            print(' ---------------------------')
+            print('\n -----------------------')
+            print(' DNA residues dictionary')
+            print(' -----------------------')
             print_sorted_dict(dna_names)
             print(' ---------------------------\n')
         elif moltype == 'rna':
-            print('\n ---------------------------')
-            print(' Protein residues dictionary')
-            print(' ---------------------------')
+            print('\n -----------------------')
+            print(' RNA residues dictionary')
+            print(' -----------------------')
             print_sorted_dict(rna_names)
             print(' ---------------------------\n')
         else:
