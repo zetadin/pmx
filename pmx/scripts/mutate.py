@@ -36,9 +36,9 @@ free energy simulations.
 
 import sys
 import os
+import argparse
 from pmx import library
 from pmx.model import Model
-from pmx.options import Option, FileOption, Commandline
 from pmx.parser import read_and_format
 from pmx.geometry import Rotation, nuc_super, bb_super
 from pmx.mutdb import read_mtp_entry
@@ -221,10 +221,6 @@ def check_OPLS_LYS(res):
         return('K')
     else:
         return('O')
-
-
-def read_script(fn):
-    return read_and_format(fn, "is")
 
 
 def int_input():
@@ -596,94 +592,139 @@ def get_ff_path(ff):
     return ff_path
 
 
-def main(argv):
+def parse_options():
+    parser = argparse.ArgumentParser(description='''
+This script applies mutations of residues in a structure file for subsequent
+free energy calculations. By default it assumes a protein is being mutated, but
+DNA and RNA mutations can also be chosen via the --type flag.
 
-    options = [
-        Option( "-resinfo", "bool", False, "print a 3-letter -> 1-letter residue list"),
-        Option( "-dna", "bool", False, "generate hybrid residue for the DNA nucleotides"),
-        Option( "-rna", "bool", False, "generate hybrid residue for the RNA nucleotides"),
-        ]
+The mutation information and dummy placements are taken from the hybrid residue
+database "mutres.mtp". The best way to use this script is to take a pdb/gro file
+that has been written with pdb2gmx with all hydrogen atoms present.
 
-    files = [
-       FileOption("-f", "r",["pdb","gro"],"protein.pdb", "input structure file"),
-       FileOption("-fB", "r",["pdb","gro"],"proteinB.pdb", "input structure file of the Bstate (optional)"),
-       FileOption("-o", "w",["pdb","gro"],"out.pdb", "output structure file"),
-       FileOption("-ff", "dir",["ff"],"amber99sbmut", "path to mutation forcefield"),
-       FileOption("-script", "r",["txt"],"mutations.txt", "text file with mutations to insert"),
-       ]
+The program can either be executed interactively or via script. The script file
+simply has to consist of "resi_number target_residue" pairs.
 
-    help_text = ('This script applies mutations of residues in a structure file ',
-                'for subsequent free energy calculations like FEP, TI, etc.',
-                'The mutation information and dummy placements are taken from',
-                'the hybrid residue database "mutres.mtp". The best way to use',
-                'this script is to take a pdb/gro file that has been written with pdb2gmx',
-                'with all hydrogen atoms present.'
-                'The program can either be executed interactively or via script.',
-                'The script file simply has to consist of "resi_number target_residue." pairs.',
-                'The script uses an extended one-letter code for amino acids to account for',
-                'different protonation states. Use the -resinfo flag to print the dictionary.',
-                'Currently available force fields:',
-                '    - amber99sbmut (Hornak et al, 2006)',
-                '    - amber99sb-star-ildn-mut (Best & Hummer, 2009; Lindorff-Larsen et al, 2010)',
-                '    - charmm22starmut.ff (Piana et al, 2011)',
-                '    - charmm36mut (Best et al, 2012)',
-                '    - oplsaamut (Jorgensen et al, 1996; Kaminski et al, 2001)',
-                '',
-                '',
-                'Please cite:',
-                'Vytautas Gapsys, Servaas Michielssens, Daniel Seeliger and Bert L. de Groot.',
-                'Automated Protein Structure and Topology Generation for Alchemical Perturbations.',
-                'J. Comput. Chem. 2015, 36, 348-354. DOI: 10.1002/jcc.23804',
-                '',
-                'Old pmx (pymacs) version:',
-                'Daniel Seeliger and Bert L. de Groot. Protein Thermostability Calculations Using',
-                'Alchemical Free Energy Simulations, Biophysical Journal, 98(10):2309-2316 (2010)',
-                '',
-                '',
-                '',
-                )
+The script uses an extended one-letter code for amino acids to account for
+different protonation states. Use the --resinfo flag to print the dictionary.
 
+Currently available force fields:
+    - amber99sb-star-ildn-mut (Best & Hummer, 2009; Lindorff-Larsen et al, 2010)
+    - charmm36m-mut (Best et al, 2012)
+''', formatter_class=argparse.RawTextHelpFormatter)
 
-    cmdl = Commandline( argv, options = options,
-                       fileoptions = files,
-                       program_desc = help_text,
-                       check_for_existing_files = False )
+    ff_choices = ['amber99sb-star-ildn-mut', 'charmm36m-mut.ff']
+    type_choices = ['protein', 'dna', 'rna']
 
-    bDNA = cmdl['-dna']
-    bRNA = cmdl['-rna']
+    parser.add_argument('-f',
+                        metavar='infile',
+                        dest='infile',
+                        type=str,
+                        help='Input structure file in PDB or GRO format. '
+                        'Default is "protein.pdb"',
+                        default='protein.pdb')
+    parser.add_argument('-fB',
+                        metavar='infileB',
+                        dest='infileB',
+                        type=str,
+                        help='Input structure file of the B state in PDB '
+                        'or GRO format (optional).',
+                        default=None)
+    parser.add_argument('-o',
+                        metavar='outfile',
+                        dest='outfile',
+                        type=str,
+                        help='Output structure file in PDB or GRO format. '
+                        'Default is "mutant.pdb"',
+                        default='mutant.pdb')
+    parser.add_argument('-ff',
+                        metavar='ff',
+                        dest='ff',
+                        type=str.lower,
+                        help='Force field to use. '
+                        'Default is "amber99sb-star-ildn-mut"',
+                        choices=ff_choices,
+                        default='amber99sb-star-ildn-mut')
+    parser.add_argument('--type',
+                        metavar='muttype',
+                        dest='muttype',
+                        type=str.lower,
+                        help='Type of molecule being mutated: protein, dna, '
+                        'or rna. Default is "protein".',
+                        choices=type_choices,
+                        default='protein',
+                        nargs=1)
+    parser.add_argument('--script',
+                        metavar='script',
+                        dest='script',
+                        type=str,
+                        help='Text file with list of mutations (optional).',
+                        default=None)
+    parser.add_argument('--resinfo',
+                        dest='resinfo',
+                        help='Show the list of 3-letter -> 1-letter residues',
+                        default=False,
+                        action='store_true')
 
-    if cmdl['-resinfo']:
+    args, unknown = parser.parse_known_args()
+
+    # TODO: residue dictionary also for DNA and RNA
+    if args.resinfo is True:
         print 'Residue dictionary:'
         lst = ext_one_letter.items()
         lst.sort(lambda a, b: cmp(a, b))
         for key, val in lst:
             print "%5s %4s" % (key, val)
         sys.exit(0)
+    else:
+        return args
+
+
+def main(args):
+
+    # input variables
+    infile = args.infile
+    infileB = args.infileB
+    outfile = args.outfile
+    ff = args.ff
+    muttype = args.muttype
+    script = args.script
+
+    # figure out the force field and type of mutation
+    ffpath = get_ff_path(ff=ff)
 
     bStrB = False
-    infileB = ''
-    if cmdl.opt['-fB'].is_set:
+    bDNA = False
+    bRNA = False
+    if infileB is not None:
         bStrB = True
-        infileB = cmdl['-fB']
 
-    ffpath = get_ff_path(cmdl['-ff'])
-    if bDNA:
+    # DNA mutation
+    if muttype == 'dna':
         mtp_file = os.path.join(ffpath, 'mutres_dna.mtp')
-    elif bRNA:
+        bDNA = True  # FIXME: is bDNA not used?
+    # RNA mutation
+    elif muttype == 'rna':
         mtp_file = os.path.join(ffpath, 'mutres_rna.mtp')
-    else:
+        bRNA = True
+    # Protein mutation
+    elif muttype == 'protein':
         mtp_file = os.path.join(ffpath, 'mutres.mtp')
-    infile = cmdl['-f']
+    else:
+        raise(ValueError, 'Cannot undertand mutation type provided')
 
+    # initialise Model
     m = Model(infile, bPDBTER=True)
-
     rename_atoms_to_gromacs(m)
     m.nm2a()
-    if cmdl.opt['-script'].is_set:
-        mutations_to_make = read_script(cmdl['-script'])
+
+    # if script is provided, do the mutations in that file
+    if script is not None:
+        mutations_to_make = read_and_format(script, "is")
         for mut in mutations_to_make:
             check_residue_name(m.residues[mut[0]-1])
-            apply_mutation(m, mut, mtp_file, bStrB, infileB, bRNA)
+            apply_mutation(m, mut, mtp_file, bStrB, infileB, bRNA)  # FIXME: what about bDNA?
+    # if not provided, interactive selection
     else:
         do_more = True
         while do_more:
@@ -692,11 +733,12 @@ def main(argv):
             if not ask_next():
                 do_more = False
 
-    m.write(cmdl['-o'])
+    m.write(outfile)
     print
     print 'mutations done...........'
     print
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    args = parse_options()
+    main(args)
