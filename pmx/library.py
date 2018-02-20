@@ -171,7 +171,7 @@ _aacids_ext_oplsaa = {
     'V':'VAL'
     }
 
-_protein_residues = (
+_protein_residues = set([
     'ALA','ARG','ASN','ASP','ASPH','ASH','ASPP','GLH','CYS','CYS2','CYN','CYX','CYM','CYSH',
     'GLU','GLUP','GLN','GLY','HIS','HIE','HIP','HID','HSE','HSD','HSP','ILE','LEU','LYS','LYN',
     'LYSH','LYP','LSN','MET','PHE','PRO','SER','THR','TRP','TYR','VAL',
@@ -181,13 +181,13 @@ _protein_residues = (
     'CLEU','CILE','CVAL','CASN','CGLN','CARG','CHID','CHIE','CHIP',
     'CTRP','CPHE','CTYR','CGLU','CASP','CLYP','CPRO','CCYN','CCYX',
     'CMET','SEP','HISH','HIS1','HISE','GLUH'
-    )
+    ])
 
-_dna_residues = ['DA', 'DT', 'DC', 'DG', 'DA3', 'DT3', 'DC3', 'DG3', 'DA5',
-                 'DT5', 'DC5', 'DG5']
+_dna_residues = set(['DA', 'DT', 'DC', 'DG', 'DA3', 'DT3', 'DC3', 'DG3', 'DA5',
+                     'DT5', 'DC5', 'DG5'])
 
-_rna_residues = ['RA', 'RU', 'RC', 'RG', 'RA3', 'RU3', 'RC3', 'RG3', 'RA5',
-                 'RU5', 'RC5', 'RG5']
+_rna_residues = set(['RA', 'RU', 'RC', 'RG', 'RA3', 'RU3', 'RC3', 'RG3', 'RA5',
+                     'RU5', 'RC5', 'RG5'])
 
 _one_letter = {
     'ALA':'A',
