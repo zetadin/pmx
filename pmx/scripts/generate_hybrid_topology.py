@@ -31,7 +31,7 @@
 
 import sys, os, copy
 from pmx import *
-from pmx.forcefield2 import Topology
+from pmx.forcefield import Topology
 from pmx.mutdb import read_mtp_entry
 from pmx.parser import kickOutComments
 
@@ -65,7 +65,7 @@ def dump_atoms_and_exit( msg, atoms ):
         print >>sys.stderr, atom.name, atom.resname, atom.atomtype, atom.atomtypeB, atom.type, atom.typeB
     print >>sys.stderr, 'err_> Exiting'
     sys.exit(1)
-    
+
 def atoms_morphe(atoms):
     for atom in atoms:
         if atom.atomtypeB is not None and (atom.q!=atom.qB or atom.m != atom.mB or atom.atomtype != atom.atomtypeB): return True
@@ -216,7 +216,7 @@ def proline_decouplings( topol, rlist, rdic ):
 		    elif prolineState=='B':
 			b[3] = cp.deepcopy(b[4])
 			b[3][2] = 0.0
-            
+
 	    # decouple angles
 	    for ang in topol.angles:
                 a1 = ang[0]
@@ -239,7 +239,7 @@ def proline_decouplings( topol, rlist, rdic ):
 			    ang[4] = [1,0,0,0,0]
 			else:
 			    ang[4] = [1,0,0]
-			  
+
 	    # decouple dihedrals
 	    for dih in topol.dihedrals:
                 a1 = dih[0]
@@ -376,7 +376,7 @@ def check_dih_ILDN_OPLS( topol, rlist, rdic, a1, a2, a3, a4 ):
                 for name in d[:4]:
                     atom = r.fetch(name)[0]
                     al.append(atom)
-                        
+
                 if (a1.id == al[0].id and \
                    a2.id == al[1].id and \
                    a3.id == al[2].id and \
@@ -460,7 +460,7 @@ def find_dihedral_entries( topol, rlist, rdic, dih_predef_default, ):
 	    # only consider the dihedral, if it has not been encountered so far
 	    undef = 0
 	    encountered = 0
-	   
+
 	    (undef,encountered) = is_dih_undef(dih_predef_default, d)
 	    encountered = is_dih_encountered_strict(visited_dih, d, encountered)
 	    if(encountered == 1):
@@ -479,9 +479,9 @@ def find_dihedral_entries( topol, rlist, rdic, dih_predef_default, ):
                 a1,a2,a3,a4, func, val = d
 	    else:
                 a1,a2,a3,a4, func, val, rest = d
-		
+
             backup_d = d[:6]
-            
+
             if atoms_morphe([a1,a2,a3,a4]):
                 A,B= check_case(d[:4])
                 if A!='AAAA' and B!='AAAA':
@@ -516,7 +516,7 @@ def find_dihedral_entries( topol, rlist, rdic, dih_predef_default, ):
                         foo = topol.BondedParams.get_dihedral_param(a1.typeB,a2.typeB,a3.typeB,a4.typeB, func)
                         #need to check if the dihedral has torsion pre-defined
                         counter = check_dih_ILDN_OPLS(topol,rlist,rdic, a1, a2, a3, a4)
-			
+
                         if( counter == 42 ):
                             continue
 
@@ -546,21 +546,21 @@ def find_dihedral_entries( topol, rlist, rdic, dih_predef_default, ):
                                 bstate = topol.BondedParams.get_dihedral_param(a1.typeB,a2.typeB,a3.typeB,a4.typeB, func)
 #                        else:
 #			    if (undef != 3):
- #                               bstate = astate[:] 
+ #                               bstate = astate[:]
 
 
 			if(undef==1 and astate == [] ):
 			    continue
 			elif(undef==1 and (astate[0][0]==4 or astate[0][0]==2)):
 			    continue
-			elif(undef==2 and bstate == []): 
+			elif(undef==2 and bstate == []):
 			    continue
 			elif(undef==2 and (bstate[0][0]==4 or bstate[0][0]==2) ):
 			    continue
 
                         #need to check if the dihedral has torsion pre-defined
                         counter = check_dih_ILDN_OPLS(topol,rlist,rdic, a1, a2, a3, a4)
-				
+
 			if( counter == 42): #torsion for both states defined, change nothing
 			    continue
 
@@ -621,9 +621,9 @@ def find_dihedral_entries( topol, rlist, rdic, dih_predef_default, ):
                                 alus.append(bst)
                                 dih9.append(alus)
 
-                    
+
 		    if astate == None :
-                        print 'Error: No dihedral angle found (state A: predefined state B) for:' 
+                        print 'Error: No dihedral angle found (state A: predefined state B) for:'
                         print a1.resname, a2.resname, a3.resname, a4.resname
                         print a1.name, a2.name, a3.name, a4.name, func
                         print a1.atomtype, a2.atomtype, a3.atomtype, a4.atomtype
@@ -633,9 +633,9 @@ def find_dihedral_entries( topol, rlist, rdic, dih_predef_default, ):
 			print astate
                         print d
                         sys.exit(1)
-                        
+
                     if bstate == None :
-                        print 'Error: No dihedral angle found (state B: predefined state A) for:' 
+                        print 'Error: No dihedral angle found (state B: predefined state A) for:'
                         print a1.resname, a2.resname, a3.resname, a4.resname
                         print a1.name, a2.name, a3.name, a4.name, func
                         print a1.atomtype, a2.atomtype, a3.atomtype, a4.atomtype
@@ -644,7 +644,7 @@ def find_dihedral_entries( topol, rlist, rdic, dih_predef_default, ):
                         print a1.typeB, a2.typeB, a3.typeB, a4.typeB
                         print d
                         sys.exit(1)
-                       
+
 		    ### VG ###
 		    ### the previous two if sentences will kill the execution if anything goes wrong ###
 		    ### therefore, I am not afraid to do d.append() already in the previous steps ###
@@ -685,7 +685,7 @@ def explicit_defined_dihedrals(filename,ff):
 def is_ildn_dih_encountered(ildn_used, d, encountered):
     for dih in ildn_used:
         if( dih[0]==d[0] and dih[1]==d[1] and dih[2]==d[2] and dih[3]==d[3] and dih[4]==d[4]):
-	    encountered = 1	
+	    encountered = 1
     return encountered
 
 
@@ -759,7 +759,7 @@ def find_predefined_dihedrals(topol, rlist, rdic, ffbonded, dih_predef_default, 
                     A,B =  check_case(al[:4])
                     paramA = topol.BondedParams.get_dihedral_param(al[0].type,al[1].type,al[2].type,al[3].type, func)
                     paramB = topol.BondedParams.get_dihedral_param(al[0].typeB,al[1].typeB,al[2].typeB,al[3].typeB, func)
-			
+
 		    astate = []
 		    bstate = []
 		    backup_dx = dx[:]
@@ -817,7 +817,7 @@ def find_predefined_dihedrals(topol, rlist, rdic, ffbonded, dih_predef_default, 
                         astate = ''
                     else:
                         astate = d[4]
-		    
+
                     if d[5] == 'default-A': #amber99sb
                         bstate = paramA
                     elif d[5] == 'default-B': #amber99sb
@@ -848,8 +848,8 @@ def find_predefined_dihedrals(topol, rlist, rdic, ffbonded, dih_predef_default, 
                         bstate = ''
                     else:
                         bstate = d[5]
-		
-		    
+
+
 		    ### VG ###
 		    # this should work for ILDN #
 	            #MS: only for type 9?
@@ -908,7 +908,7 @@ def find_predefined_dihedrals(topol, rlist, rdic, ffbonded, dih_predef_default, 
                             alus.append(foo)
                             dih9.append(alus)
                         counter = 1
-    
+
 #		    print "testing %s %s %s %s %s %s" %(bstate, dx,dx[0].id,dx[1].id,dx[2].id,dx[3].id)
     topol.dihedrals.extend(dih9)
 
@@ -941,7 +941,7 @@ def change_outfile_format(filename, ext):
     name, ex = os.path.splitext(tail)
     new_name = os.path.join(head, name+'.'+ext)
     return new_name
-    
+
 def get_hybrid_residues( m, mtp_file, version ):
     rdic = {}
     rlist = []
@@ -984,7 +984,7 @@ def __atoms_morphe( atoms ):
     for atom in atoms:
         if atom.atomtypeB is not None and (atom.q!=atom.qB or atom.m != atom.mB): return True
     return False
-    
+
 
 def sum_charge_of_states(rlist):
     qA = []
@@ -1022,14 +1022,14 @@ def get_ff_path( ff ):
     return ff_path
 
 def main(argv):
-    
+
     options = [
         Option( "-split", "bool", False, "Write splitted topologies for vdw and q morphes"),
         Option( "-scale_mass", "bool", False, "scale_mass"),
         Option( "-dna", "bool", False, "generate hybrid residue for the DNA nucleotides"),
         Option( "-rna", "bool", False, "generate hybrid residue for the RNA nucleotides"),
         ]
-    
+
     files = [
         FileOption("-p", "r",["top"],"topol.top", "Input Topology File"),
         FileOption("-itp", "r",["itp"],"topol.itp", "Optional Input ITP  File"),
@@ -1037,7 +1037,7 @@ def main(argv):
         FileOption("-ff", "dir",["ff"],"amber99sbmut", "Mutation force field "),
         FileOption("-log", "w",["log"],"bstate.log", "Log file"),
         ]
-   
+
     help_text = ('This script adds a B state to an .itp or .top file for a hybrid residue.',
 		'Hybrid residues in the topology file are recognized automatically.',
 		'-scale_mass flag sets dummy masses to 1.0, this option is set to True by default.',
@@ -1067,7 +1067,7 @@ def main(argv):
                         program_desc = help_text,
                         check_for_existing_files = False )
 
-    
+
     do_scale_mass = cmdl['-scale_mass']
     top_file = cmdl['-p']
     out_file = cmdl['-o']
@@ -1127,7 +1127,7 @@ def main(argv):
     qA, qB = sum_charge_of_states( rlist )
     qA_mem = copy.deepcopy( qA )
     qB_mem = copy.deepcopy( qB )
-    
+
     print 'log_> Total charge of state A = ', topol.get_qA()
     print 'log_> Total charge of state B = ', topol.get_qB()
 
@@ -1182,4 +1182,3 @@ def main(argv):
 
 if __name__=='__main__':
     main(sys.argv)
-
