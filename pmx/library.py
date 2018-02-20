@@ -62,6 +62,10 @@ def pmx_data_file(filename):
     else:
         return data_file
 
+
+# ===============================
+# Dicts and Sets of residue names
+# ===============================
 _aacids_dic = {
     'A':'ALA',
     'R':'ARG',
@@ -183,12 +187,6 @@ _protein_residues = set([
     'CMET','SEP','HISH','HIS1','HISE','GLUH'
     ])
 
-_dna_residues = set(['DA', 'DT', 'DC', 'DG', 'DA3', 'DT3', 'DC3', 'DG3', 'DA5',
-                     'DT5', 'DC5', 'DG5'])
-
-_rna_residues = set(['RA', 'RU', 'RC', 'RG', 'RA3', 'RU3', 'RC3', 'RG3', 'RA5',
-                     'RU5', 'RC5', 'RG5'])
-
 _one_letter = {
     'ALA':'A',
     'ARG':'R',
@@ -274,6 +272,13 @@ _one_letter = {
     'CMET':'M'
 }
 
+_dna_residues = set(['DA', 'DT', 'DC', 'DG', 'DA3', 'DT3', 'DC3', 'DG3', 'DA5',
+                     'DT5', 'DC5', 'DG5'])
+
+_rna_residues = set(['RA', 'RU', 'RC', 'RG', 'RA3', 'RU3', 'RC3', 'RG3', 'RA5',
+                     'RU5', 'RC5', 'RG5'])
+
+# TODO: make nucleic acids the union of dna and rna
 _nucleic_acids = (
     'G','T','A','C','DG','DT','DA','DC','DA5','DA3','DT5','DT3',
     'DG5','DG3','DA3','DA5','DC3','DC5','U','RU','RA','RC','RG',
@@ -289,6 +294,10 @@ _water = set(['SOL', 'HOH', 'HO4'])
 
 _water_and_ions = _water.union(_ions)
 
+
+# ==========
+# Parameters
+# ==========
 _atommass = {
     'H'  :   1.00794,
     'He' :   4.002602,
