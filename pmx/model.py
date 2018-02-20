@@ -401,6 +401,11 @@ class Model(Atomselection):
         """
         residues = set([r.resname for r in self.residues])
 
+        # do not consider water and ions
+        residues -= library._water
+        residues -= library._ions
+
+        # determine type
         if residues.issubset(library._protein_residues):
             self.moltype = 'protein'
         elif residues.issubset(library._dna_residues):

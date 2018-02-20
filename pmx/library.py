@@ -280,14 +280,12 @@ _nucleic_acids = (
     'RG3','RG5','RU3','RU5','RC3','RC5','RA3','RA5','DAN','RAN',
     'DTN','RUN','RGN','DCN','RCN')
 
-_ions = (
+_ions = set([
     'CA','Ca','MG','Mg','FE','Fe','MN','Mn','K','CL','Cl','NA',
     'Na','Na+','K+','Cl-','NA+','CL-','NaS','ClS','ZN','Zn','Zn+'
-    )
+    ])
 
-_water = (
-    'SOL','HOH','HO4'
-    )
+_water = set(['SOL', 'HOH', 'HO4'])
 
 _atommass = {
     'H'  :   1.00794,
