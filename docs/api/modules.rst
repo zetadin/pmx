@@ -46,14 +46,6 @@ pmx.chain module
     :undoc-members:
     :show-inheritance:
 
-pmx.cpp module
---------------
-
-.. automodule:: pmx.cpp
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 pmx.estimators module
 ---------------------
 
@@ -78,26 +70,10 @@ pmx.forcefield module
     :undoc-members:
     :show-inheritance:
 
-pmx.forcefield2 module
-----------------------
-
-.. automodule:: pmx.forcefield2
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 pmx.geometry module
 -------------------
 
 .. automodule:: pmx.geometry
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pmx.histogram module
---------------------
-
-.. automodule:: pmx.histogram
     :members:
     :undoc-members:
     :show-inheritance:
