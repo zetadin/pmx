@@ -70,9 +70,9 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, infileB=None):
     bb_super(residue, hybrid_res)
 
     # VG rename residue atoms
-    hash1 = rename_to_match_library(residue)
-    hash2 = rename_to_match_library(hybrid_res)
-    set_conformation(residue, hybrid_res, rotdic)
+    hash1 = _rename_to_match_library(residue)
+    hash2 = _rename_to_match_library(hybrid_res)
+    _set_conformation(residue, hybrid_res, rotdic)
     if infileB is not None:
         print("log_> Set Bstate geometry according to the provided structure")
         mB = Model(infileB, bPDBTER=True, for_gmx=True)
@@ -83,8 +83,8 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, infileB=None):
                 for atomB in residueB.atoms:
                     if atomB.name == hybrid_res.morphes[atom.name]['n1']:
                         atom.x = atomB.x
-    rename_back(residue, hash1)
-    rename_back(hybrid_res, hash2)
+    _rename_back(residue, hash1)
+    _rename_back(hybrid_res, hash2)
     # VG rename residue atoms back
 
     m.replace_residue(residue, hybrid_res)
@@ -134,18 +134,18 @@ def get_nuc_hybrid_resname(residue, new_nuc_name):
             r2 = firstLetter+new_nuc_name+'3'
             dict_key = r1+'_'+r2
             if residue.moltype == 'rna':
-                hybrid_residue_name = rna_names[dict_key]
+                hybrid_residue_name = _rna_names[dict_key]
             else:
-                hybrid_residue_name = dna_names[dict_key]
+                hybrid_residue_name = _dna_names[dict_key]
             return(hybrid_residue_name, residue.resname[1], new_nuc_name)
         elif a.name == 'H5T':
             r1 = firstLetter+residue.resname[1]+'5'
             r2 = firstLetter+new_nuc_name+'5'
             dict_key = r1+'_'+r2
             if residue.moltype == 'rna':
-                hybrid_residue_name = rna_names[dict_key]
+                hybrid_residue_name = _rna_names[dict_key]
             else:
-                hybrid_residue_name = dna_names[dict_key]
+                hybrid_residue_name = _dna_names[dict_key]
             return(hybrid_residue_name, residue.resname[1], new_nuc_name)
     hybrid_residue_name = residue.resname+new_nuc_name
     return(hybrid_residue_name, residue.resname[1], new_nuc_name)
@@ -194,7 +194,7 @@ def _rename_ile(residue):
             pass
 
 
-def rename_to_match_library(res):
+def _rename_to_match_library(res):
     name_hash = {}
     atoms = res.atoms
     for atom in atoms:
@@ -214,12 +214,12 @@ def rename_to_match_library(res):
     return name_hash
 
 
-def rename_back(res, name_hash):
+def _rename_back(res, name_hash):
     for atom in res.atoms:
         atom.name = name_hash[atom.name]
 
 
-def set_conformation(old_res, new_res, rotdic):
+def _set_conformation(old_res, new_res, rotdic):
     old_res.get_real_resname()
     dihedrals = library._aa_dihedrals[old_res.real_resname]
     for key, lst in rotdic.items():
@@ -247,10 +247,12 @@ def set_conformation(old_res, new_res, rotdic):
     for atom in new_res.atoms:
         if (atom.name[0] != 'D') and (not atom.name.startswith('HV')):
             atom.x = old_res[atom.name].x
+
+
 # ==============
 # Data/Libraries
 # ==============
-dna_names = {
+_dna_names = {
     'DA5_DT5': 'D5K',
     'DA5_DC5': 'D5L',
     'DA5_DG5': 'D5M',
@@ -286,7 +288,7 @@ dna_names = {
     'DT5_DT5': 'FOO',
     }
 
-rna_names = {
+_rna_names = {
     'RA5_RU5': 'R5K',
     'RA5_RC5': 'R5L',
     'RA5_RG5': 'R5M',
