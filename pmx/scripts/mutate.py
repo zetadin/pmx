@@ -628,6 +628,7 @@ Currently available force fields:
 
     args, unknown = parser.parse_known_args()
 
+    # ------------------
     # residue dictionary
     # ------------------
     if args.resinfo is True:
@@ -651,8 +652,19 @@ Currently available force fields:
             print_sorted_dict(rna_names)
             print(' ---------------------------\n')
         else:
-            raise(ValueError, 'Cannot undertand mutation type needed '
-                              'from the input strcture provided')
+            print('\n ---------------------------')
+            print(' Protein residues dictionary')
+            print(' ---------------------------')
+            print_sorted_dict(ext_one_letter)
+            print(' ---------------------------')
+            print(' DNA residues dictionary')
+            print(' ---------------------------')
+            print_sorted_dict(dna_names)
+            print(' ---------------------------')
+            print(' RNA residues dictionary')
+            print(' ---------------------------')
+            print_sorted_dict(rna_names)
+            print(' ---------------------------\n')
         exit()
     else:
         return args
