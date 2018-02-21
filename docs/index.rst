@@ -1,10 +1,10 @@
 pmx
 ===
-Toolkit for free-energy calculation setup/analysis and biomolecular structure handling. 
+Toolkit for free-energy calculation setup/analysis and biomolecular structure handling.
 
 pmx is a python library that allows users to setup and analyse molecular
-dynamics simulations with the `Gromacs <http://gromacs.org>`_ package. 
-Among its main features are the setup and analysis of alchemical free energy 
+dynamics simulations with the `Gromacs <http://gromacs.org>`_ package.
+Among its main features are the setup and analysis of alchemical free energy
 calculations for protein, nucleic acid, and small molecule mutations.
 
 
@@ -12,8 +12,10 @@ calculations for protein, nucleic acid, and small molecule mutations.
    :maxdepth: 1
 
    installation
-   scripts/index
    examples/index
+   scripts/index
+   tutorials/index
+
 
 API Reference
 -------------
@@ -23,6 +25,7 @@ API Reference
 
    api/modules
    api/classes
+
 
 Citations
 ---------
@@ -34,7 +37,7 @@ If you use pmx in scientific publications, please cite the following papers:
 ::
 
     @article{Gapsys2015pmx,
-        title = {pmx: Automated protein structure and topology 
+        title = {pmx: Automated protein structure and topology
         generation for alchemical perturbations},
         author = {Gapsys, Vytautas and Michielssens, Servaas
         and Seeliger, Daniel and de Groot, Bert L.},
@@ -47,7 +50,7 @@ If you use pmx in scientific publications, please cite the following papers:
     }
 
     @article{Seeliger2010pmx,
-        title = {Protein Thermostability Calculations Using 
+        title = {Protein Thermostability Calculations Using
         Alchemical Free Energy Simulations},
         author = {Seeliger, Daniel and de Groot, Bert L.},
         journal = {Biophysical Journal},
@@ -57,6 +60,7 @@ If you use pmx in scientific publications, please cite the following papers:
         year = {2010},
         doi = {10.1016/j.bpj.2010.01.051}
     }
+
 
 License
 -------

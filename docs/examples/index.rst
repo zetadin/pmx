@@ -1,8 +1,9 @@
-========
+.. _examples:
+
 Examples
 ========
 
-here we will put examples/small tutorials
+here we will put examples on the use of the library
 
 e.g. code:
 
@@ -18,3 +19,7 @@ list of examples:
 
    mutate
    analysis
+
+
+In the :ref:`scripts` you can find how these tasks can be carried out
+using the ``pmx`` command line tool.

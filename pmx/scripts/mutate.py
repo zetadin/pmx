@@ -267,9 +267,6 @@ simply has to consist of "resi_number target_residue" pairs.
 The script uses an extended one-letter code for amino acids to account for
 different protonation states. Use the --resinfo flag to print the dictionary.
 
-Currently available force fields:
-    - amber99sb-star-ildn-mut (Best & Hummer, 2009; Lindorff-Larsen et al, 2010)
-    - charmm36m-mut (Best et al, 2012)
 ''', formatter_class=argparse.RawTextHelpFormatter)
 
     ff_choices = ['amber99sb-star-ildn-mut', 'charmm36m-mut.ff',
@@ -300,9 +297,11 @@ Currently available force fields:
                         metavar='ff',
                         dest='ff',
                         type=str.lower,
-                        help='Force field to use. Available choices are: '
-                        'amber99sb-star-ildn-mut, charmm36m-mut.ff, '
-                        'amber99sb-star-ildn-bsc1-mut, amber14sb-mut. '
+                        help='Force field to use. Available choices are:\n'
+                        '  amber99sb-star-ildn-mut\n'
+                        '  charmm36m-mut.ff\n'
+                        '  amber99sb-star-ildn-bsc1-mut\n'
+                        '  amber14sb-mut.\n'
                         'Default is "amber99sb-star-ildn-mut"',
                         choices=ff_choices,
                         default='amber99sb-star-ildn-mut')

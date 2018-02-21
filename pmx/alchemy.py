@@ -23,7 +23,7 @@ def mutate(m, mut_resid, mut_resname, ff, refB=None):
     Parameters
     ----------
     m : Model object
-        The model to be mutated. See :class:`~model.Model`.
+        The model to be mutated. See :py:class:`pmx.model.Model`.
     mut_resid : int
         The ID of the residue to be mutated.
     mut_resname : str
