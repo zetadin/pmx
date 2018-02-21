@@ -713,8 +713,6 @@ def main(args):
     # figure out the force field and type of mutation
     ffpath = get_ff_path(ff=ff)
 
-    bDNA = False
-
     # initialise Model
     m = Model(infile, bPDBTER=True)
     rename_atoms_to_gromacs(m)
@@ -723,7 +721,6 @@ def main(args):
     # DNA mutation
     if m.moltype == 'dna':
         mtp_file = os.path.join(ffpath, 'mutres_dna.mtp')
-        bDNA = True  # FIXME: is bDNA not used?
     # RNA mutation
     elif m.moltype == 'rna':
         mtp_file = os.path.join(ffpath, 'mutres_rna.mtp')
