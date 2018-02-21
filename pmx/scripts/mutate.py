@@ -42,7 +42,7 @@ from pmx.model import Model
 from pmx.parser import read_and_format
 from pmx.geometry import Rotation, nuc_super, bb_super
 from pmx.mutdb import read_mtp_entry
-from pmx.utils import UnknownResidueError, RangeCheckError, mtpError
+from pmx.utils import get_ff_path, UnknownResidueError, RangeCheckError, mtpError
 
 # set GMXLIB
 path = os.path.abspath(library.__file__)
@@ -169,10 +169,24 @@ rna_names = {
     'RU5_RU5': 'FOO',
     }
 
+dna_one_letter = {'A': 'adenosine',
+                  'C': 'cytosine',
+                  'G': 'guanine',
+                  'T': 'thymine'}
+
+rna_one_letter = {'A': 'adenosine',
+                  'C': 'cytosine',
+                  'G': 'guanine',
+                  'U': 'uracil'}
 
 # ================
 # Helper functions
 # ================
+def _print_sorted_dict(d):
+    for key in sorted(d.iterkeys()):
+        print("{0:>5}{1:>15}".format(key, d[key]))
+
+
 def _int_input():
     inp = raw_input()
     try:
@@ -547,9 +561,11 @@ def apply_mutation(m, mut_resid, mut_resname, ff, infileB):
         raise(ValueError, 'Cannot undertand mutation type needed '
                           'from the input strcture provided')
 
+    # Mutation if Protein
     if residue.moltype == 'protein':
         new_aa_name = _convert_aa_name(mut_resname)
         apply_aa_mutation(m, residue, new_aa_name, mtp_file, infileB)
+    # Mutation if DNA or RNA
     elif residue.moltype in ['dna', 'rna']:
         new_nuc_name = mut_resname.upper()
         apply_nuc_mutation(m, residue, new_nuc_name, mtp_file)
@@ -586,28 +602,7 @@ def rename_atoms_to_gromacs(m):
             atom.name = atom.name[1:]+atom.name[0]
 
 
-def get_ff_path(ff):
-    ff_path = None
-    if not os.path.isdir(ff):
-        gmxlib = os.environ.get('GMXLIB')
-        p = os.path.join(gmxlib, ff)
-        pff = p+'.ff'
-        if os.path.isdir(p):
-            ff_path = p
-        elif os.path.isdir(pff):
-            ff_path = pff
-        else:
-            print >>sys.stderr, ' Error: forcefield path "%s" not found' % ff
-            sys.exit(0)
-    else:
-        ff_path = ff
-    print 'Opening forcefield: %s' % ff_path
-    return ff_path
 
-
-def print_sorted_dict(d):
-    for key in sorted(d.iterkeys()):
-        print("{0:>10}{1:>5}".format(key, d[key]))
 
 
 def parse_options():
@@ -686,33 +681,33 @@ Currently available force fields:
             print('\n ---------------------------')
             print(' Protein residues dictionary')
             print(' ---------------------------')
-            print_sorted_dict(ext_one_letter)
+            _print_sorted_dict(ext_one_letter)
             print(' ---------------------------\n')
         elif moltype == 'dna':
             print('\n -----------------------')
             print(' DNA residues dictionary')
             print(' -----------------------')
-            print_sorted_dict(dna_names)
-            print(' ---------------------------\n')
+            _print_sorted_dict(dna_one_letter)
+            print(' -----------------------\n')
         elif moltype == 'rna':
             print('\n -----------------------')
             print(' RNA residues dictionary')
             print(' -----------------------')
-            print_sorted_dict(rna_names)
-            print(' ---------------------------\n')
+            _print_sorted_dict(rna_one_letter)
+            print(' -----------------------\n')
         else:
             print('\n ---------------------------')
             print(' Protein residues dictionary')
             print(' ---------------------------')
-            print_sorted_dict(ext_one_letter)
+            _print_sorted_dict(ext_one_letter)
             print(' ---------------------------')
             print(' DNA residues dictionary')
             print(' ---------------------------')
-            print_sorted_dict(dna_names)
+            _print_sorted_dict(dna_one_letter)
             print(' ---------------------------')
             print(' RNA residues dictionary')
             print(' ---------------------------')
-            print_sorted_dict(rna_names)
+            _print_sorted_dict(rna_one_letter)
             print(' ---------------------------\n')
         exit()
     else:
@@ -727,9 +722,6 @@ def main(args):
     outfile = args.outfile
     ff = args.ff
     script = args.script
-
-    # figure out the force field and type of mutation
-    #ffpath = get_ff_path(ff=ff)
 
     # initialise Model
     m = Model(infile, bPDBTER=True)

@@ -34,6 +34,7 @@
 """
 
 import os
+import sys
 from glob import glob
 import types
 import numpy as np
@@ -65,6 +66,25 @@ def ffopen(filename, mode='r', backup=True):
 
     else:
         return open(filename, mode)
+
+
+def get_ff_path(ff):
+    ff_path = None
+    if not os.path.isdir(ff):
+        gmxlib = os.environ.get('GMXLIB')
+        p = os.path.join(gmxlib, ff)
+        pff = p+'.ff'
+        if os.path.isdir(p):
+            ff_path = p
+        elif os.path.isdir(pff):
+            ff_path = pff
+        else:
+            print >>sys.stderr, ' Error: forcefield path "%s" not found' % ff
+            sys.exit(0)
+    else:
+        ff_path = ff
+    print 'Opening forcefield: %s' % ff_path
+    return ff_path
 
 
 def listFiles(dir='./', ext=None, abs=True, backups=False):
