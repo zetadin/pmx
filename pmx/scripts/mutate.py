@@ -231,6 +231,18 @@ def _ask_next():
         return _ask_next()
 
 
+def _convert_aa_name(aa):
+    # firstly, some special deprotonated cases
+    if aa == 'CM':
+        return(aa.upper())
+    elif len(aa) == 1:
+        return aa.upper()
+    elif len(aa) in [3, 4]:
+        return ext_one_letter[aa.upper()]
+    else:
+        raise UnknownResidueError(aa)
+
+
 class InteractiveSelection:
     """Class containing fucntions related to the interactive selection of
     residues to be mutated.
@@ -364,20 +376,6 @@ class InteractiveSelection:
             return aa
 
 
-def convert_aa_name(aa):
-    # firstly, some special deprotonated cases
-    if aa == 'CM':
-        return(aa.upper())
-    elif len(aa) == 1:
-        return aa.upper()
-    elif len(aa) == 3:
-        return ext_one_letter[aa.upper()]
-    elif len(aa) == 4:
-        return ext_one_letter[aa.upper()]
-    else:
-        raise UnknownResidueError(aa)
-
-
 def rename_to_match_library(res):
     name_hash = {}
     atoms = res.atoms
@@ -479,11 +477,11 @@ def apply_nuc_mutation(m, residue, new_nuc_name, mtp_file, bRNA=False):
           (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
 
 
-def apply_aa_mutation(m, residue, new_aa_name, mtp_file, bStrB, infileB):
+def apply_aa_mutation(m, residue, new_aa_name, mtp_file, infileB=None):
 
     if residue.resname == 'ILE':
         rename_ile(residue)
-    olkey = convert_aa_name(residue.resname)
+    olkey = _convert_aa_name(residue.resname)
 
     # olkey should contain the correct one letter name of the WT residue
     # however, due to the different namings of the residues in the FFs
@@ -503,7 +501,7 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, bStrB, infileB):
     hash1 = rename_to_match_library(residue)
     hash2 = rename_to_match_library(hybrid_res)
     set_conformation(residue, hybrid_res, rotdic)
-    if bStrB:
+    if infileB is not None:
         print("log_> Set Bstate geometry according to the provided structure")
         mB = Model(infileB, bPDBTER=True)
         rename_atoms_to_gromacs(mB)
@@ -524,14 +522,14 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, bStrB, infileB):
           (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
 
 
-def apply_mutation(m, mut_resid, mut_resname, mtp_file, bStrB, infileB, bRNA):
+def apply_mutation(m, mut_resid, mut_resname, mtp_file, infileB, bRNA):
 
     if not _check_residue_range(m, mut_resid):
         raise RangeCheckError(mut_resid)
     residue = m.residues[mut_resid - 1]
     if residue.moltype == 'protein':
-        new_aa_name = convert_aa_name(mut_resname)
-        apply_aa_mutation(m, residue, new_aa_name, mtp_file, bStrB, infileB)
+        new_aa_name = _convert_aa_name(mut_resname)
+        apply_aa_mutation(m, residue, new_aa_name, mtp_file, infileB)
     elif residue.moltype in ['dna', 'rna']:
         new_nuc_name = mut_resname.upper()
         apply_nuc_mutation(m, residue, new_nuc_name, mtp_file, bRNA)
@@ -715,10 +713,6 @@ def main(args):
 
     bDNA = False
     bRNA = False
-    if infileB is not None:
-        bStrB = True
-    else:
-        bStrB = False
 
     # initialise Model
     m = Model(infile, bPDBTER=True)
@@ -749,7 +743,7 @@ def main(args):
                            mut_resid=mut[0],
                            mut_resname=mut[1],
                            mtp_file=mtp_file,
-                           bStrB=bStrB, infileB=infileB, bRNA=bRNA)  # FIXME: what about bDNA?
+                           infileB=infileB, bRNA=bRNA)  # FIXME: what about bDNA?
     # if not provided, interactive selection
     else:
         do_more = True
@@ -758,14 +752,13 @@ def main(args):
             print "m: ", m
             print "mut: ", sele
             print "mtp_file: ", mtp_file
-            print "bStrB: ", bStrB
             print "infileB: ", infileB
             print "bRNA: ", bRNA
             apply_mutation(m=m,
                            mut_resid=sele.mut_resid,
                            mut_resname=sele.mut_resname,
                            mtp_file=mtp_file,
-                           bStrB=bStrB, infileB=infileB, bRNA=bRNA)
+                           infileB=infileB, bRNA=bRNA)
             if not _ask_next():
                 do_more = False
 
