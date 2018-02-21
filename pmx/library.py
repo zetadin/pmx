@@ -332,11 +332,11 @@ _rna_residues = set(['RA', 'RU', 'RC', 'RG', 'RA3', 'RU3', 'RC3', 'RG3', 'RA5',
                      'RU5', 'RC5', 'RG5'])
 
 # TODO: make nucleic acids the union of dna and rna
-_nucleic_acids = (
+_nucleic_acids = set([
     'G','T','A','C','DG','DT','DA','DC','DA5','DA3','DT5','DT3',
     'DG5','DG3','DA3','DA5','DC3','DC5','U','RU','RA','RC','RG',
     'RG3','RG5','RU3','RU5','RC3','RC5','RA3','RA5','DAN','RAN',
-    'DTN','RUN','RGN','DCN','RCN')
+    'DTN','RUN','RGN','DCN','RCN'])
 
 # ------------
 # Solvent/Ions
@@ -5016,19 +5016,6 @@ _mol2_types = {
     'O':['O.2',0],
     },
     'HIE':
-    {
-    'N':['N.am',0],
-    'CA':['C.3',0],
-    'CB':['C.3',0],
-    'CG':['C.2',0],
-    'ND1':['N.2',0],
-    'CE1':['C.2',0],
-    'NE2':['N.pl3',0],
-    'CD2':['C.2',0],
-    'C':['C.2',0],
-    'O':['O.2',0],
-    },
-    'HSE':
     {
     'N':['N.am',0],
     'CA':['C.3',0],
