@@ -263,9 +263,9 @@ class InteractiveSelection:
 
     """
 
-    def __init__(self, m, ffpath):
+    def __init__(self, m, ff):
         self.m = m
-        self.ffpath = ffpath
+        self.ffpath = get_ff_path(ff)
 
         self.mut_resid = self.select_residue()
         self.mut_resname = self.select_mutation()
@@ -524,11 +524,29 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, infileB=None):
           (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
 
 
-def apply_mutation(m, mut_resid, mut_resname, mtp_file, infileB):
+def apply_mutation(m, mut_resid, mut_resname, ff, infileB):
 
+    # check selection is valid
     if not _check_residue_range(m, mut_resid):
         raise RangeCheckError(mut_resid)
+    # get th residue
     residue = m.residues[mut_resid - 1]
+
+    # Determine which mtp file to use
+    ffpath = get_ff_path(ff=ff)
+    # DNA mutation
+    if residue.moltype == 'dna':
+        mtp_file = os.path.join(ffpath, 'mutres_dna.mtp')
+    # RNA mutation
+    elif residue.moltype == 'rna':
+        mtp_file = os.path.join(ffpath, 'mutres_rna.mtp')
+    # Protein mutation
+    elif residue.moltype == 'protein':
+        mtp_file = os.path.join(ffpath, 'mutres.mtp')
+    else:
+        raise(ValueError, 'Cannot undertand mutation type needed '
+                          'from the input strcture provided')
+
     if residue.moltype == 'protein':
         new_aa_name = _convert_aa_name(mut_resname)
         apply_aa_mutation(m, residue, new_aa_name, mtp_file, infileB)
@@ -711,25 +729,12 @@ def main(args):
     script = args.script
 
     # figure out the force field and type of mutation
-    ffpath = get_ff_path(ff=ff)
+    #ffpath = get_ff_path(ff=ff)
 
     # initialise Model
     m = Model(infile, bPDBTER=True)
     rename_atoms_to_gromacs(m)
     m.nm2a()
-
-    # DNA mutation
-    if m.moltype == 'dna':
-        mtp_file = os.path.join(ffpath, 'mutres_dna.mtp')
-    # RNA mutation
-    elif m.moltype == 'rna':
-        mtp_file = os.path.join(ffpath, 'mutres_rna.mtp')
-    # Protein mutation
-    elif m.moltype == 'protein':
-        mtp_file = os.path.join(ffpath, 'mutres.mtp')
-    else:
-        raise(ValueError, 'Cannot undertand mutation type needed '
-                          'from the input strcture provided')
 
     # if script is provided, do the mutations in that file
     if script is not None:
@@ -739,21 +744,20 @@ def main(args):
             apply_mutation(m=m,
                            mut_resid=mut[0],
                            mut_resname=mut[1],
-                           mtp_file=mtp_file,
+                           ff=ff,
                            infileB=infileB)  # FIXME: what about bDNA?
     # if not provided, interactive selection
     else:
         do_more = True
         while do_more:
-            sele = InteractiveSelection(m, ffpath)
+            sele = InteractiveSelection(m, ff)
             print "m: ", m
             print "mut: ", sele
-            print "mtp_file: ", mtp_file
             print "infileB: ", infileB
             apply_mutation(m=m,
                            mut_resid=sele.mut_resid,
                            mut_resname=sele.mut_resname,
-                           mtp_file=mtp_file,
+                           ff=ff,
                            infileB=infileB)
             if not _ask_next():
                 do_more = False
