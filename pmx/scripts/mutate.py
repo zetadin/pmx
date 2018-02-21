@@ -383,20 +383,17 @@ def main(args):
                    mut_resid=mut[0],
                    mut_resname=mut[1],
                    ff=ff,
-                   infileB=infileB)
+                   refB=infileB)
     # if not provided, interactive selection
     else:
         do_more = True
         while do_more:
             sele = InteractiveSelection(m, ff)
-            print "m: ", m
-            print "mut: ", sele
-            print "infileB: ", infileB
             mutate(m=m,
                    mut_resid=sele.mut_resid,
                    mut_resname=sele.mut_resname,
                    ff=ff,
-                   infileB=infileB)
+                   refB=infileB)
             if not _ask_next():
                 do_more = False
 
@@ -406,6 +403,10 @@ def main(args):
     print
 
 
-if __name__ == '__main__':
+def entry_point():
     args = parse_options()
     main(args)
+
+
+if __name__ == '__main__':
+    entry_point()

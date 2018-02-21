@@ -16,8 +16,8 @@ class PmxCli(object):
     ------------------------
 
     Available commands are:
-        analyse    Estimate free energy from Gromacs xvg files
-        mutate     Mutate protein or DNA''',
+        mutate     Mutate protein or DNA/RNA
+        analyse    Estimate free energy from Gromacs xvg files''',
             formatter_class=RawTextHelpFormatter)
 
         parser.add_argument('command', help=SUPPRESS)
@@ -31,12 +31,13 @@ class PmxCli(object):
         # use dispatch pattern to invoke method with same name
         getattr(self, args.command)()
 
+    def mutate(self):
+        import mutate
+        mutate.entry_point()
+
     def analyse(self):
         import analyze_dgdl
         analyze_dgdl.entry_point()
-
-    def mutate(self):
-        pass
 
 
 def entry_point():
