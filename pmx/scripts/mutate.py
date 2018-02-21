@@ -170,7 +170,20 @@ rna_names = {
     }
 
 
-def check_residue_name(res):
+# ================
+# Helper functions
+# ================
+def _int_input():
+    inp = raw_input()
+    try:
+        inp = int(inp)
+        return inp
+    except:
+        print 'You entered "%s" -> Try again' % inp
+        return None
+
+
+def _check_residue_name(res):
     if res.resname == 'LYS':
         if res.has_atom('HZ3'):
             res.set_resname('LYP')
@@ -193,136 +206,21 @@ def check_residue_name(res):
             print >>sys.stderr, ' Cannot mutate SS-bonded Cys %d' % res.id
 
 
-def check_OPLS_LYS(res):
+def _check_OPLS_LYS(res):
     if res.has_atom('HZ3'):
         return('K')
     else:
         return('O')
 
 
-def int_input():
-    inp = raw_input()
-    try:
-        inp = int(inp)
-        return inp
-    except:
-        print 'You entered "%s" -> Try again' % inp
-        return None
-
-
-def check_residue_range(m, idx):
+def _check_residue_range(m, idx):
     valid_ids = range(1, len(m.residues)+1)
     if idx not in valid_ids:
         return False
     return True
 
 
-def select_residue(m):
-    valid_ids = range(1, len(m.residues)+1)
-    print '\nSelect residue to mutate:'
-    for i, r in enumerate(m.residues):
-        if r.moltype not in ['water', 'ion']:
-            sys.stdout.write('%6d-%s-%s' % (r.id, r.resname, r.chain_id))
-            if r.id % 6 == 0:
-                print("")
-    print("")
-    selected_residue_id = None
-    while not selected_residue_id:
-        sys.stdout.write('Enter residue number: ')
-        selected_residue_id = int_input()
-        if selected_residue_id is not None and selected_residue_id not in valid_ids:
-            print('Residue id %d not in range %d-%d -> Try again' %
-                  (selected_residue_id, 1, len(residues)))  # BUG? residues is not defined
-            selected_residue_id = None
-    return selected_residue_id
-
-
-def select_mutation(m, selected_residue_id, ffpath):
-
-    residue = m.residues[selected_residue_id - 1]
-    if residue.moltype == 'protein':
-        return select_aa_mutation(residue, ffpath)
-    elif residue.moltype in ['dna', 'rna']:
-        return select_nuc_mutation(residue)
-
-
-def select_nuc_mutation(residue):
-    aa = None
-    print('\nSelect new base for %s-%s: ' % (residue.id, residue.resname))
-    sys.stdout.write('One-letter code: ')
-    while aa is None:
-        aa = raw_input().upper()
-        if residue.moltype == 'dna' and aa not in ['A', 'C', 'G', 'T']:
-            sys.stdout.write('Unknown DNA residue "%s"!\nOne-letter code: ' % aa)
-            aa = None
-        elif residue.moltype == 'rna' and aa not in ['A', 'C', 'G', 'U']:
-            sys.stdout.write('Unknown RNA residue "%s"!\nOne-letter code: ' % aa)
-            aa = None
-        if aa:
-            print('Will apply mutation %s->%s on residue %s-%d'
-                  % (residue.resname[1], aa, residue.resname, residue.id))
-        return aa
-
-
-def select_aa_mutation(residue, ffpath):
-    check_residue_name(residue)
-    print '\nSelect new amino acid for %s-%s: ' % (residue.id, residue.resname)
-    sys.stdout.write('Three- or one-letter code (or four-letter for ff specific residues): ')
-    if residue.resname in ['HIE', 'HISE', 'HSE']:
-        rol = 'X'
-    elif residue.resname in ['HIP', 'HISH', 'HSP']:
-        rol = 'Z'
-    elif residue.resname in ['GLH', 'GLUH', 'GLUP']:
-        rol = 'J'
-    elif residue.resname in ['ASH', 'ASPH', 'ASPP']:
-        rol = 'B'
-    elif residue.resname in ['LYN', 'LYS', 'LSN']:
-        rol = 'O'
-    else:
-        rol = library._one_letter[residue.resname]
-    aa = None
-    ol = library._aacids_dic.keys()
-    tl = library._aacids_dic.values()
-    ffpathlower = ffpath.lower()
-    if('amber' in ffpathlower):
-            ol = library._aacids_ext_amber.keys()
-            tl = library._aacids_ext_amber.values()
-    if('opls' in ffpathlower):
-            ol = library._aacids_ext_oplsaa.keys()
-            tl = library._aacids_ext_oplsaa.values()+['ASPP', 'GLUP', 'LSN']
-    if('charmm' in ffpathlower):
-            ol = library._aacids_ext_charmm.keys()
-            tl = library._aacids_ext_charmm.values()
-
-    while aa is None:
-        aa = raw_input().upper()
-        # some special residues:
-        #   CM - deprotonated cysteine
-        #   YM - deprotonated tyrosine
-        if aa == 'CM':
-            sys.stdout.write('Special case for deprotonated residue')
-        elif len(aa) != 1 and len(aa) != 3 and len(aa) != 4:
-            sys.stdout.write('Nope!\nThree- or one-letter code (or four-letter for ff specific residues): ')
-            aa = None
-        elif (len(aa) == 1 and aa not in ol+['B', 'J', 'O', 'X', 'Z']) or \
-             (len(aa) == 3 and aa not in tl) or \
-             (len(aa) == 4 and aa not in tl):
-            sys.stdout.write('Unknown aa "%s"!\nThree- or one-letter code (or four-letter for ff specific residues): ' % aa)
-            aa = None
-        if aa and (len(aa) == 3 or len(aa) == 4):
-            aa = ext_one_letter[aa]
-    print('Will apply mutation %s->%s on residue %s-%d'
-          % (rol, aa, residue.resname, residue.id))
-    return aa
-
-
-def interactive_selection(m, ffpath):
-    residue_id = select_residue(m)
-    mutation = select_mutation(m, residue_id, ffpath)
-    return residue_id, mutation
-
-
-def ask_next():
+def _ask_next():
     sys.stdout.write('\nApply another mutation [y/n]? ')
     res = raw_input().lower()
     if res == 'y':
@@ -330,7 +228,140 @@ def ask_next():
     elif res == 'n':
         return False
     else:
-        return ask_next()
+        return _ask_next()
+
+
+class InteractiveSelection:
+    """Class containing fucntions related to the interactive selection of
+    residues to be mutated.
+
+    Parameters
+    ----------
+    m : Model object
+        instance of pmx.model.Model
+    ffpath : str
+        path to forcefield files
+
+    Attributes
+    ----------
+    mut_resid : int
+        index of residue to be mutated
+    mut_resname : str
+        one-letter code of target residue
+
+    """
+
+    def __init__(self, m, ffpath):
+        self.m = m
+        self.ffpath = ffpath
+
+        self.mut_resid = self.select_residue()
+        self.mut_resname = self.select_mutation()
+
+    def select_residue(self):
+        """Ask for the residue id to mutate.
+        """
+        valid_ids = range(1, len(self.m.residues)+1)
+        print '\nSelect residue to mutate:'
+        for i, r in enumerate(self.m.residues):
+            if r.moltype not in ['water', 'ion']:
+                sys.stdout.write('%6d-%s-%s' % (r.id, r.resname, r.chain_id))
+                if r.id % 6 == 0:
+                    print("")
+        print("")
+        selected_residue_id = None
+        while not selected_residue_id:
+            sys.stdout.write('Enter residue number: ')
+            selected_residue_id = _int_input()
+            if selected_residue_id is not None and selected_residue_id not in valid_ids:
+                print('Residue id %d not in range %d-%d -> Try again' %
+                      (selected_residue_id, 1, len(self.m.residues)))
+                selected_residue_id = None
+        return selected_residue_id
+
+    def select_mutation(self):
+        """Ask which residue to mutate to.
+        """
+
+        residue = self.m.residues[self.mut_resid - 1]
+        if residue.moltype == 'protein':
+            aa = self.select_aa_mutation(residue)
+        elif residue.moltype in ['dna', 'rna']:
+            aa = self.select_nuc_mutation(residue)
+        return aa
+
+    def select_aa_mutation(self, residue):
+        """Selection for protein residues.
+        """
+
+        _check_residue_name(residue)
+        print '\nSelect new amino acid for %s-%s: ' % (residue.id, residue.resname)
+        sys.stdout.write('Three- or one-letter code (or four-letter for ff specific residues): ')
+        if residue.resname in ['HIE', 'HISE', 'HSE']:
+            rol = 'X'
+        elif residue.resname in ['HIP', 'HISH', 'HSP']:
+            rol = 'Z'
+        elif residue.resname in ['GLH', 'GLUH', 'GLUP']:
+            rol = 'J'
+        elif residue.resname in ['ASH', 'ASPH', 'ASPP']:
+            rol = 'B'
+        elif residue.resname in ['LYN', 'LYS', 'LSN']:
+            rol = 'O'
+        else:
+            rol = library._one_letter[residue.resname]
+        aa = None
+        ol = library._aacids_dic.keys()
+        tl = library._aacids_dic.values()
+        ffpathlower = self.ffpath.lower()
+        if 'amber' in ffpathlower:
+                ol = library._aacids_ext_amber.keys()
+                tl = library._aacids_ext_amber.values()
+        if 'opls' in ffpathlower:
+                ol = library._aacids_ext_oplsaa.keys()
+                tl = library._aacids_ext_oplsaa.values()+['ASPP', 'GLUP', 'LSN']
+        if 'charmm' in ffpathlower:
+                ol = library._aacids_ext_charmm.keys()
+                tl = library._aacids_ext_charmm.values()
+
+        while aa is None:
+            aa = raw_input().upper()
+            # some special residues:
+            #   CM - deprotonated cysteine
+            #   YM - deprotonated tyrosine
+            if aa == 'CM':
+                sys.stdout.write('Special case for deprotonated residue')
+            elif len(aa) != 1 and len(aa) != 3 and len(aa) != 4:
+                sys.stdout.write('Nope!\nThree- or one-letter code (or four-letter for ff specific residues): ')
+                aa = None
+            elif (len(aa) == 1 and aa not in ol+['B', 'J', 'O', 'X', 'Z']) or \
+                 (len(aa) == 3 and aa not in tl) or \
+                 (len(aa) == 4 and aa not in tl):
+                sys.stdout.write('Unknown aa "%s"!\nThree- or one-letter code (or four-letter for ff specific residues): ' % aa)
+                aa = None
+            if aa and (len(aa) == 3 or len(aa) == 4):
+                aa = ext_one_letter[aa]
+        print('Will apply mutation %s->%s on residue %s-%d'
+              % (rol, aa, residue.resname, residue.id))
+        return aa
+
+    def select_nuc_mutation(self, residue):
+        """Selection for nucleic acids.
+        """
+        aa = None
+        print('\nSelect new base for %s-%s: ' % (residue.id, residue.resname))
+        sys.stdout.write('One-letter code: ')
+        while aa is None:
+            aa = raw_input().upper()
+            if residue.moltype == 'dna' and aa not in ['A', 'C', 'G', 'T']:
+                sys.stdout.write('Unknown DNA residue "%s"!\nOne-letter code: ' % aa)
+                aa = None
+            elif residue.moltype == 'rna' and aa not in ['A', 'C', 'G', 'U']:
+                sys.stdout.write('Unknown RNA residue "%s"!\nOne-letter code: ' % aa)
+                aa = None
+            if aa:
+                print('Will apply mutation %s->%s on residue %s-%d'
+                      % (residue.resname[1], aa, residue.resname, residue.id))
+            return aa
 
 
 def convert_aa_name(aa):
@@ -459,7 +490,7 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, bStrB, infileB):
     # Lys needs to be checked once again: in OPLS Lys is non-protonated,
     # while in the other FFs it is protonated
     if ('opls' in mtp_file) and ('LYS' in residue.resname):
-        olkey = check_OPLS_LYS(residue)
+        olkey = _check_OPLS_LYS(residue)
 
     hybrid_residue_name = olkey+'2'+new_aa_name
     print('log_> Residue to mutate: %d | %s | %s ' % (residue.id, residue.resname, residue.chain_id))
@@ -494,15 +525,18 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, bStrB, infileB):
 
 
 def apply_mutation(m, mut, mtp_file, bStrB, infileB, bRNA):
-    residue_id = mut[0]
-    if not check_residue_range(m, residue_id):
+    #residue_id = mut[0]
+    residue_id = mut.mut_resid
+    residue_name = mut.mut_resname
+
+    if not _check_residue_range(m, residue_id):
         raise RangeCheckError(residue_id)
     residue = m.residues[residue_id - 1]
     if residue.moltype == 'protein':
-        new_aa_name = convert_aa_name(mut[1])
+        new_aa_name = convert_aa_name(residue_name)
         apply_aa_mutation(m, residue, new_aa_name, mtp_file, bStrB, infileB)
     elif residue.moltype in ['dna', 'rna']:
-        new_nuc_name = mut[1].upper()
+        new_nuc_name = residue_name.upper()
         apply_nuc_mutation(m, residue, new_nuc_name, mtp_file, bRNA)
 
 
@@ -713,23 +747,23 @@ def main(args):
     if script is not None:
         mutations_to_make = read_and_format(script, "is")
         for mut in mutations_to_make:
-            check_residue_name(m.residues[mut[0]-1])
+            _check_residue_name(m.residues[mut[0]-1])
             apply_mutation(m=m, mut=mut, mtp_file=mtp_file,
                            bStrB=bStrB, infileB=infileB, bRNA=bRNA)  # FIXME: what about bDNA?
     # if not provided, interactive selection
     else:
         do_more = True
         while do_more:
-            mutation = interactive_selection(m, ffpath)
+            sele = InteractiveSelection(m, ffpath)
             print "m: ", m
-            print "mut: ", mutation
+            print "mut: ", sele
             print "mtp_file: ", mtp_file
             print "bStrB: ", bStrB
             print "infileB: ", infileB
             print "bRNA: ", bRNA
-            apply_mutation(m=m, mut=mutation, mtp_file=mtp_file,
+            apply_mutation(m=m, mut=sele, mtp_file=mtp_file,
                            bStrB=bStrB, infileB=infileB, bRNA=bRNA)
-            if not ask_next():
+            if not _ask_next():
                 do_more = False
 
     m.write(outfile)
