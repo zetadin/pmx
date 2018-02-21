@@ -63,9 +63,156 @@ def pmx_data_file(filename):
         return data_file
 
 
-# ===============================
-# Dicts and Sets of residue names
-# ===============================
+# ==============================================================================
+#                       Dicts and Sets of residue names
+# ==============================================================================
+
+# ----------------
+# Protein Residues
+# ----------------
+_protein_residues = set([
+    'ALA','ARG','ASN','ASP','ASPH','ASH','ASPP','GLH','CYS','CYS2','CYN','CYX','CYM','CYSH',
+    'GLU','GLUP','GLN','GLY','HIS','HIE','HIP','HID','HSE','HSD','HSP','ILE','LEU','LYS','LYN',
+    'LYSH','LYP','LSN','MET','PHE','PRO','SER','THR','TRP','TYR','VAL',
+    'NALA','NGLY','NSER','NTHR','NLEU','NILE','NVAL','NASN','NGLN',
+    'NARG','NHID','NHIE','NHIP','NTRP','NPHE','NTYR','NGLU','NASP',
+    'NLYP','NPRO','NCYN','NCYX','NMET','CALA','CGLY','CSER','CTHR',
+    'CLEU','CILE','CVAL','CASN','CGLN','CARG','CHID','CHIE','CHIP',
+    'CTRP','CPHE','CTYR','CGLU','CASP','CLYP','CPRO','CCYN','CCYX',
+    'CMET','SEP','HISH','HIS1','HISE','GLUH'
+    ])
+
+_one_letter = {
+    'ALA':'A',
+    'ARG':'R',
+    'ASN':'N',
+    'ASP':'D',
+    'ASPP':'D',
+    'ASPH':'D',
+    'CYS':'C',
+    'CYS2':'C',
+    'CYN':'C',
+    'CYX':'C',
+    'CYM':'C',
+    'GLU':'E',
+    'GLUP':'E',
+    'GLN':'Q',
+    'GLY':'G',
+    'HIS':'H',
+    'HIE':'H',
+    'HSE':'H',
+    'HIP':'H',
+    'HSP':'H',
+    'HID':'H',
+    'HSD':'H',
+    'ILE':'I',
+    'LEU':'L',
+    'LYS':'K',
+    'LSN':'K',
+    'LYSH':'K',
+    'LYP':'K',
+    'MET':'M',
+    'PHE':'F',
+    'PRO':'P',
+    'SER':'S',
+    'THR':'T',
+    'TRP':'W',
+    'TYR':'Y',
+    'VAL':'V',
+    'NALA':'A',
+    'NGLY':'G',
+    'NSER':'S',
+    'NTHR':'T',
+    'NLEU':'L',
+    'NILE':'I',
+    'NVAL':'V',
+    'NASN':'N',
+    'NGLN':'Q',
+    'NARG':'R',
+    'NHID':'H',
+    'NHIE':'H',
+    'NHIP':'H',
+    'NTRP':'W',
+    'NPHE':'F',
+    'NTYR':'Y',
+    'NGLU':'E',
+    'NASP':'D',
+    'NLYP':'K',
+    'NPRO':'P',
+    'NCYN':'C',
+    'NCYX':'C',
+    'NMET':'M',
+    'CALA':'A',
+    'CGLY':'G',
+    'CSER':'S',
+    'CTHR':'T',
+    'CLEU':'L',
+    'CILE':'I',
+    'CVAL':'V',
+    'CASN':'N',
+    'CGLN':'Q',
+    'CARG':'R',
+    'CHID':'H',
+    'CHIE':'H',
+    'CHIP':'H',
+    'CTRP':'W',
+    'CPHE':'F',
+    'CTYR':'Y',
+    'CGLU':'E',
+    'CASP':'D',
+    'CLYP':'K',
+    'CPRO':'P',
+    'CCYN':'C',
+    'CCYX':'C',
+    'CMET':'M'
+}
+
+_ext_one_letter = {
+    'ALA':  'A',
+    'ARG':  'R',
+    'ASN':  'N',
+    'ASP':  'D',
+    'ASPH': 'B',
+    'ASPP': 'B',
+    'ASH':  'B',
+    'CYS':  'C',
+    'CYS2': 'C',
+    'CYN':  'C',
+    'CYX':  'C',
+    'CYM':  'CM',
+    'CYSH': 'C',
+    'GLU':  'E',
+    'GLUH': 'J',
+    'GLUP': 'J',
+    'GLH':  'J',
+    'GLN':  'Q',
+    'GLY':  'G',
+    'HIS':  'H',
+    'HIE':  'X',
+    'HISE': 'X',
+    'HSE':  'X',
+    'HIP':  'Z',
+    'HSP':  'Z',
+    'HISH': 'Z',
+    'HID':  'H',
+    'HSD':  'H',
+    'ILE':  'I',
+    'LEU':  'L',
+    'LYS':  'K',
+    'LYSH': 'K',
+    'LYP':  'K',
+    'LYN':  'O',
+    'LSN':  'O',
+    'MET':  'M',
+    'PHE':  'F',
+    'PRO':  'P',
+    'SER':  'S',
+    'THR':  'T',
+    'TRP':  'W',
+    'TYR':  'Y',
+    'VAL':  'V',
+}
+
 _aacids_dic = {
     'A':'ALA',
     'R':'ARG',
@@ -175,103 +322,9 @@ _aacids_ext_oplsaa = {
     'V':'VAL'
     }
 
-_protein_residues = set([
-    'ALA','ARG','ASN','ASP','ASPH','ASH','ASPP','GLH','CYS','CYS2','CYN','CYX','CYM','CYSH',
-    'GLU','GLUP','GLN','GLY','HIS','HIE','HIP','HID','HSE','HSD','HSP','ILE','LEU','LYS','LYN',
-    'LYSH','LYP','LSN','MET','PHE','PRO','SER','THR','TRP','TYR','VAL',
-    'NALA','NGLY','NSER','NTHR','NLEU','NILE','NVAL','NASN','NGLN',
-    'NARG','NHID','NHIE','NHIP','NTRP','NPHE','NTYR','NGLU','NASP',
-    'NLYP','NPRO','NCYN','NCYX','NMET','CALA','CGLY','CSER','CTHR',
-    'CLEU','CILE','CVAL','CASN','CGLN','CARG','CHID','CHIE','CHIP',
-    'CTRP','CPHE','CTYR','CGLU','CASP','CLYP','CPRO','CCYN','CCYX',
-    'CMET','SEP','HISH','HIS1','HISE','GLUH'
-    ])
-
-_one_letter = {
-    'ALA':'A',
-    'ARG':'R',
-    'ASN':'N',
-    'ASP':'D',
-    'ASPP':'D',
-    'ASPH':'D',
-    'CYS':'C',
-    'CYS2':'C',
-    'CYN':'C',
-    'CYX':'C',
-    'CYM':'C',
-    'GLU':'E',
-    'GLUP':'E',
-    'GLN':'Q',
-    'GLY':'G',
-    'HIS':'H',
-    'HIE':'H',
-    'HSE':'H',
-    'HIP':'H',
-    'HSP':'H',
-    'HID':'H',
-    'HSD':'H',
-    'ILE':'I',
-    'LEU':'L',
-    'LYS':'K',
-    'LSN':'K',
-    'LYSH':'K',
-    'LYP':'K',
-    'MET':'M',
-    'PHE':'F',
-    'PRO':'P',
-    'SER':'S',
-    'THR':'T',
-    'TRP':'W',
-    'TYR':'Y',
-    'VAL':'V',
-    'NALA':'A',
-    'NGLY':'G',
-    'NSER':'S',
-    'NTHR':'T',
-    'NLEU':'L',
-    'NILE':'I',
-    'NVAL':'V',
-    'NASN':'N',
-    'NGLN':'Q',
-    'NARG':'R',
-    'NHID':'H',
-    'NHIE':'H',
-    'NHIP':'H',
-    'NTRP':'W',
-    'NPHE':'F',
-    'NTYR':'Y',
-    'NGLU':'E',
-    'NASP':'D',
-    'NLYP':'K',
-    'NPRO':'P',
-    'NCYN':'C',
-    'NCYX':'C',
-    'NMET':'M',
-    'CALA':'A',
-    'CGLY':'G',
-    'CSER':'S',
-    'CTHR':'T',
-    'CLEU':'L',
-    'CILE':'I',
-    'CVAL':'V',
-    'CASN':'N',
-    'CGLN':'Q',
-    'CARG':'R',
-    'CHID':'H',
-    'CHIE':'H',
-    'CHIP':'H',
-    'CTRP':'W',
-    'CPHE':'F',
-    'CTYR':'Y',
-    'CGLU':'E',
-    'CASP':'D',
-    'CLYP':'K',
-    'CPRO':'P',
-    'CCYN':'C',
-    'CCYX':'C',
-    'CMET':'M'
-}
-
+# -------------
+# Nucleic Acids
+# -------------
 _dna_residues = set(['DA', 'DT', 'DC', 'DG', 'DA3', 'DT3', 'DC3', 'DG3', 'DA5',
                      'DT5', 'DC5', 'DG5'])
 
@@ -285,6 +338,9 @@ _nucleic_acids = (
     'RG3','RG5','RU3','RU5','RC3','RC5','RA3','RA5','DAN','RAN',
     'DTN','RUN','RGN','DCN','RCN')
 
+# ------------
+# Solvent/Ions
+# ------------
 _ions = set([
     'CA', 'Ca',
     'MG', 'Mg',
@@ -301,9 +357,9 @@ _water = set(['SOL', 'HOH', 'HO4'])
 _water_and_ions = _water.union(_ions)
 
 
-# ==========
-# Parameters
-# ==========
+# ==============================================================================
+#                           Atoms/Residues Parameters
+# ==============================================================================
 _atommass = {
     'H'  :   1.00794,
     'He' :   4.002602,
