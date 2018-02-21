@@ -519,9 +519,7 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, infileB=None):
     set_conformation(residue, hybrid_res, rotdic)
     if infileB is not None:
         print("log_> Set Bstate geometry according to the provided structure")
-        mB = Model(infileB, bPDBTER=True)
-        mB.rename_atoms_to_gmx(mB)
-        mB.nm2a()
+        mB = Model(infileB, bPDBTER=True, for_gmx=True)
         residueB = mB.residues[residue.id-1]
         bb_super(residue, residueB)
         for atom in hybrid_res.atoms:
@@ -715,9 +713,7 @@ def main(args):
     script = args.script
 
     # initialise Model
-    m = Model(infile, bPDBTER=True)
-    m.rename_atoms_to_gmx()
-    m.nm2a()
+    m = Model(infile, bPDBTER=True, for_gmx=True)
 
     # if script is provided, do the mutations in that file
     if script is not None:
