@@ -41,7 +41,7 @@ from pmx import library
 from pmx.model import Model
 from pmx.parser import read_and_format
 from pmx.utils import get_ff_path
-from pmx.alchemy import apply_mutation
+from pmx.alchemy import mutate
 
 # set GMXLIB
 path = os.path.abspath(library.__file__)
@@ -49,7 +49,7 @@ dir_path = os.path.dirname(path)
 data_path = dir_path + '/data/mutff45dna'
 os.environ['GMXLIB'] = data_path
 
-# TODO: move dicts to library?
+# resinfo
 dna_one_letter = {'A': 'adenosine',
                   'C': 'cytosine',
                   'G': 'guanine',
@@ -112,6 +112,9 @@ def _ask_next():
         return _ask_next()
 
 
+# ===============================
+# Class for interactive selection
+# ===============================
 class InteractiveSelection:
     """Class containing fucntions related to the interactive selection of
     residues to be mutated.
@@ -245,11 +248,9 @@ class InteractiveSelection:
             return aa
 
 
-
-
-
-
-
+# =============
+# Input Options
+# =============
 def parse_options():
     parser = argparse.ArgumentParser(description='''
 This script applies mutations of residues in a structure file for subsequent
@@ -299,7 +300,9 @@ Currently available force fields:
                         metavar='ff',
                         dest='ff',
                         type=str.lower,
-                        help='Force field to use. '
+                        help='Force field to use. Available choices are: '
+                        'amber99sb-star-ildn-mut, charmm36m-mut.ff, '
+                        'amber99sb-star-ildn-bsc1-mut, amber14sb-mut. '
                         'Default is "amber99sb-star-ildn-mut"',
                         choices=ff_choices,
                         default='amber99sb-star-ildn-mut')
@@ -376,11 +379,11 @@ def main(args):
         mutations_to_make = read_and_format(script, "is")
         for mut in mutations_to_make:
             _check_residue_name(m.residues[mut[0]-1])
-            apply_mutation(m=m,
-                           mut_resid=mut[0],
-                           mut_resname=mut[1],
-                           ff=ff,
-                           infileB=infileB)  # FIXME: what about bDNA?
+            mutate(m=m,
+                   mut_resid=mut[0],
+                   mut_resname=mut[1],
+                   ff=ff,
+                   infileB=infileB)
     # if not provided, interactive selection
     else:
         do_more = True
@@ -389,11 +392,11 @@ def main(args):
             print "m: ", m
             print "mut: ", sele
             print "infileB: ", infileB
-            apply_mutation(m=m,
-                           mut_resid=sele.mut_resid,
-                           mut_resname=sele.mut_resname,
-                           ff=ff,
-                           infileB=infileB)
+            mutate(m=m,
+                   mut_resid=sele.mut_resid,
+                   mut_resname=sele.mut_resname,
+                   ff=ff,
+                   infileB=infileB)
             if not _ask_next():
                 do_more = False
 
