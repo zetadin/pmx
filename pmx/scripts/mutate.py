@@ -50,7 +50,7 @@ dir_path = os.path.dirname(path)
 data_path = dir_path + '/data/mutff45dna'
 os.environ['GMXLIB'] = data_path
 
-# TODO: move dicts to library
+# TODO: move dicts to library?
 ext_one_letter = {
     'ALA':  'A',
     'ARG':  'R',
@@ -240,22 +240,22 @@ def select_residue(m):
 def select_mutation(m, selected_residue_id, ffpath):
 
     residue = m.residues[selected_residue_id - 1]
-    if get_restype(residue) == 'PEPTIDE':
+    if m.moltype == 'protein':
         return select_aa_mutation(residue, ffpath)
-    elif get_restype(residue) in ['DNA', 'RNA']:
-        return select_nuc_mutation(residue)
+    elif m.moltype in ['dna', 'rna']:
+        return select_nuc_mutation(residue, m)
 
 
-def select_nuc_mutation(residue):
+def select_nuc_mutation(residue, m):
     aa = None
     print('\nSelect new base for %s-%s: ' % (residue.id, residue.resname))
     sys.stdout.write('One-letter code: ')
     while aa is None:
         aa = raw_input().upper()
-        if get_restype(residue) == 'DNA' and aa not in ['A', 'C', 'G', 'T']:
+        if m.moltype == 'dna' and aa not in ['A', 'C', 'G', 'T']:
             sys.stdout.write('Unknown DNA residue "%s"!\nOne-letter code: ' % aa)
             aa = None
-        elif get_restype(residue) == 'RNA' and aa not in ['A', 'C', 'G', 'U']:
+        elif m.moltype == 'rna' and aa not in ['A', 'C', 'G', 'U']:
             sys.stdout.write('Unknown RNA residue "%s"!\nOne-letter code: ' % aa)
             aa = None
         if aa:
@@ -498,10 +498,10 @@ def apply_mutation(m, mut, mtp_file, bStrB, infileB, bRNA):
     if not check_residue_range(m, residue_id):
         raise RangeCheckError(residue_id)
     residue = m.residues[residue_id - 1]
-    if get_restype(residue) == 'PEPTIDE':
+    if m.moltype == 'protein':
         new_aa_name = convert_aa_name(mut[1])
         apply_aa_mutation(m, residue, new_aa_name, mtp_file, bStrB, infileB)
-    elif get_restype(residue) in ['DNA', 'RNA']:
+    elif m.moltype in ['dna', 'rna']:
         new_nuc_name = mut[1].upper()
         apply_nuc_mutation(m, residue, new_nuc_name, mtp_file, bRNA)
 
@@ -535,19 +535,6 @@ def rename_atoms_to_gromacs(m):
     for atom in m.atoms:
         if atom.name[0].isdigit():
             atom.name = atom.name[1:]+atom.name[0]
-
-
-def get_restype(r):
-    dna_resnames = ['DA', 'DT', 'DC', 'DG', 'DA3', 'DT3', 'DC3', 'DG3', 'DA5',
-                    'DT5', 'DC5', 'DG5']
-    rna_resnames = ['RA', 'RU', 'RC', 'RG', 'RA3', 'RU3', 'RC3', 'RG3', 'RA5',
-                    'RU5', 'RC5', 'RG5']
-    if r.resname in dna_resnames:
-        return 'DNA'
-    elif r.resname in rna_resnames:
-        return 'RNA'
-    else:
-        return 'PEPTIDE'
 
 
 def get_ff_path(ff):
