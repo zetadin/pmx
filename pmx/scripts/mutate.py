@@ -221,7 +221,7 @@ def select_residue(m):
     valid_ids = range(1, len(m.residues)+1)
     print '\nSelect residue to mutate:'
     for i, r in enumerate(m.residues):
-        if r.resname not in library._water_and_ions:
+        if r.moltype not in ['water', 'ion']:
             sys.stdout.write('%6d-%s-%s' % (r.id, r.resname, r.chain_id))
             if r.id % 6 == 0:
                 print("")
@@ -240,22 +240,22 @@ def select_residue(m):
 def select_mutation(m, selected_residue_id, ffpath):
 
     residue = m.residues[selected_residue_id - 1]
-    if m.moltype == 'protein':
+    if residue.moltype == 'protein':
         return select_aa_mutation(residue, ffpath)
-    elif m.moltype in ['dna', 'rna']:
-        return select_nuc_mutation(residue, m)
+    elif residue.moltype in ['dna', 'rna']:
+        return select_nuc_mutation(residue)
 
 
-def select_nuc_mutation(residue, m):
+def select_nuc_mutation(residue):
     aa = None
     print('\nSelect new base for %s-%s: ' % (residue.id, residue.resname))
     sys.stdout.write('One-letter code: ')
     while aa is None:
         aa = raw_input().upper()
-        if m.moltype == 'dna' and aa not in ['A', 'C', 'G', 'T']:
+        if residue.moltype == 'dna' and aa not in ['A', 'C', 'G', 'T']:
             sys.stdout.write('Unknown DNA residue "%s"!\nOne-letter code: ' % aa)
             aa = None
-        elif m.moltype == 'rna' and aa not in ['A', 'C', 'G', 'U']:
+        elif residue.moltype == 'rna' and aa not in ['A', 'C', 'G', 'U']:
             sys.stdout.write('Unknown RNA residue "%s"!\nOne-letter code: ' % aa)
             aa = None
         if aa:
@@ -498,10 +498,10 @@ def apply_mutation(m, mut, mtp_file, bStrB, infileB, bRNA):
     if not check_residue_range(m, residue_id):
         raise RangeCheckError(residue_id)
     residue = m.residues[residue_id - 1]
-    if m.moltype == 'protein':
+    if residue.moltype == 'protein':
         new_aa_name = convert_aa_name(mut[1])
         apply_aa_mutation(m, residue, new_aa_name, mtp_file, bStrB, infileB)
-    elif m.moltype in ['dna', 'rna']:
+    elif residue.moltype in ['dna', 'rna']:
         new_nuc_name = mut[1].upper()
         apply_nuc_mutation(m, residue, new_nuc_name, mtp_file, bRNA)
 
@@ -681,7 +681,7 @@ def main(args):
     m = Model(infile, bPDBTER=True)
     rename_atoms_to_gromacs(m)
     m.nm2a()
-    print m.moltype
+
     # DNA mutation
     if m.moltype == 'dna':
         mtp_file = os.path.join(ffpath, 'mutres_dna.mtp')
