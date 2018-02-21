@@ -286,8 +286,14 @@ _nucleic_acids = (
     'DTN','RUN','RGN','DCN','RCN')
 
 _ions = set([
-    'CA','Ca','MG','Mg','FE','Fe','MN','Mn','K','CL','Cl','NA',
-    'Na','Na+','K+','Cl-','NA+','CL-','NaS','ClS','ZN','Zn','Zn+'
+    'CA', 'Ca',
+    'MG', 'Mg',
+    'FE', 'Fe',
+    'MN', 'Mn',
+    'K', 'K+',
+    'CL', 'Cl', 'ClJ', 'Cl-', 'CL-', 'ClS',
+    'NA', 'Na', 'Na+', 'NaJ', 'NA+', 'NaS',
+    'ZN', 'Zn', 'Zn+'
     ])
 
 _water = set(['SOL', 'HOH', 'HO4'])
