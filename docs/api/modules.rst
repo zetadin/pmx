@@ -6,6 +6,14 @@ Modules
     :undoc-members:
     :show-inheritance:
 
+pmx.alchemy module
+-------------------
+
+.. automodule:: pmx.alchemy
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 pmx.analysis module
 -------------------
 
