@@ -88,12 +88,31 @@ import _pmx as _p
 class Model(Atomselection):
     """Model Class.
 
+    Parameters
+    ----------
+    filename : str
+        filename of input structure
+    pdbline : ??
+        ...describe
+    renumber_atoms : bool
+        ...describe
+    renumber_residues : bool
+        ...describe
+    bPDBTER : bool
+        ...describe
+    bNoNewID : bool
+        ...describe
+    for_gmx : bool
+        Rename atoms and scale coordinates. It is suggested to set this to True
+        if the Model is then written to file and used as input for Gromacs
+        (pdb2gmx).
+
     Attributes
     ----------
     """
     def __init__(self, filename=None, pdbline=None, renumber_atoms=True,
                  renumber_residues=True, bPDBTER=False, bNoNewID=True,
-                 **kwargs):
+                 for_gmx=False, **kwargs):
 
         Atomselection.__init__(self)
         self.title = 'PMX MODEL'
@@ -131,10 +150,13 @@ class Model(Atomselection):
             if not self.atoms and not self.residues:
                 self.resl_from_chains()
                 self.al_from_resl()
-        if renumber_atoms:
+        if renumber_atoms is True:
             self.renumber_atoms()
-        if renumber_residues:
+        if renumber_residues is True:
             self.renumber_residues()
+        if for_gmx is True:
+            self.rename_atoms_to_gmx()
+            self.nm2a()
 
         self.assign_moltype()
 
