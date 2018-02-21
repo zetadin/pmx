@@ -520,7 +520,7 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, infileB=None):
     if infileB is not None:
         print("log_> Set Bstate geometry according to the provided structure")
         mB = Model(infileB, bPDBTER=True)
-        rename_atoms_to_gromacs(mB)
+        mB.rename_atoms_to_gmx(mB)
         mB.nm2a()
         residueB = mB.residues[residue.id-1]
         bb_super(residue, residueB)
@@ -594,15 +594,6 @@ def rename_ile(residue):
             atom.name = value
         except:
             pass
-
-
-def rename_atoms_to_gromacs(m):
-    for atom in m.atoms:
-        if atom.name[0].isdigit():
-            atom.name = atom.name[1:]+atom.name[0]
-
-
-
 
 
 def parse_options():
@@ -725,7 +716,7 @@ def main(args):
 
     # initialise Model
     m = Model(infile, bPDBTER=True)
-    rename_atoms_to_gromacs(m)
+    m.rename_atoms_to_gmx()
     m.nm2a()
 
     # if script is provided, do the mutations in that file

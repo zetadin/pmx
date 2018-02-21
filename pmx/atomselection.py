@@ -197,6 +197,15 @@ class Atomselection:
                 atom.orig_id = atom.id
             atom.id = i+1
 
+    def rename_atoms_to_gmx(self):
+        """Rename atoms to comply with Gromacs syntax: if the name starts with
+        a digit, the digit is moved at the end of the name. E.g. "1CA" becomes
+        "CA1".
+        """
+        for atom in self.atoms:
+            if atom.name[0].isdigit():
+                atom.name = atom.name[1:]+atom.name[0]
+
     def a2nm(self):
         if self.unity == 'nm':
             return
