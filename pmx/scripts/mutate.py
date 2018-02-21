@@ -431,9 +431,11 @@ def set_conformation(old_res, new_res, rotdic):
             atom.x = old_res[atom.name].x
 
 
-def get_nuc_hybrid_resname(residue, new_nuc_name, bRNA=False):
-    firstLetter = 'D'
-    if bRNA:
+def get_nuc_hybrid_resname(residue, new_nuc_name):
+
+    if residue.moltype == 'dna':
+        firstLetter = 'D'
+    if residue.moltype == 'rna':
         firstLetter = 'R'
 
     # identify if the nucleotide is terminal
@@ -442,7 +444,7 @@ def get_nuc_hybrid_resname(residue, new_nuc_name, bRNA=False):
             r1 = firstLetter+residue.resname[1]+'3'
             r2 = firstLetter+new_nuc_name+'3'
             dict_key = r1+'_'+r2
-            if bRNA:
+            if residue.moltype == 'rna':
                 hybrid_residue_name = rna_names[dict_key]
             else:
                 hybrid_residue_name = dna_names[dict_key]
@@ -451,7 +453,7 @@ def get_nuc_hybrid_resname(residue, new_nuc_name, bRNA=False):
             r1 = firstLetter+residue.resname[1]+'5'
             r2 = firstLetter+new_nuc_name+'5'
             dict_key = r1+'_'+r2
-            if bRNA:
+            if residue.moltype == 'rna':
                 hybrid_residue_name = rna_names[dict_key]
             else:
                 hybrid_residue_name = dna_names[dict_key]
@@ -460,9 +462,9 @@ def get_nuc_hybrid_resname(residue, new_nuc_name, bRNA=False):
     return(hybrid_residue_name, residue.resname[1], new_nuc_name)
 
 
-def apply_nuc_mutation(m, residue, new_nuc_name, mtp_file, bRNA=False):
+def apply_nuc_mutation(m, residue, new_nuc_name, mtp_file):
 
-    hybrid_residue_name, resname1, resname2 = get_nuc_hybrid_resname(residue, new_nuc_name, bRNA)
+    hybrid_residue_name, resname1, resname2 = get_nuc_hybrid_resname(residue, new_nuc_name)
     print 'log_> Residue to mutate: %d | %s | %s ' % (residue.id, residue.resname, residue.chain_id)
     print 'log_> Mutation to apply: %s->%s' % (residue.resname[1], new_nuc_name)
     print 'log_> Hybrid residue name: %s' % hybrid_residue_name
@@ -522,7 +524,7 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, infileB=None):
           (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
 
 
-def apply_mutation(m, mut_resid, mut_resname, mtp_file, infileB, bRNA):
+def apply_mutation(m, mut_resid, mut_resname, mtp_file, infileB):
 
     if not _check_residue_range(m, mut_resid):
         raise RangeCheckError(mut_resid)
@@ -532,7 +534,7 @@ def apply_mutation(m, mut_resid, mut_resname, mtp_file, infileB, bRNA):
         apply_aa_mutation(m, residue, new_aa_name, mtp_file, infileB)
     elif residue.moltype in ['dna', 'rna']:
         new_nuc_name = mut_resname.upper()
-        apply_nuc_mutation(m, residue, new_nuc_name, mtp_file, bRNA)
+        apply_nuc_mutation(m, residue, new_nuc_name, mtp_file)
 
 
 def get_hybrid_residue(residue_name, mtp_file='ffamber99sb.mtp'):
@@ -612,7 +614,7 @@ Currently available force fields:
 ''', formatter_class=argparse.RawTextHelpFormatter)
 
     ff_choices = ['amber99sb-star-ildn-mut', 'charmm36m-mut.ff',
-                  'amber99sb-star-ildn-bsc1-mut']
+                  'amber99sb-star-ildn-bsc1-mut', 'amber14sb-mut']
 
     parser.add_argument('-f',
                         metavar='infile',
@@ -712,7 +714,6 @@ def main(args):
     ffpath = get_ff_path(ff=ff)
 
     bDNA = False
-    bRNA = False
 
     # initialise Model
     m = Model(infile, bPDBTER=True)
@@ -726,7 +727,6 @@ def main(args):
     # RNA mutation
     elif m.moltype == 'rna':
         mtp_file = os.path.join(ffpath, 'mutres_rna.mtp')
-        bRNA = True
     # Protein mutation
     elif m.moltype == 'protein':
         mtp_file = os.path.join(ffpath, 'mutres.mtp')
@@ -743,7 +743,7 @@ def main(args):
                            mut_resid=mut[0],
                            mut_resname=mut[1],
                            mtp_file=mtp_file,
-                           infileB=infileB, bRNA=bRNA)  # FIXME: what about bDNA?
+                           infileB=infileB)  # FIXME: what about bDNA?
     # if not provided, interactive selection
     else:
         do_more = True
@@ -753,12 +753,11 @@ def main(args):
             print "mut: ", sele
             print "mtp_file: ", mtp_file
             print "infileB: ", infileB
-            print "bRNA: ", bRNA
             apply_mutation(m=m,
                            mut_resid=sele.mut_resid,
                            mut_resname=sele.mut_resname,
                            mtp_file=mtp_file,
-                           infileB=infileB, bRNA=bRNA)
+                           infileB=infileB)
             if not _ask_next():
                 do_more = False
 
