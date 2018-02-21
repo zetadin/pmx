@@ -87,10 +87,11 @@ class Molecule(Atomselection):
         self.id = 0
         for key, val in kwargs.items():
             setattr(self, key, val)
+        self.assign_moltype()
 
     def __str__(self):
-        s = '<Molecule: id = %d name = %s chain_id = %s '\
-            % (self.id, self.resname, self.chain_id)
+        s = '<Molecule: moltype = %s id = %d name = %s chain_id = %s '\
+            % (self.moltype, self.id, self.resname, self.chain_id)
         s += ' natoms = %d>' % len(self.atoms)
         return s
 
@@ -107,6 +108,30 @@ class Molecule(Atomselection):
             atom = self.fetch(item)[0]
             if atom:
                 self.remove_atom(atom)
+
+    def assign_moltype(self):
+        """Identifies what type of molecule/residue the molecule is:
+        - protein (residue)
+        - dna (residue)
+        - rna (residue)
+        - water
+        - ion
+        - unknown.
+        """
+
+        # determine type
+        if self.resname in library._protein_residues:
+            self.moltype = 'protein'
+        elif self.resname in library._dna_residues:
+            self.moltype = 'dna'
+        elif self.resname in library._rna_residues:
+            self.moltype = 'rna'
+        elif self.resname in library._water:
+            self.moltype = 'water'
+        elif self.resname in library._ions:
+            self.moltype = 'ion'
+        else:
+            self.moltype = 'unknown'
 
     def has_atom(self, atom_name):
         if self.fetch(atom_name):
@@ -612,7 +637,7 @@ class Mol2Molecule:
                     self.keys.append(entr)
 
     def read(self, lines):
-        self.header = readUntil(lines, '@<TRIPOS>ATOM')  # FIXME: I cannot figure out where this func is coming from
+        self.header = readUntil(lines, '@<TRIPOS>ATOM')  # BUG? I cannot figure out where this func is coming from
         self.atom_lines = readSection(lines, '@<TRIPOS>ATOM', '@')
         self.bond_lines = readSection(lines, '@<TRIPOS>BOND', '@')
         self.__parse_molecule()
@@ -699,7 +724,7 @@ class Mol2File:
         l = open(fn).readlines()
         for i, line in enumerate(l):
             if line.startswith('@<TRIPOS>MOLECULE'):
-                lines = readUntil(l[i+1:], '@<TRIPOS>MOLECULE')  # FIXME: I cannot figure out where this func is coming from
+                lines = readUntil(l[i+1:], '@<TRIPOS>MOLECULE')  # BUG? I cannot figure out where this func is coming from
                 mol = Mol2Molecule([line]+lines)
                 self.molecules.append(mol)
 

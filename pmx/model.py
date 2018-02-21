@@ -253,6 +253,7 @@ class Model(Atomselection):
             self.residues.append(mol)
             ch.residues.append(mol)
         for r in self.residues:
+            r.assign_moltype()
             for atom in r.atoms:
                 atom.molecule = r
                 atom.model = self
@@ -398,6 +399,8 @@ class Model(Atomselection):
     def assign_moltype(self):
         """Identifies what type of molecule the Model is:
         protein, dna, or rna.
+        If it is a mix, or if it is an organic molecule, "unknown" is
+        returned.
         """
         residues = set([r.resname for r in self.residues])
 
