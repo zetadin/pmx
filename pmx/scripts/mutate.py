@@ -524,19 +524,16 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, bStrB, infileB):
           (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
 
 
-def apply_mutation(m, mut, mtp_file, bStrB, infileB, bRNA):
-    #residue_id = mut[0]
-    residue_id = mut.mut_resid
-    residue_name = mut.mut_resname
+def apply_mutation(m, mut_resid, mut_resname, mtp_file, bStrB, infileB, bRNA):
 
-    if not _check_residue_range(m, residue_id):
-        raise RangeCheckError(residue_id)
-    residue = m.residues[residue_id - 1]
+    if not _check_residue_range(m, mut_resid):
+        raise RangeCheckError(mut_resid)
+    residue = m.residues[mut_resid - 1]
     if residue.moltype == 'protein':
-        new_aa_name = convert_aa_name(residue_name)
+        new_aa_name = convert_aa_name(mut_resname)
         apply_aa_mutation(m, residue, new_aa_name, mtp_file, bStrB, infileB)
     elif residue.moltype in ['dna', 'rna']:
-        new_nuc_name = residue_name.upper()
+        new_nuc_name = mut_resname.upper()
         apply_nuc_mutation(m, residue, new_nuc_name, mtp_file, bRNA)
 
 
@@ -748,7 +745,10 @@ def main(args):
         mutations_to_make = read_and_format(script, "is")
         for mut in mutations_to_make:
             _check_residue_name(m.residues[mut[0]-1])
-            apply_mutation(m=m, mut=mut, mtp_file=mtp_file,
+            apply_mutation(m=m,
+                           mut_resid=mut[0],
+                           mut_resname=mut[1],
+                           mtp_file=mtp_file,
                            bStrB=bStrB, infileB=infileB, bRNA=bRNA)  # FIXME: what about bDNA?
     # if not provided, interactive selection
     else:
@@ -761,7 +761,10 @@ def main(args):
             print "bStrB: ", bStrB
             print "infileB: ", infileB
             print "bRNA: ", bRNA
-            apply_mutation(m=m, mut=sele, mtp_file=mtp_file,
+            apply_mutation(m=m,
+                           mut_resid=sele.mut_resid,
+                           mut_resname=sele.mut_resname,
+                           mtp_file=mtp_file,
                            bStrB=bStrB, infileB=infileB, bRNA=bRNA)
             if not _ask_next():
                 do_more = False
