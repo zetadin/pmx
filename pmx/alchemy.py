@@ -11,12 +11,36 @@ from mutdb import read_mtp_entry
 import library
 import os
 
-__all__ = ['apply_mutation']
+__all__ = ['mutate']
+
 
 # ==============
 # Main Functions
 # ==============
-def apply_mutation(m, mut_resid, mut_resname, ff, infileB):
+def mutate(m, mut_resid, mut_resname, ff, refB=None):
+    """Creates an hybrid structure file.
+
+    Parameters
+    ----------
+    m : Model object
+        The model to be mutated. See :class:`~model.Model`.
+    mut_resid : int
+        The ID of the residue to be mutated.
+    mut_resname : str
+        The target residue.
+    ff : str
+        The forcefield to use.
+    refB : str (optional)
+        Reference structure file of the B state in PDB or GRO format. If it is
+        provided, the dummy atoms will be built based on the position of the
+        atoms in this structure. This option is available only for Protein
+        mutations.
+
+    Returns
+    -------
+    Model is modified in place.
+
+    """
 
     # check selection is valid
     if not _check_residue_range(m, mut_resid):
@@ -42,14 +66,14 @@ def apply_mutation(m, mut_resid, mut_resname, ff, infileB):
     # Mutation if Protein
     if residue.moltype == 'protein':
         new_aa_name = _convert_aa_name(mut_resname)
-        apply_aa_mutation(m, residue, new_aa_name, mtp_file, infileB)
+        apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB)
     # Mutation if DNA or RNA
     elif residue.moltype in ['dna', 'rna']:
         new_nuc_name = mut_resname.upper()
         apply_nuc_mutation(m, residue, new_nuc_name, mtp_file)
 
 
-def apply_aa_mutation(m, residue, new_aa_name, mtp_file, infileB=None):
+def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None):
 
     if residue.resname == 'ILE':
         _rename_ile(residue)
@@ -73,9 +97,9 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, infileB=None):
     hash1 = _rename_to_match_library(residue)
     hash2 = _rename_to_match_library(hybrid_res)
     _set_conformation(residue, hybrid_res, rotdic)
-    if infileB is not None:
+    if refB is not None:
         print("log_> Set Bstate geometry according to the provided structure")
-        mB = Model(infileB, bPDBTER=True, for_gmx=True)
+        mB = Model(refB, bPDBTER=True, for_gmx=True)
         residueB = mB.residues[residue.id-1]
         bb_super(residue, residueB)
         for atom in hybrid_res.atoms:
