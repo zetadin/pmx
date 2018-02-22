@@ -1,9 +1,8 @@
 *.[oa]
 *~
 *.pyc
-build.sh
 .localhistory
-build
+.pytest_cache/
 
 # docs
 docs/build

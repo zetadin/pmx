@@ -1,4 +1,6 @@
-from pmx import *
+from pmx.molecule import Molecule
+from pmx.chain import Chain
+from pmx.builder import build_dna_strand
 
 
 # start a peptide chain from an amino acid
@@ -46,7 +48,6 @@ c.write("repeat_helix.pdb")
 
 
 # building a DNA strand
-from pmx.builder import *
+
 model = build_dna_strand("ACGTGTCA")
 model.write("dna.pdb")
-
