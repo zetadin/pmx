@@ -43,7 +43,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
-    'numpydoc'
+    'sphinx.ext.napoleon'
 ]
 
 numpydoc_show_class_members = False
@@ -84,6 +84,7 @@ pygments_style = 'sphinx'
 import sphinx_rtd_theme
 html_theme = 'sphinx_rtd_theme'
 
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -104,7 +105,7 @@ html_theme = 'sphinx_rtd_theme'
 # 'searchbox.html']``.
 #
 # html_sidebars = {}
-html_sidebars = { '**': ['globaltoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html'], }
+html_sidebars = {'**': ['globaltoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html']}
 
 
 # -- Options for HTMLHelp output ---------------------------------------------
