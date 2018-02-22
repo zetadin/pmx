@@ -19,19 +19,19 @@ def readme():
 # ----------
 pmx = Extension('pmx._pmx',
                 libraries=['m'],
-                include_dirs=['pmx/extensions/pmx'],
-                sources=['pmx/extensions/pmx/Geometry.c',
-                         'pmx/extensions/pmx/wrap_Geometry.c',
-                         'pmx/extensions/pmx/init.c',
-                         'pmx/extensions/pmx/Energy.c']
+                include_dirs=['src/pmx/extensions/pmx'],
+                sources=['src/pmx/extensions/pmx/Geometry.c',
+                         'src/pmx/extensions/pmx/wrap_Geometry.c',
+                         'src/pmx/extensions/pmx/init.c',
+                         'src/pmx/extensions/pmx/Energy.c']
                 )
 
 xdrio = Extension('pmx._xdrio',
                   libraries=['m'],
-                  include_dirs=['pmx/extensions/xdr'],
-                  sources=['pmx/extensions/xdr/xdrfile.c',
-                           'pmx/extensions/xdr/xdrfile_trr.c',
-                           'pmx/extensions/xdr/xdrfile_xtc.c']
+                  include_dirs=['src/pmx/extensions/xdr'],
+                  sources=['src/pmx/extensions/xdr/xdrfile.c',
+                           'src/pmx/extensions/xdr/xdrfile_trr.c',
+                           'src/pmx/extensions/xdr/xdrfile_xtc.c']
                   )
 extensions = [pmx, xdrio]
 
@@ -39,7 +39,7 @@ extensions = [pmx, xdrio]
 # Setup
 # -----
 setup(name='pmx',
-      version='1.1.0dev',
+      version='2.0dev0',
       description='Toolkit for free-energy calculation setup/analysis '
                   'and biomolecular structure handling',
       long_description=readme(),
@@ -55,10 +55,11 @@ setup(name='pmx',
       author_email='seeliger.biosoft@gmail.de',
       license='GPL 3',
       packages=['pmx'],
-      package_dir={'pmx': 'pmx'},
+      package_dir={'': 'src'},
       include_package_data=True,
       zip_safe=False,
       ext_modules=extensions,
+      tests_require=['pytest'],
       install_requires=['numpy', 'scipy', 'matplotlib'],
       entry_points={'console_scripts': ['pmx = pmx.scripts.cli:entry_point']},
       )
