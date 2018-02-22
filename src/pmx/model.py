@@ -48,7 +48,7 @@ Examples
 --------
 Basic usage:
 
-    >>> model = Model().read('input.pdb')
+    >>> model = Model('input.pdb')
 
 Some useful methods:
 
