@@ -6,176 +6,176 @@ Modules
     :undoc-members:
     :show-inheritance:
 
-pmx.alchemy module
--------------------
+pmx.alchemy
+-----------
 
 .. automodule:: pmx.alchemy
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.analysis module
--------------------
+pmx.analysis
+------------
 
 .. automodule:: pmx.analysis
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.atom module
----------------
+pmx.atom
+--------
 
 .. automodule:: pmx.atom
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.atomselection module
-------------------------
+pmx.atomselection
+-----------------
 
 .. automodule:: pmx.atomselection
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.builder module
-------------------
+pmx.builder
+-----------
 
 .. automodule:: pmx.builder
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.chain module
-----------------
+pmx.chain
+---------
 
 .. automodule:: pmx.chain
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.estimators module
----------------------
+pmx.estimators
+--------------
 
 .. automodule:: pmx.estimators
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.ffparser module
--------------------
+pmx.ffparser
+------------
 
 .. automodule:: pmx.ffparser
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.forcefield module
----------------------
+pmx.forcefield
+--------------
 
 .. automodule:: pmx.forcefield
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.geometry module
--------------------
+pmx.geometry
+------------
 
 .. automodule:: pmx.geometry
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.library module
-------------------
+pmx.library
+-----------
 
 .. automodule:: pmx.library
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.model module
-----------------
+pmx.model
+---------
 
 .. automodule:: pmx.model
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.molecule module
--------------------
+pmx.molecule
+------------
 
 .. automodule:: pmx.molecule
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.mutdb module
-----------------
+pmx.mutdb
+---------
 
 .. automodule:: pmx.mutdb
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.ndx module
---------------
+pmx.ndx
+-------
 
 .. automodule:: pmx.ndx
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.options module
-------------------
+pmx.options
+-----------
 
 .. automodule:: pmx.options
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.parser module
------------------
+pmx.parser
+----------
 
 .. automodule:: pmx.parser
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.rotamer module
-------------------
+pmx.rotamer
+-----------
 
 .. automodule:: pmx.rotamer
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.tCNC module
----------------
+pmx.tCNC
+--------
 
 .. automodule:: pmx.tCNC
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.utils module
-----------------
+pmx.utils
+---------
 
 .. automodule:: pmx.utils
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.xdrfile module
-------------------
+pmx.xdrfile
+-----------
 
 .. automodule:: pmx.xdrfile
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.xtc module
---------------
+pmx.xtc
+-------
 
 .. automodule:: pmx.xtc
     :members:

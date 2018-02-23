@@ -46,7 +46,7 @@ extensions = [
     'sphinx.ext.napoleon'
 ]
 
-numpydoc_show_class_members = False
+# numpydoc_show_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.
 # templates_path = ['_templates']
@@ -55,7 +55,7 @@ numpydoc_show_class_members = False
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ['.rst']
 
 # The master toctree document.
 master_doc = 'index'
