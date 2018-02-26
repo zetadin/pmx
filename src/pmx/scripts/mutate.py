@@ -34,9 +34,11 @@
 free energy simulations.
 """
 
+from __future__ import print_function
 import sys
 import os
 import argparse
+from glob import glob
 from pmx import library
 from pmx.model import Model
 from pmx.parser import read_and_format
@@ -44,6 +46,9 @@ from pmx.utils import get_ff_path
 from pmx.alchemy import mutate
 
 # set GMXLIB
+# TODO: this does not really work if we have 2 ff directories, ideally we
+# would have 1 single directory, and we add export GMXLIB in the bashrc
+# at installation
 path = os.path.abspath(library.__file__)
 dir_path = os.path.dirname(path)
 data_path = dir_path + '/data/mutff45dna'
@@ -74,7 +79,7 @@ def _int_input():
         inp = int(inp)
         return inp
     except:
-        print 'You entered "%s" -> Try again' % inp
+        print('You entered "%s" -> Try again' % inp)
         return None
 
 
@@ -98,7 +103,7 @@ def _check_residue_name(res):
             res.set_resname('GLH')
     elif res.resname == 'CYS':
         if not res.has_atom('HG'):
-            print >>sys.stderr, ' Cannot mutate SS-bonded Cys %d' % res.id
+            print(' Cannot mutate SS-bonded Cys %d' % res.id, file=sys.stderr)
 
 
 def _ask_next():
@@ -111,6 +116,32 @@ def _ask_next():
     else:
         return _ask_next()
 
+
+def ff_selection(gmxlib=os.environ['GMXLIB']):
+    print('Choose a force field:\n')
+    print('  [i]    {0:40}{1}\n'.format('name', 'description'), end='')
+    print('  ---    {0:40}{1}\n'.format('----', '-----------'), end='')
+
+    ffs = [d for d in glob('{}/*.ff'.format(gmxlib)) if os.path.isdir(d)]
+
+    ffs_dict = {}
+    for i, ff in enumerate(ffs):
+        # get ff name
+        f = os.path.basename(ff).split('.')[0]
+        # store in dict
+        ffs_dict[i] = f
+        # print info
+        docfile = ff + '/forcefield.doc'
+        docstring = [l for l in open(docfile, 'r').readlines()][0]
+        print('  [{0}]    {1:40}{2}'.format(i, f, docstring), end='')
+
+    # allow choice of ff
+    print('')
+    print('Enter the index [i] of the chosen forcefield: ', end='')
+    i = int(raw_input())
+    ff = ffs_dict[i]
+
+    return ff
 
 # ===============================
 # Class for interactive selection
@@ -146,7 +177,7 @@ class InteractiveSelection:
         """Ask for the residue id to mutate.
         """
         valid_ids = range(1, len(self.m.residues)+1)
-        print '\nSelect residue to mutate:'
+        print('\nSelect residue to mutate:')
         for i, r in enumerate(self.m.residues):
             if r.moltype not in ['water', 'ion']:
                 sys.stdout.write('%6d-%s-%s' % (r.id, r.resname, r.chain_id))
@@ -179,7 +210,7 @@ class InteractiveSelection:
         """
 
         _check_residue_name(residue)
-        print '\nSelect new amino acid for %s-%s: ' % (residue.id, residue.resname)
+        print('\nSelect new amino acid for %s-%s: ' % (residue.id, residue.resname))
         sys.stdout.write('Three- or one-letter code (or four-letter for ff specific residues): ')
         if residue.resname in ['HIE', 'HISE', 'HSE']:
             rol = 'X'
@@ -304,7 +335,7 @@ different protonation states. Use the --resinfo flag to print the dictionary.
                         '  amber14sb-mut.\n'
                         'Default is "amber99sb-star-ildn-mut"',
                         choices=ff_choices,
-                        default='amber99sb-star-ildn-mut')
+                        default=None)
     parser.add_argument('--script',
                         metavar='script',
                         dest='script',
@@ -357,8 +388,14 @@ different protonation states. Use the --resinfo flag to print the dictionary.
             _print_sorted_dict(rna_one_letter)
             print(' ---------------------------\n')
         exit()
-    else:
-        return args
+
+    # ------------
+    # ff selection
+    # ------------
+    if args.ff is None:
+        args.ff = ff_selection()
+
+    return args
 
 
 def main(args):
@@ -397,9 +434,9 @@ def main(args):
                 do_more = False
 
     m.write(outfile)
-    print
-    print 'mutations done...........'
-    print
+    print('')
+    print('mutations done...........')
+    print('')
 
 
 def entry_point():
