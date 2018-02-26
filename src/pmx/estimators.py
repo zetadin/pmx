@@ -216,11 +216,11 @@ class Crooks(object):
         # Calculate Crooks properties
         self.dg, self.inters_bool = self.calc_dg(wf=self.wf, wr=self.wr)
 
-        self.err_boot1 = self.calc_err_boot1(m1=self.mf, s1=self.devf,
-                                             n1=len(wf), m2=self.mr,
-                                             s2=self.devr, n2=len(wr),
-                                             nboots=1000)
         if nboots > 0:
+            self.err_boot1 = self.calc_err_boot1(m1=self.mf, s1=self.devf,
+                                                 n1=len(wf), m2=self.mr,
+                                                 s2=self.devr, n2=len(wr),
+                                                 nboots=1000)
             self.err_boot2 = self.calc_err_boot2(wf=self.wf, wr=self.wr,
                                                  nboots=nboots)
 
@@ -279,7 +279,7 @@ class Crooks(object):
     # or the mean, but for each bootstrap sample if the intersecion cannot
     # be taken, then the mean is used automatically.
     @staticmethod
-    def calc_err_boot1(m1, s1, n1, m2, s2, n2, nboots=1000):
+    def calc_err_boot1(m1, s1, n1, m2, s2, n2, nboots):
         '''Calculates the standard error of the Crooks Gaussian Intersection
         via parametric bootstrap. Given the parameters of the forward and
         reverse Gaussian distributions, multiple (nboots) bootstrap samples
