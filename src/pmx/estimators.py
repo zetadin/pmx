@@ -259,9 +259,6 @@ class Crooks(object):
         p1 = m1/s1**2-m2/s2**2
         p2 = np.sqrt(1/(s1**2*s2**2)*(m1-m2)**2+2*(1/s1**2-1/s2**2)*np.log(s2/s1))
         p3 = 1/s1**2-1/s2**2
-
-        # FIXME: x1 and x2 throw the following error in the tests:
-        # RuntimeWarning: invalid value encountered in double_scalars
         x1 = (p1+p2)/p3
         x2 = (p1-p2)/p3
 
