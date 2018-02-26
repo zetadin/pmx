@@ -1,5 +1,5 @@
-pmx
-===
+pmx: alchemistry in gromacs
+===========================
 Toolkit for free-energy calculation setup/analysis and biomolecular structure handling.
 
 **pmx** is a python library that allows users to setup and analyse molecular
@@ -18,9 +18,6 @@ calculations for protein, nucleic acid, and small molecule mutations.
    tutorials/index
 
 
-API Reference
--------------
-
 .. toctree::
    :maxdepth: 1
    :caption: API Reference
@@ -31,7 +28,7 @@ API Reference
 
 Citations
 ---------
-If you use pmx in scientific publications, please cite the following papers:
+If you use **pmx** in scientific publications, please cite the following papers:
 
 * V. Gapsys, S. Michielssens, D. Seeliger, B.L. de Groot. `pmx: Automated protein structure and topology generation for alchemical perturbations <http://onlinelibrary.wiley.com/doi/10.1002/jcc.23804/abstract>`_. *J. Comp. Chem* **36** (2015), 348-354
 * D. Seeliger, B.L. de Groot. `Protein Thermostability Calculations Using Alchemical Free Energy Simulations <https://www.sciencedirect.com/science/article/pii/S000634951000216X>`_. *Biophys. J.* **98** (2010), 2309-2316
