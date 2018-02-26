@@ -28,15 +28,15 @@
 # CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 # ----------------------------------------------------------------------
 
-"""pmx is a collection of classes and functions to deal with
-molecular structure files. It makes use of some functions
-from the GROMACS molecular dynamics package to read and write
-structure files, e.g. trajectory data, but also to allow fast
-neighborsearching from a python script.
-Quite fancy is the interface to the GROMACS command line parsing
-functionality. Take a look at the example scripts."""
+"""**pmx** is a essentially a collection of classes and functions that allow
+the manipulation of molecular structure and topolofy files. It has been thought
+to be mainly used in conjunction with the Gromacs simulation package. In fact,
+**pmx** makes use of some Gromacs functions to read/write trajectory data
+and to allow fast neighborsearching from a python script. With time, **pmx**
+has also become a library for the setup and analysis of alchemical free energy
+calculations in Gromacs."""
 
-__version__ = '1.1.0dev'
+__version__ = '2.0dev'
 
 PMX_VERSION = __version__
 

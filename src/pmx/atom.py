@@ -59,7 +59,21 @@ from library import pdb_format, pdb_format2
 
 
 class Atom:
-    """ class for storage of atom properties and methods"""
+    """ class for storage of atom properties and methods
+
+    Parameters
+    ----------
+
+    Attributes
+    ----------
+    id : int
+        atom id
+    name : str
+        atom name
+    resname : str
+        name of residue atom is part of
+
+    """
     def __init__(self, line=None, mol2line=None, **kwargs):
 
         self.race = 'ATOM  '
