@@ -521,7 +521,7 @@ def main(args):
 
         if quiet is True:
             print('Running Jarz analysis...')
-        jarz = Jarz(wf=res_ab, wr=res_ba, T=T, nboots=nboots, nblocks=nblocks, quiet=quiet)
+        jarz = Jarz(wf=res_ab, wr=res_ba, T=T, nboots=nboots, nblocks=nblocks)
         if args.pickle:
             pickle.dump(jarz, open("jarz_results.pkl", "wb"))
 
