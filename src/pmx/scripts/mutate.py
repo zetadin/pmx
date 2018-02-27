@@ -45,15 +45,6 @@ from pmx.parser import read_and_format
 from pmx.utils import get_ff_path
 from pmx.alchemy import mutate
 
-# set GMXLIB
-# TODO: this does not really work if we have 2 ff directories, ideally we
-# would have 1 single directory, and we add export GMXLIB in the bashrc
-# at installation
-path = os.path.abspath(library.__file__)
-dir_path = os.path.dirname(path)
-data_path = dir_path + '/data/mutff45dna'
-os.environ['GMXLIB'] = data_path
-
 # resinfo
 dna_one_letter = {'A': 'adenosine',
                   'C': 'cytosine',
