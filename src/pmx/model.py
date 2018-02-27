@@ -107,8 +107,22 @@ class Model(Atomselection):
         if the Model is then written to file and used as input for Gromacs
         (pdb2gmx).
 
+
     Attributes
     ----------
+    title : str
+        title of model
+    chains : list
+        list of chains
+    residues : list
+        list of molecules/residues
+    unity : str
+        coordinates unit, either 'A' or 'nm'.
+    box : 2d array
+        3x3 array containing the box vectors. See Gromacs manual, Table 3.1
+    moltype : str
+        Type of system: protein, dna, rna, or unknown if organic molecule or
+        a mix of molecules are in the system.
     """
     def __init__(self, filename=None, pdbline=None, renumber_atoms=True,
                  renumber_residues=True, bPDBTER=False, bNoNewID=True,
