@@ -33,6 +33,7 @@
 """Various utility functions and classes
 """
 
+from __future__ import print_function, division
 import os
 import sys
 from glob import glob
@@ -44,25 +45,48 @@ from re import split as resplit
 # =============
 # File IO utils
 # =============
+def show_ff(gmxlib=os.environ['GMXLIB']):
+    """Prints the list of forcefields available in $GMXLIB.
+
+    Parameters
+    ----------
+    gmxlib : str (optional)
+        Path to force field library. If not set explicitly, it is taken from
+        the enviroment variable $GMXLIB.
+    """
+    print('Available Force Fields in $GMXLIB:\n')
+    print('  [i]    {0:40}{1}\n'.format('name', 'description'), end='')
+    print('  ---    {0:40}{1}\n'.format('----', '-----------'), end='')
+
+    ffs = [d for d in glob('{}/*.ff'.format(gmxlib)) if os.path.isdir(d)]
+    for i, ff in enumerate(ffs):
+        # get ff name
+        f = os.path.basename(ff).split('.')[0]
+        # print info
+        docfile = ff + '/forcefield.doc'
+        docstring = [l for l in open(docfile, 'r').readlines()][0]
+        print('  [{0}]    {1:40}{2}'.format(i, f, docstring), end='')
+
+
 def ffopen(filename, mode='r', backup=True):
 
     if mode == 'w':
         if os.path.isfile(filename):
             if backup:
-                print 'Backing up %s to %s~' % (filename, filename)
+                print('Backing up %s to %s~' % (filename, filename))
                 os.rename(filename, filename+'~')
         try:
             fp = open(filename, 'w')
             return fp
         except:
-            print 'Error: Could not open file %s' % filename
+            print('Error: Could not open file %s' % filename)
 
     elif mode == 'r':
         try:
             fp = open(filename, 'r')
             return fp
         except:
-            print 'No such file %s' % filename
+            print('No such file %s' % filename)
 
     else:
         return open(filename, mode)
@@ -83,7 +107,7 @@ def get_ff_path(ff):
             sys.exit(0)
     else:
         ff_path = ff
-    print 'Opening forcefield: %s' % ff_path
+    print('Opening forcefield: %s' % ff_path)
     return ff_path
 
 
@@ -124,7 +148,7 @@ def listFiles(dir='./', ext=None, abs=True, backups=False):
 
     elif type(ext) == types.StringType:
         if backups:
-            print dir+'*.'+ext+'~'
+            print(dir+'*.'+ext+'~')
             fl = glob(dir+'#*.'+ext+'*')
             fl += glob(dir+'*.'+ext+'~')
         else:
@@ -166,7 +190,7 @@ def killBackups(arg, dirname, fname):
     l = listFiles(dirname, arg[0], arg[1], arg[2])
     if arg[3]:
         for f in l:
-            print '%s' % f
+            print('%s' % f)
 
 
 def removeBackups(dir, check=True):
