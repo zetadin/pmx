@@ -300,9 +300,6 @@ different protonation states. Use the --resinfo flag to print the dictionary.
 
 ''', formatter_class=argparse.RawTextHelpFormatter)
 
-    ff_choices = ['amber99sb-star-ildn-mut', 'charmm36m-mut.ff',
-                  'amber99sb-star-ildn-bsc1-mut', 'amber14sb-mut']
-
     parser.add_argument('-f',
                         metavar='infile',
                         dest='infile',
@@ -328,13 +325,8 @@ different protonation states. Use the --resinfo flag to print the dictionary.
                         metavar='ff',
                         dest='ff',
                         type=str.lower,
-                        help='Force field to use. Available choices are:\n'
-                        '  amber99sb-star-ildn-mut\n'
-                        '  charmm36m-mut.ff\n'
-                        '  amber99sb-star-ildn-bsc1-mut\n'
-                        '  amber14sb-mut.\n'
-                        'Default is "amber99sb-star-ildn-mut"',
-                        choices=ff_choices,
+                        help='Force field to use. If none is provided, \n'
+                        'a list of available ff will be shown.',
                         default=None)
     parser.add_argument('--script',
                         metavar='script',
