@@ -39,6 +39,10 @@ class PmxCli(object):
         import analyze_dgdl
         analyze_dgdl.entry_point()
 
+    def gmxlib(self):
+        import set_gmxlib
+        set_gmxlib.entry_point()
+
 
 def entry_point():
     PmxCli()
