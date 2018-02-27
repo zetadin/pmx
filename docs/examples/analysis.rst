@@ -20,6 +20,6 @@ example::
 
     >>> # use BAR to estimate the free energy difference
     >>> bar = BAR(wf=wf, wr=wf, T=298)
-    >>> print estimated dG and its uncertainty
+    >>> # print estimated dG and its uncertainty
     >>> print('%.2f +/- %.2f kJ/mol' % (bar.dg, bar.err))
-    3.19 +/- 0.49 kJ/mol
+    0.85 +/- 0.56 kJ/mol
