@@ -3,6 +3,8 @@ Mutate
 
 example on the use of mutate script and api
 
+You can download an example PDB file from here:  :download:`peptide.pdb <peptide.pdb>`
+
 example::
 
     >>> from pmx.model import Model

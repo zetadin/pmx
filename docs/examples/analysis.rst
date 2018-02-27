@@ -3,6 +3,7 @@ Analysis
 
 example on the use of analysis script and api
 
+You can download some example xvg files to analyse from here: :download:`dgdl <dgdl.tar.gz>`
 
 example::
 
