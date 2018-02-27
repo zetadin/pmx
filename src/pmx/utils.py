@@ -45,15 +45,19 @@ from re import split as resplit
 # =============
 # File IO utils
 # =============
-def show_ff(gmxlib=os.environ['GMXLIB']):
-    """Prints the list of forcefields available in $GMXLIB.
+def show_ff(gmxlib=None):
+    """Prints the list of forcefields available in GMXLIB.
 
     Parameters
     ----------
-    gmxlib : str (optional)
+    gmxlib : str, optional
         Path to force field library. If not set explicitly, it is taken from
-        the enviroment variable $GMXLIB.
+        the enviroment variable GMXLIB.
     """
+
+    if gmxlib is None:
+        gmxlib = os.environ['GMXLIB']
+
     print('Available Force Fields in $GMXLIB:\n')
     print('  [i]    {0:40}{1}\n'.format('name', 'description'), end='')
     print('  ---    {0:40}{1}\n'.format('----', '-----------'), end='')
