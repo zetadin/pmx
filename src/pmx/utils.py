@@ -127,6 +127,33 @@ def get_ff_path(ff):
     return ff_path
 
 
+def ff_selection(gmxlib=os.environ['GMXLIB']):
+    print('Choose a force field:\n')
+    print('  [i]    {0:40}{1}\n'.format('name', 'description'), end='')
+    print('  ---    {0:40}{1}\n'.format('----', '-----------'), end='')
+
+    ffs = [d for d in glob('{}/*.ff'.format(gmxlib)) if os.path.isdir(d)]
+
+    ffs_dict = {}
+    for i, ff in enumerate(ffs):
+        # get ff name
+        f = os.path.basename(ff).split('.')[0]
+        # store in dict
+        ffs_dict[i] = f
+        # print info
+        docfile = ff + '/forcefield.doc'
+        docstring = [l for l in open(docfile, 'r').readlines()][0]
+        print('  [{0}]    {1:40}{2}'.format(i, f, docstring), end='')
+
+    # allow choice of ff
+    print('')
+    print('Enter the index [i] of the chosen forcefield: ', end='')
+    i = int(raw_input())
+    ff = ffs_dict[i]
+
+    return ff
+
+
 def listFiles(dir='./', ext=None, abs=True, backups=False):
 
     """ returns a list of files in
