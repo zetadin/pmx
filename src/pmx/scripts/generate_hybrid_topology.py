@@ -953,7 +953,7 @@ def is_hybrid_residue(resname):
         return False
 
 
-def change_outfile_format(filename, ext):
+def _change_outfile_format(filename, ext):
     head, tail = os.path.split(filename)
     name, ex = os.path.splitext(tail)
     new_name = os.path.join(head, name+'.'+ext)
@@ -977,7 +977,6 @@ def get_hybrid_residues(m, ff, version):
     rlist = []
     for res in m.residues:
         if is_hybrid_residue(res.resname):
-            print res.resname
             rlist.append(res)
             # get topol params for hybrid
             mtp_file = get_mtp_file(res, ff)
@@ -1022,23 +1021,6 @@ def __atoms_morphe(atoms):
     return False
 
 
-def sum_charge_of_states(rlist):
-    qA = []
-    qB = []
-    for r in rlist:
-        qa = 0
-        qb = 0
-        for atom in r.atoms:
-            qa += atom.q
-            if __atoms_morphe([atom]):
-                qb += atom.qB
-            else:
-                qb += atom.q
-        qA.append(qa)
-        qB.append(qb)
-    return qA, qB
-
-
 # =============
 # Input Options
 # =============
@@ -1065,7 +1047,7 @@ and after having passed that mutated structure through pdb2gmx.
                         type=str,
                         help='Output topology file. '
                         'Default is "pmxtop.top"',
-                        default='pmxtop.pdb')
+                        default='pmxtop.top')
     parser.add_argument('-ff',
                         metavar='ff',
                         dest='ff',
@@ -1095,6 +1077,73 @@ and after having passed that mutated structure through pdb2gmx.
     return args
 
 
+def fill_bstate(topol, ff):
+    """Fills the bstate of a topology file containing pmx hybrid residues. This
+    can be either a top or itp file. If the top file contains itp file via
+    include statements, the function will iterate through all of them to look
+    for hybrid residues.
+
+    Parameters
+    ----------
+    topol : Topology
+        input Topology instance.
+    ff : str
+        name of the force field to be used
+
+    Returns
+    -------
+    pmxtop : Topology
+        output Topology instance with bstates assigned
+    """
+
+    # ff setup
+    ff_path = get_ff_path(ff)
+    ffbonded_file = os.path.join(ff_path, 'ffbonded.itp')
+
+    # -------------------------
+    # Start working on topology
+    # -------------------------
+    pmxtop = deepcopy(topol)
+    # create model with residue list
+    m = Model(atoms=pmxtop.atoms)
+    # use model residue list
+    pmxtop.residues = m.residues
+
+    rlist, rdic = get_hybrid_residues(m=m, ff=ff, version='new')
+    # correct b-states
+    pmxtop.assign_fftypes()
+    for r in rlist:
+        print('log_> Hybrid Residue -> %d | %s ' % (r.id, r.resname))
+
+    find_bonded_entries(pmxtop)
+    find_angle_entries(pmxtop)
+    dih_predef_default = []
+    find_predefined_dihedrals(pmxtop, rlist, rdic, ffbonded_file,
+                              dih_predef_default, ff)
+    find_dihedral_entries(pmxtop, rlist, rdic, dih_predef_default)
+
+    __add_extra_DNA_RNA_impropers(pmxtop, rlist, 1, [180, 40, 2], [180, 40, 2])
+
+    # get charge of hybrid residues
+    qA = pmxtop.get_hybrid_qA()
+    qB = pmxtop.get_hybrid_qB()
+
+    print('log_> Total charge of state A = %.f' % pmxtop.get_qA())
+    print('log_> Total charge of state B = %.f' % pmxtop.get_qB())
+    print ''
+    print qA, qB
+    print pmxtop.get_qA(), pmxtop.get_qB()
+    #exit()
+    # if prolines are involved, break one bond (CD-CG)
+    # and angles X-CD-CG, CD-CG-X
+    # and dihedrals with CD and CG
+    proline_decouplings(pmxtop, rlist, rdic)
+    # also decouple all dihedrals with [CD and N] and [CB and Calpha] for proline
+    proline_dihedral_decouplings(pmxtop, rlist, rdic)
+
+    return pmxtop, qA, qB
+
+
 def main(args):
 
     do_scale_mass = args.scale_mass
@@ -1103,10 +1152,9 @@ def main(args):
     ff = args.ff
     ff_path = get_ff_path(ff)
 
-    ffbonded_file = os.path.join(ff_path, 'ffbonded.itp')
-
+    # if input is itp but output is top, rename output
     if top_file.split('.')[-1] == 'itp' and out_file.split('.')[-1] != 'itp':
-        out_file = change_outfile_format(out_file, 'itp')
+        out_file = _change_outfile_format(out_file, 'itp')
         print 'log_> Setting outfile name to %s' % out_file
 
     if top_file.split('.')[-1] == 'itp':
@@ -1118,41 +1166,12 @@ def main(args):
         topol = Topology(top_file, topfile=top_file, version='new',
                          ff=ff)
 
-    # create model with residue list
-    m = Model(atoms=topol.atoms)
-    # use model residue list
-    topol.residues = m.residues
-    rlist, rdic = get_hybrid_residues(m=m, ff=ff, version='new')
-    # correct b-states
-    topol.assign_fftypes()
-    for r in rlist:
-        print('log_> Hybrid Residue -> %d | %s ' % (r.id, r.resname))
+    pmxtop, qA, qB = fill_bstate(topol=topol, ff=ff)
+    pmxtop.write(out_file, scale_mass=do_scale_mass, target_qB=qB)
 
-    find_bonded_entries(topol)
-    find_angle_entries(topol)
-    dih_predef_default = []
-    find_predefined_dihedrals(topol, rlist, rdic, ffbonded_file,
-                              dih_predef_default, ff)
-    find_dihedral_entries(topol, rlist, rdic, dih_predef_default)
-
-    __add_extra_DNA_RNA_impropers(topol, rlist, 1, [180, 40, 2], [180, 40, 2])
-    qA, qB = sum_charge_of_states(rlist)
-    qA_mem = deepcopy(qA)
-    qB_mem = deepcopy(qB)
-
-    print('log_> Total charge of state A = %.f' % topol.get_qA())
-    print('log_> Total charge of state B = %.f' % topol.get_qB())
-
-    # if prolines are involved, break one bond (CD-CG)
-    # and angles X-CD-CG, CD-CG-X
-    # and dihedrals with CD and CG
-    proline_decouplings(topol, rlist, rdic)
-    # also decouple all dihedrals with [CD and N] and [CB and Calpha] for proline
-    proline_dihedral_decouplings(topol, rlist, rdic)
-
-    topol.write(out_file, scale_mass=do_scale_mass, target_qB=qB)
-
-    # write splitted topology
+    # -----------------
+    # splitted topology
+    # -----------------
     if args.split is True:
         root, ext = os.path.splitext(out_file)
         out_file_qoff = root + '_qoff' + ext
@@ -1162,33 +1181,33 @@ def main(args):
         print '------------------------------------------------------'
         print 'log_> Creating splitted topologies............'
         print 'log_> Making "qoff" topology : "%s"' % out_file_qoff
-        contQ = deepcopy(qA_mem)
-        topol.write(out_file_qoff, stateQ='AB', stateTypes='AA', dummy_qB='off',
+        contQ = deepcopy(qA)
+        pmxtop.write(out_file_qoff, stateQ='AB', stateTypes='AA', dummy_qB='off',
                     scale_mass=do_scale_mass, target_qB=qA, stateBonded='AA',
                     full_morphe=False)
-        print 'log_> Charge of state A: %g' % topol.qA
-        print 'log_> Charge of state B: %g' % topol.qB
+        print 'log_> Charge of state A: %g' % pmxtop.qA
+        print 'log_> Charge of state B: %g' % pmxtop.qB
 
         print '------------------------------------------------------'
         print 'log_> Making "vdw" topology : "%s"' % out_file_vdw
-        contQ = deepcopy(qA_mem)
-        topol.write(out_file_vdw, stateQ='BB', stateTypes='AB', dummy_qA='off',
+        contQ = deepcopy(qA)
+        pmxtop.write(out_file_vdw, stateQ='BB', stateTypes='AB', dummy_qA='off',
                     dummy_qB='off', scale_mass=do_scale_mass,
                     target_qB=contQ, stateBonded='AB', full_morphe=False)
-        print 'log_> Charge of state A: %g' % topol.qA
-        print 'log_> Charge of state B: %g' % topol.qB
+        print 'log_> Charge of state A: %g' % pmxtop.qA
+        print 'log_> Charge of state B: %g' % pmxtop.qB
         print '------------------------------------------------------'
 
         print 'log_> Making "qon" topology : "%s"' % out_file_qon
-        topol.write(out_file_qon, stateQ='BB', stateTypes='BB', dummy_qA='off',
-                    dummy_qB='on', scale_mass=do_scale_mass, target_qB=qB_mem,
+        pmxtop.write(out_file_qon, stateQ='BB', stateTypes='BB', dummy_qA='off',
+                    dummy_qB='on', scale_mass=do_scale_mass, target_qB=qB,
                     stateBonded='BB', full_morphe=False)
-        print 'log_> Charge of state A: %g' % topol.qA
-        print 'log_> Charge of state B: %g' % topol.qB
+        print 'log_> Charge of state A: %g' % pmxtop.qA
+        print 'log_> Charge of state B: %g' % pmxtop.qB
         print '------------------------------------------------------'
 
     print
-    print 'making b-states done...........'
+    print 'b-states filled...........'
     print
 
 
