@@ -993,12 +993,16 @@ class TopolBase:
         return last_atom
 
     def get_qA(self):
+        """Returns the total charge of state A.
+        """
         qA = 0
         for atom in self.atoms:
             qA += atom.q
         return round(qA, 3)
 
     def get_qB(self):
+        """Returns the total charge of state B.
+        """
         qB = 0
         for atom in self.atoms:
             if atom.atomtypeB is not None:
@@ -1006,6 +1010,43 @@ class TopolBase:
             else:
                 qB += atom.q
         return round(qB, 3)
+
+    def get_hybrid_qA(self):
+        """Returns the charge of state A for hybrid residues only.
+        """
+        qA = []
+        rlist = []
+        # identify hybrid residues
+        for res in self.residues:
+            if res.is_hybrid():
+                rlist.append(res)
+        # add all atom q of hybrid residues
+        for r in rlist:
+            qa = 0
+            for atom in r.atoms:
+                qa += atom.q
+            qA.append(qa)
+        return qA
+
+    def get_hybrid_qB(self):
+        """Returns the charge of state B for hybrid residues only.
+        """
+        qB = []
+        rlist = []
+        # identify hybrid residues
+        for res in self.residues:
+            if res.is_hybrid():
+                rlist.append(res)
+        # add all atom q of hybrid residues
+        for r in rlist:
+            qb = 0
+            for atom in r.atoms:
+                if self.__atoms_morphe([atom]):
+                    qb += atom.qB
+                else:
+                    qb += atom.q
+            qB.append(qb)
+        return qB
 
 
 class ITPFile(TopolBase):
