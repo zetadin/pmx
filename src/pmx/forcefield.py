@@ -516,14 +516,16 @@ class TopolBase:
     # write functions
     # ===============
     def write(self, outfile, stateBonded='AB', stateTypes='AB', stateQ='AB',
-              scale_mass=False, dummy_qA='on', dummy_qB='on',
+              scale_mass=False, dummy_qA='on', dummy_qB='on', target_qB=None,
               full_morphe=True):
         """Write the topology file.
         """
         # open file for writing
         fp = open(outfile, 'w')
-        # determine the target charges for hybrid residues if present
-        target_qB = self.get_hybrid_qB()
+        # determine the target charges for hybrid residues if they are not
+        # provided explicitly
+        if target_qB is None:
+            target_qB = self.get_hybrid_qB()
         # write all top sections
         if not self.is_itp:
             self.write_header(fp)
