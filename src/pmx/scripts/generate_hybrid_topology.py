@@ -31,12 +31,12 @@
 
 import sys
 import os
+import argparse
 from copy import deepcopy
 from pmx.model import Model
-from pmx.options import Option, FileOption, Commandline
 from pmx.forcefield import Topology
 from pmx.mutdb import read_mtp_entry
-from pmx.utils import mtpError, get_ff_path
+from pmx.utils import mtpError, get_ff_path, ff_selection
 from pmx.library import _perturbed_nucleotides
 
 
@@ -944,18 +944,6 @@ def find_predefined_dihedrals(topol, rlist, rdic, ffbonded,
     topol.dihedrals.extend(dih9)
 
 
-def get_hybrid_residue(residue_name, mtp_file='ffamber99sb.mtp',
-                       version='old'):
-    print('log_> Scanning database for %s ' % residue_name)
-    resi, bonds, imps, diheds, rotdic = read_mtp_entry(residue_name,
-                                                       filename=mtp_file,
-                                                       version=version)
-    if len(resi.atoms) == 0:
-        raise mtpError("Hybrid residue %s not found in %s"
-                       % (residue_name, mtp_file))
-    return resi, bonds, imps, diheds, rotdic
-
-
 def is_hybrid_residue(resname):
     if (resname in _perturbed_nucleotides or resname[1] == '2' or
        '2CM' in resname or 'CM2' in resname):  # special two letter cases
@@ -969,6 +957,19 @@ def change_outfile_format(filename, ext):
     name, ex = os.path.splitext(tail)
     new_name = os.path.join(head, name+'.'+ext)
     return new_name
+
+
+
+def get_hybrid_residue(residue_name, mtp_file='ffamber99sb.mtp',
+                       version='old'):
+    print('log_> Scanning database for %s ' % residue_name)
+    resi, bonds, imps, diheds, rotdic = read_mtp_entry(residue_name,
+                                                       filename=mtp_file,
+                                                       version=version)
+    if len(resi.atoms) == 0:
+        raise mtpError("Hybrid residue %s not found in %s"
+                       % (residue_name, mtp_file))
+    return resi, bonds, imps, diheds, rotdic
 
 
 def get_hybrid_residues(m, mtp_file, version):
@@ -1035,88 +1036,101 @@ def sum_charge_of_states(rlist):
     return qA, qB
 
 
-def main(argv):
+# =============
+# Input Options
+# =============
+def parse_options():
+    parser = argparse.ArgumentParser(description='''
+This script fills in the B state to a topology file (itp or top) according to
+the hybrid residues present in the file. If you provide a top file with
+include statemets, the script will run through the included itp files too.
 
-    options = [
-        Option( "-split", "bool", False, "Write splitted topologies for vdw and q morphes"),
-        Option( "-scale_mass", "bool", False, "scale_mass"),
-        Option( "-dna", "bool", False, "generate hybrid residue for the DNA nucleotides"),
-        Option( "-rna", "bool", False, "generate hybrid residue for the RNA nucleotides"),
-        ]
+You need to use this script after having mutated a structure file with pmx mutate,
+and after having passed that mutated structure through pdb2gmx.
+''')
 
-    files = [
-        FileOption("-p", "r",["top"],"topol.top", "Input Topology File"),
-        FileOption("-itp", "r",["itp"],"topol.itp", "Optional Input ITP  File"),
-        FileOption("-o", "w",["top","itp"],"newtop.top", "Topology or ITP output file "),
-        FileOption("-ff", "dir",["ff"],"amber99sbmut", "Mutation force field "),
-        FileOption("-log", "w",["log"],"bstate.log", "Log file"),
-        ]
+    parser.add_argument('-p',
+                        metavar='topol',
+                        dest='intop',
+                        type=str,
+                        help='Input topology file (itp or top). '
+                        'Default is "topol.top"',
+                        default='topol.top')
+    parser.add_argument('-o',
+                        metavar='outfile',
+                        dest='outfile',
+                        type=str,
+                        help='Output topology file. '
+                        'Default is "pmxtop.top"',
+                        default='pmxtop.pdb')
+    parser.add_argument('-ff',
+                        metavar='ff',
+                        dest='ff',
+                        type=str.lower,
+                        help='Force field to use. If none is provided, \n'
+                        'a list of available ff will be shown.',
+                        default=None)
+    parser.add_argument('--split',
+                        dest='split',
+                        help='Write two separate topologies for vdw and q '
+                        'morphing.',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--scale_mass',
+                        dest='scale_mass',
+                        help='Scale the masses of morphing atoms so that '
+                        'dummies have a mass of 1.',
+                        default=False,
+                        action='store_true')
 
-    help_text = ('This script adds a B state to an .itp or .top file for a hybrid residue.',
-		'Hybrid residues in the topology file are recognized automatically.',
-		'-scale_mass flag sets dummy masses to 1.0, this option is set to True by default.',
-		'Currently available force fields:',
-		'    - amber99sbmut (Hornak et al, 2006)',
-		'    - amber99sb-star-ildn-mut (Best & Hummer, 2009; Lindorff-Larsen et al, 2010)',
-		'    - charmm22starmut.ff (Piana et al, 2011)',
-		'    - charmm36mut (Best et al, 2012)',
-		'    - oplsaamut (Jorgensen et al, 1996; Kaminski et al, 2001)',
-                '',
-                '',
-                'Please cite:',
-                'Vytautas Gapsys, Servaas Michielssens, Daniel Seeliger and Bert L. de Groot.',
-                'Automated Protein Structure and Topology Generation for Alchemical Perturbations.',
-		'J. Comput. Chem. 2015, 36, 348-354. DOI: 10.1002/jcc.23804',
-                '',
-		'Old pmx (pymacs) version:',
-                'Daniel Seeliger and Bert L. de Groot. Protein Thermostability Calculations Using',
-                'Alchemical Free Energy Simulations, Biophysical Journal, 98(10):2309-2316 (2010)',
-                '',
-                '',
-                '',
-                )
+    args, unknown = parser.parse_known_args()
 
-    cmdl = Commandline( argv, options = options,
-                        fileoptions = files,
-                        program_desc = help_text,
-                        check_for_existing_files = False )
+    # ff selection
+    if args.ff is None:
+        args.ff = ff_selection()
 
-    do_scale_mass = cmdl['-scale_mass']
-    top_file = cmdl['-p']
-    out_file = cmdl['-o']
-    bDNA = cmdl['-dna']
-    bRNA = cmdl['-rna']
-    if bDNA:
-        mtp_file = os.path.join(get_ff_path(cmdl['-ff']), 'mutres_dna.mtp')
-    elif bRNA:
-        mtp_file = os.path.join(get_ff_path(cmdl['-ff']), 'mutres_rna.mtp')
-    else:
-        mtp_file = os.path.join(get_ff_path(cmdl['-ff']), 'mutres.mtp')
-    ffbonded_file = os.path.join(get_ff_path(cmdl['-ff']), 'ffbonded.itp')
+    return args
 
-    if cmdl.opt['-itp'].is_set:
-        input_itp = cmdl['-itp']
-    else:
-        input_itp = None
-    if input_itp and out_file.split('.')[-1] != 'itp':
+
+def main(args):
+
+    do_scale_mass = args.scale_mass
+    top_file = args.intop
+    out_file = args.outfile
+    ff = args.ff
+    ff_path = get_ff_path(ff)
+
+    #bDNA = cmdl['-dna']
+    #bRNA = cmdl['-rna']
+    #if bDNA:
+    #    mtp_file = os.path.join(get_ff_path(cmdl['-ff']), 'mutres_dna.mtp')
+    #elif bRNA:
+    #    mtp_file = os.path.join(get_ff_path(cmdl['-ff']), 'mutres_rna.mtp')
+    #else:
+    #    mtp_file = os.path.join(get_ff_path(cmdl['-ff']), 'mutres.mtp')
+    mtp_file = os.path.join(ff_path, 'mutres.mtp')
+    ffbonded_file = os.path.join(ff_path, 'ffbonded.itp')
+
+    if top_file.split('.')[-1] == 'itp' and out_file.split('.')[-1] != 'itp':
         out_file = change_outfile_format(out_file, 'itp')
         print 'log_> Setting outfile name to %s' % out_file
 
-    if input_itp:
-        print 'log_> Reading input .itp file "%s""' % (input_itp)
-        topol = Topology(input_itp, topfile=None, version='new',
-                         ff=cmdl['-ff'], ffpath=get_ff_path(cmdl['-ff']))
+    if top_file.split('.')[-1] == 'itp':
+        print 'log_> Reading input .itp file "%s""' % (top_file)
+        topol = Topology(top_file, topfile=None, version='new',
+                         ff=ff, ffpath=ff_path)
     else:
         print 'log_> Reading input .top file "%s"' % (top_file)
         topol = Topology(top_file, topfile=top_file, version='new',
-                         ff=cmdl['-ff'])
+                         ff=ff)
 
     # create model with residue list
     m = Model(atoms=topol.atoms)
-
-    topol.residues = m.residues  # use model residue list
+    # use model residue list
+    topol.residues = m.residues
     rlist, rdic = get_hybrid_residues(m, mtp_file, version='new')
-    topol.assign_fftypes()  # correct b-states
+    # correct b-states
+    topol.assign_fftypes()
     for r in rlist:
         print('log_> Hybrid Residue -> %d | %s ' % (r.id, r.resname))
 
@@ -1124,7 +1138,7 @@ def main(argv):
     find_angle_entries(topol)
     dih_predef_default = []
     find_predefined_dihedrals(topol, rlist, rdic, ffbonded_file,
-                              dih_predef_default, cmdl['-ff'])
+                              dih_predef_default, ff)
     find_dihedral_entries(topol, rlist, rdic, dih_predef_default)
 
     __add_extra_DNA_RNA_impropers(topol, rlist, 1, [180, 40, 2], [180, 40, 2])
@@ -1139,13 +1153,13 @@ def main(argv):
     # and angles X-CD-CG, CD-CG-X
     # and dihedrals with CD and CG
     proline_decouplings(topol, rlist, rdic)
-    # also decouple all dihedrals with  [CD and N] and [CB and Calpha] for proline
+    # also decouple all dihedrals with [CD and N] and [CB and Calpha] for proline
     proline_dihedral_decouplings(topol, rlist, rdic)
 
     topol.write(out_file, scale_mass=do_scale_mass, target_qB=qB)
 
     # write splitted topology
-    if cmdl['-split']:
+    if args.split is True:
         root, ext = os.path.splitext(out_file)
         out_file_qoff = root + '_qoff' + ext
         out_file_vdw = root + '_vdw' + ext
@@ -1184,5 +1198,10 @@ def main(argv):
     print
 
 
+def entry_point():
+    args = parse_options()
+    main(args)
+
+
 if __name__ == '__main__':
-    main(sys.argv)
+    entry_point()
