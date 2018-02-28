@@ -1014,13 +1014,6 @@ def __add_extra_DNA_RNA_impropers(topol, rlist, func_type, stateA, stateB):
     topol.dihedrals += extra_impropers
 
 
-def __atoms_morphe(atoms):
-    for atom in atoms:
-        if atom.atomtypeB is not None and (atom.q != atom.qB or atom.m != atom.mB):
-            return True
-    return False
-
-
 # =============
 # Input Options
 # =============
@@ -1124,15 +1117,9 @@ def fill_bstate(topol, ff):
 
     __add_extra_DNA_RNA_impropers(pmxtop, rlist, 1, [180, 40, 2], [180, 40, 2])
 
-    # get charge of hybrid residues
-    qA = pmxtop.get_hybrid_qA()
-    qB = pmxtop.get_hybrid_qB()
-
     print('log_> Total charge of state A = %.f' % pmxtop.get_qA())
     print('log_> Total charge of state B = %.f' % pmxtop.get_qB())
-    print ''
-    print qA, qB
-    print pmxtop.get_qA(), pmxtop.get_qB()
+
     #exit()
     # if prolines are involved, break one bond (CD-CG)
     # and angles X-CD-CG, CD-CG-X
@@ -1141,7 +1128,7 @@ def fill_bstate(topol, ff):
     # also decouple all dihedrals with [CD and N] and [CB and Calpha] for proline
     proline_dihedral_decouplings(pmxtop, rlist, rdic)
 
-    return pmxtop, qA, qB
+    return pmxtop
 
 
 def main(args):
@@ -1166,7 +1153,10 @@ def main(args):
         topol = Topology(top_file, topfile=top_file, version='new',
                          ff=ff)
 
-    pmxtop, qA, qB = fill_bstate(topol=topol, ff=ff)
+    pmxtop = fill_bstate(topol=topol, ff=ff)
+    # get charge of hybrid residues
+    qA = pmxtop.get_hybrid_qA()
+    qB = pmxtop.get_hybrid_qB()
     pmxtop.write(out_file, scale_mass=do_scale_mass, target_qB=qB)
 
     # -----------------
