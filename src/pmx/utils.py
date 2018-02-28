@@ -127,6 +127,39 @@ def get_ff_path(ff):
     return ff_path
 
 
+def get_mtp_file(residue, ff):
+    """Returns the correct mutres mtp file depending on the nature of the
+    residue.
+
+    Parameters
+    ----------
+    residue : Molecule instance
+        the residue that will be mutated
+    ff : str
+        the force field to use
+
+    Returns
+    -------
+    mtp_file : str
+        path to the mtp file
+    """
+    # Determine which mtp file to use
+    ffpath = get_ff_path(ff=ff)
+    # DNA mutation
+    if residue.moltype == 'dna':
+        mtp_file = os.path.join(ffpath, 'mutres_dna.mtp')
+    # RNA mutation
+    elif residue.moltype == 'rna':
+        mtp_file = os.path.join(ffpath, 'mutres_rna.mtp')
+    # Protein mutation
+    elif residue.moltype == 'protein':
+        mtp_file = os.path.join(ffpath, 'mutres.mtp')
+    else:
+        raise(ValueError, 'Cannot undertand mutation type needed '
+                          'from the input strcture provided')
+    return mtp_file
+
+
 def ff_selection(gmxlib=os.environ['GMXLIB']):
     print('Choose a force field:\n')
     print('  [i]    {0:40}{1}\n'.format('name', 'description'), end='')

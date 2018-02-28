@@ -5,11 +5,11 @@ structures and topologies needed for alchemical free energy calculations.
 """
 
 from model import Model
-from utils import get_ff_path, RangeCheckError, mtpError, UnknownResidueError
+from utils import get_mtp_file
+from utils import RangeCheckError, mtpError, UnknownResidueError
 from geometry import Rotation, nuc_super, bb_super
 from mutdb import read_mtp_entry
 import library
-import os
 
 __all__ = ['mutate']
 
@@ -45,23 +45,10 @@ def mutate(m, mut_resid, mut_resname, ff, refB=None):
     # check selection is valid
     if not _check_residue_range(m, mut_resid):
         raise RangeCheckError(mut_resid)
-    # get th residue
+    # get the residue
     residue = m.residues[mut_resid - 1]
-
-    # Determine which mtp file to use
-    ffpath = get_ff_path(ff=ff)
-    # DNA mutation
-    if residue.moltype == 'dna':
-        mtp_file = os.path.join(ffpath, 'mutres_dna.mtp')
-    # RNA mutation
-    elif residue.moltype == 'rna':
-        mtp_file = os.path.join(ffpath, 'mutres_rna.mtp')
-    # Protein mutation
-    elif residue.moltype == 'protein':
-        mtp_file = os.path.join(ffpath, 'mutres.mtp')
-    else:
-        raise(ValueError, 'Cannot undertand mutation type needed '
-                          'from the input strcture provided')
+    # get the correct mtp file
+    mtp_file = get_mtp_file(residue, ff)
 
     # Mutation if Protein
     if residue.moltype == 'protein':
