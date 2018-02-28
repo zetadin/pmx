@@ -63,25 +63,26 @@ def pmx_data_file(filename):
         return data_file
 
 
+def pmx_aamut_pairs(lst):
+    """Create an array with all possible combinations of protein residue
+    mutants. e.g. A2D, A2E, E2A, D2A etc etc
+    """
+    pairs = []
+    for i in lst:
+        for j in lst:
+            if i != j:
+                mut = "{0}2{1}".format(i, j)
+                pairs.append(mut)
+    return pairs
+
+
 # ==============================================================================
 #                       Dicts and Sets of residue names
 # ==============================================================================
 
-# ----------------
-# Protein Residues
-# ----------------
-_protein_residues = set([
-    'ALA','ARG','ASN','ASP','ASPH','ASH','ASPP','GLH','CYS','CYS2','CYN','CYX','CYM','CYSH',
-    'GLU','GLUP','GLN','GLY','HIS','HIE','HIP','HID','HSE','HSD','HSP','ILE','LEU','LYS','LYN',
-    'LYSH','LYP','LSN','MET','PHE','PRO','SER','THR','TRP','TYR','VAL',
-    'NALA','NGLY','NSER','NTHR','NLEU','NILE','NVAL','NASN','NGLN',
-    'NARG','NHID','NHIE','NHIP','NTRP','NPHE','NTYR','NGLU','NASP',
-    'NLYP','NPRO','NCYN','NCYX','NMET','CALA','CGLY','CSER','CTHR',
-    'CLEU','CILE','CVAL','CASN','CGLN','CARG','CHID','CHIE','CHIP',
-    'CTRP','CPHE','CTYR','CGLU','CASP','CLYP','CPRO','CCYN','CCYX',
-    'CMET','SEP','HISH','HIS1','HISE','GLUH'
-    ])
-
+# -----------
+# Amino Acids
+# -----------
 _one_letter = {
     'ALA':'A',
     'ARG':'R',
@@ -321,6 +322,25 @@ _aacids_ext_oplsaa = {
     'Y':'TYR',
     'V':'VAL'
     }
+
+# ----------------
+# Protein Residues
+# ----------------
+_protein_residues = set([
+    'ALA','ARG','ASN','ASP','ASPH','ASH','ASPP','GLH','CYS','CYS2','CYN','CYX','CYM','CYSH',
+    'GLU','GLUP','GLN','GLY','HIS','HIE','HIP','HID','HSE','HSD','HSP','ILE','LEU','LYS','LYN',
+    'LYSH','LYP','LSN','MET','PHE','PRO','SER','THR','TRP','TYR','VAL',
+    'NALA','NGLY','NSER','NTHR','NLEU','NILE','NVAL','NASN','NGLN',
+    'NARG','NHID','NHIE','NHIP','NTRP','NPHE','NTYR','NGLU','NASP',
+    'NLYP','NPRO','NCYN','NCYX','NMET','CALA','CGLY','CSER','CTHR',
+    'CLEU','CILE','CVAL','CASN','CGLN','CARG','CHID','CHIE','CHIP',
+    'CTRP','CPHE','CTYR','CGLU','CASP','CLYP','CPRO','CCYN','CCYX',
+    'CMET','SEP','HISH','HIS1','HISE','GLUH'
+    ])
+
+_pmx_mut_resisdues = set(pmx_aamut_pairs(lst=_ext_one_letter.values()))
+
+_protein_residues_incl_pmx_mut = _protein_residues.union(_pmx_mut_resisdues)
 
 # -------------
 # Nucleic Acids
