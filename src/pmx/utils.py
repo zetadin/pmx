@@ -96,7 +96,7 @@ def ffopen(filename, mode='r', backup=True):
         return open(filename, mode)
 
 
-def get_ff_path(ff):
+def get_ff_path(ff, verbose=False):
     """Get path of force field.
 
     Parameters
@@ -123,7 +123,10 @@ def get_ff_path(ff):
             sys.exit(0)
     else:
         ff_path = ff
-    print('Opening forcefield: %s' % ff_path)
+
+    if verbose is True:
+        print('Opening forcefield: %s' % ff_path)
+
     return ff_path
 
 
