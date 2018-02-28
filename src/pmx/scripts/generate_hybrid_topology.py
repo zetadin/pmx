@@ -1101,7 +1101,7 @@ def fill_bstate(topol, ff):
     m = Model(atoms=pmxtop.atoms)
     # use model residue list
     pmxtop.residues = m.residues
-
+    # get list of hybrid residues and their params
     rlist, rdic = get_hybrid_residues(m=m, ff=ff, version='new')
     # correct b-states
     pmxtop.assign_fftypes()
@@ -1120,7 +1120,6 @@ def fill_bstate(topol, ff):
     print('log_> Total charge of state A = %.f' % pmxtop.get_qA())
     print('log_> Total charge of state B = %.f' % pmxtop.get_qB())
 
-    #exit()
     # if prolines are involved, break one bond (CD-CG)
     # and angles X-CD-CG, CD-CG-X
     # and dihedrals with CD and CG
@@ -1131,17 +1130,77 @@ def fill_bstate(topol, ff):
     return pmxtop
 
 
+def write_split_top(pmxtop, outfile='pmxtop.top', scale_mass=False,
+                    verbose=False):
+    """Write three topology files to be used for three separate free energy
+    calculations: charges off, vdw on, changes on. This can be useful when one
+    wants to avoid using a soft-core for the electrostatic interactions
+
+    Parameters
+    ----------
+    pmxtop : Topology
+        Topology object with B states defined.
+    outfile : str
+        name of output topology file.
+    scale_mass : bool
+        whether to scale the masses of morphing atoms
+    verbose : bool
+        whether to print information or not
+
+    Returns
+    -------
+    None
+    """
+
+    root, ext = os.path.splitext(outfile)
+    out_file_qoff = root + '_qoff' + ext
+    out_file_vdw = root + '_vdw' + ext
+    out_file_qon = root + '_qon' + ext
+
+    # get charge of states A/B for hybrid residues
+    qA = pmxtop.get_hybrid_qA()
+    qB = pmxtop.get_hybrid_qB()
+
+    print '------------------------------------------------------'
+    print 'log_> Creating splitted topologies............'
+    print 'log_> Making "qoff" topology : "%s"' % out_file_qoff
+    contQ = deepcopy(qA)
+    pmxtop.write(out_file_qoff, stateQ='AB', stateTypes='AA', dummy_qB='off',
+                scale_mass=scale_mass, target_qB=qA, stateBonded='AA',
+                full_morphe=False)
+    print 'log_> Charge of state A: %g' % pmxtop.qA
+    print 'log_> Charge of state B: %g' % pmxtop.qB
+
+    print '------------------------------------------------------'
+    print 'log_> Making "vdw" topology : "%s"' % out_file_vdw
+    contQ = deepcopy(qA)
+    pmxtop.write(out_file_vdw, stateQ='BB', stateTypes='AB', dummy_qA='off',
+                dummy_qB='off', scale_mass=scale_mass,
+                target_qB=contQ, stateBonded='AB', full_morphe=False)
+    print 'log_> Charge of state A: %g' % pmxtop.qA
+    print 'log_> Charge of state B: %g' % pmxtop.qB
+    print '------------------------------------------------------'
+
+    print 'log_> Making "qon" topology : "%s"' % out_file_qon
+    pmxtop.write(out_file_qon, stateQ='BB', stateTypes='BB', dummy_qA='off',
+                dummy_qB='on', scale_mass=scale_mass, target_qB=qB,
+                stateBonded='BB', full_morphe=False)
+    print 'log_> Charge of state A: %g' % pmxtop.qA
+    print 'log_> Charge of state B: %g' % pmxtop.qB
+    print '------------------------------------------------------'
+
+
 def main(args):
 
-    do_scale_mass = args.scale_mass
+    scale_mass = args.scale_mass
     top_file = args.intop
-    out_file = args.outfile
+    outfile = args.outfile
     ff = args.ff
     ff_path = get_ff_path(ff)
 
     # if input is itp but output is top, rename output
-    if top_file.split('.')[-1] == 'itp' and out_file.split('.')[-1] != 'itp':
-        out_file = _change_outfile_format(out_file, 'itp')
+    if top_file.split('.')[-1] == 'itp' and outfile.split('.')[-1] != 'itp':
+        out_file = _change_outfile_format(outfile, 'itp')
         print 'log_> Setting outfile name to %s' % out_file
 
     if top_file.split('.')[-1] == 'itp':
@@ -1153,52 +1212,19 @@ def main(args):
         topol = Topology(top_file, topfile=top_file, version='new',
                          ff=ff)
 
+    # fill the B states
     pmxtop = fill_bstate(topol=topol, ff=ff)
-    # get charge of hybrid residues
-    qA = pmxtop.get_hybrid_qA()
-    qB = pmxtop.get_hybrid_qB()
-    pmxtop.write(out_file, scale_mass=do_scale_mass, target_qB=qB)
+    # write hybrid topology
+    pmxtop.write(outfile, scale_mass=scale_mass)
 
-    # -----------------
-    # splitted topology
-    # -----------------
+    # separated topologies
     if args.split is True:
-        root, ext = os.path.splitext(out_file)
-        out_file_qoff = root + '_qoff' + ext
-        out_file_vdw = root + '_vdw' + ext
-        out_file_qon = root + '_qon' + ext
+        write_split_top(pmxtop=pmxtop, outfile=outfile, scale_mass=scale_mass,
+                        verbose=True)
 
-        print '------------------------------------------------------'
-        print 'log_> Creating splitted topologies............'
-        print 'log_> Making "qoff" topology : "%s"' % out_file_qoff
-        contQ = deepcopy(qA)
-        pmxtop.write(out_file_qoff, stateQ='AB', stateTypes='AA', dummy_qB='off',
-                    scale_mass=do_scale_mass, target_qB=qA, stateBonded='AA',
-                    full_morphe=False)
-        print 'log_> Charge of state A: %g' % pmxtop.qA
-        print 'log_> Charge of state B: %g' % pmxtop.qB
-
-        print '------------------------------------------------------'
-        print 'log_> Making "vdw" topology : "%s"' % out_file_vdw
-        contQ = deepcopy(qA)
-        pmxtop.write(out_file_vdw, stateQ='BB', stateTypes='AB', dummy_qA='off',
-                    dummy_qB='off', scale_mass=do_scale_mass,
-                    target_qB=contQ, stateBonded='AB', full_morphe=False)
-        print 'log_> Charge of state A: %g' % pmxtop.qA
-        print 'log_> Charge of state B: %g' % pmxtop.qB
-        print '------------------------------------------------------'
-
-        print 'log_> Making "qon" topology : "%s"' % out_file_qon
-        pmxtop.write(out_file_qon, stateQ='BB', stateTypes='BB', dummy_qA='off',
-                    dummy_qB='on', scale_mass=do_scale_mass, target_qB=qB,
-                    stateBonded='BB', full_morphe=False)
-        print 'log_> Charge of state A: %g' % pmxtop.qA
-        print 'log_> Charge of state B: %g' % pmxtop.qB
-        print '------------------------------------------------------'
-
-    print
-    print 'b-states filled...........'
-    print
+    print('')
+    print('b-states filled...........')
+    print('')
 
 
 def entry_point():
