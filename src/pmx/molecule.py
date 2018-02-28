@@ -120,7 +120,7 @@ class Molecule(Atomselection):
         """
 
         # determine type
-        if self.resname in library._protein_residues:
+        if self.resname in library._protein_residues_incl_pmx_mut:
             self.moltype = 'protein'
         elif self.resname in library._dna_residues:
             self.moltype = 'dna'
