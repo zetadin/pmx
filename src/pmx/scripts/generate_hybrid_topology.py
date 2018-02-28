@@ -37,6 +37,7 @@ from pmx.model import Model
 from pmx.forcefield import Topology
 from pmx.mutdb import read_mtp_entry
 from pmx.utils import mtpError, get_ff_path, ff_selection
+from pmx.utils import get_mtp_file
 from pmx.library import _perturbed_nucleotides
 
 
@@ -959,7 +960,6 @@ def change_outfile_format(filename, ext):
     return new_name
 
 
-
 def get_hybrid_residue(residue_name, mtp_file='ffamber99sb.mtp',
                        version='old'):
     print('log_> Scanning database for %s ' % residue_name)
@@ -972,12 +972,15 @@ def get_hybrid_residue(residue_name, mtp_file='ffamber99sb.mtp',
     return resi, bonds, imps, diheds, rotdic
 
 
-def get_hybrid_residues(m, mtp_file, version):
+def get_hybrid_residues(m, ff, version):
     rdic = {}
     rlist = []
     for res in m.residues:
         if is_hybrid_residue(res.resname):
+            print res.resname
             rlist.append(res)
+            # get topol params for hybrid
+            mtp_file = get_mtp_file(res, ff)
             mtp = get_hybrid_residue(res.resname, mtp_file, version)
             rdic[res.resname] = mtp
             hybrid_res = mtp[0]
@@ -1100,15 +1103,6 @@ def main(args):
     ff = args.ff
     ff_path = get_ff_path(ff)
 
-    #bDNA = cmdl['-dna']
-    #bRNA = cmdl['-rna']
-    #if bDNA:
-    #    mtp_file = os.path.join(get_ff_path(cmdl['-ff']), 'mutres_dna.mtp')
-    #elif bRNA:
-    #    mtp_file = os.path.join(get_ff_path(cmdl['-ff']), 'mutres_rna.mtp')
-    #else:
-    #    mtp_file = os.path.join(get_ff_path(cmdl['-ff']), 'mutres.mtp')
-    mtp_file = os.path.join(ff_path, 'mutres.mtp')
     ffbonded_file = os.path.join(ff_path, 'ffbonded.itp')
 
     if top_file.split('.')[-1] == 'itp' and out_file.split('.')[-1] != 'itp':
@@ -1128,7 +1122,7 @@ def main(args):
     m = Model(atoms=topol.atoms)
     # use model residue list
     topol.residues = m.residues
-    rlist, rdic = get_hybrid_residues(m, mtp_file, version='new')
+    rlist, rdic = get_hybrid_residues(m=m, ff=ff, version='new')
     # correct b-states
     topol.assign_fftypes()
     for r in rlist:
