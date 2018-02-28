@@ -113,7 +113,10 @@ class TopolBase:
         self.system = ''
         self.qA = 0.
         self.qB = 0.
+        self.include_itps = []
+        self.has_include_itps = False
         self.read()
+        print self.include_itps
 
     # ==============
     # read functions
@@ -125,6 +128,7 @@ class TopolBase:
             self.read_header(lines)
         self.read_footer(lines)
         posre_sections = self.get_posre_section(lines)
+        self.read_include_itps(lines)
         lines = kickOutComments(lines, '#')
         self.read_moleculetype(lines)
         if self.name:  # atoms, bonds, ... section
@@ -495,6 +499,19 @@ class TopolBase:
                 except:
                     rest = ''
                 self.posre.append([self.atoms[idx-1], func, rest])
+
+    def read_include_itps(self, lines):
+        inc_lines = [l.strip() for l in lines if l[:8] == '#include']
+        # exclude standard include statemets
+        inc = []
+        for line in inc_lines:
+            if (('posre' not in line) and ('.ff' not in line)):
+                f = line.split()[1].strip('"')
+                inc.append(f)
+
+        if len(inc) > 0:
+            self.has_include_itps = True
+            self.include_itps = inc
 
     # ===============
     # write functions
@@ -994,7 +1011,7 @@ class TopolBase:
 
 class ITPFile(TopolBase):
 
-    def __init__(self, filename ):
+    def __init__(self, filename):
         TopolBase.__init__(self, filename)
 
 
