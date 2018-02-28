@@ -97,6 +97,18 @@ def ffopen(filename, mode='r', backup=True):
 
 
 def get_ff_path(ff):
+    """Get path of force field.
+
+    Parameters
+    ----------
+    ff : str
+        force field name
+
+    Returns
+    -------
+    ff_path: str
+        absolute path to the force field
+    """
     ff_path = None
     if not os.path.isdir(ff):
         gmxlib = os.environ.get('GMXLIB')
