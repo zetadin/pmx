@@ -37,16 +37,7 @@ from pmx.options import Option, FileOption, Commandline
 from pmx.forcefield import Topology
 from pmx.mutdb import read_mtp_entry
 from pmx.utils import mtpError, get_ff_path
-
-_perturbed_nucleotides = ['DAT','DAC','DAG','DCT','DCG','DCA',
-                          'DTA','DTG','DTC','DGA','DGC','DGT',
-                          'RAU','RAC','RAG','RCU','RCG','RCA',
-                          'RUA','RUG','RUC','RGA','RGC','RGU',
-			  'D5K','D5L','D5M','D5N','D5O','D5P','D5R','D5S','D5T','D5X','D5Y','D5Z',
-			  'D3K','D3L','D3M','D3N','D3O','D3P','D3R','D3S','D3T','D3X','D3Y','D3Z',
-			  'R5K','R5L','R5M','R5N','R5O','R5P','R5R','R5S','R5T','R5X','R5Y','R5Z',
-			  'R3K','R3L','R3M','R3N','R3O','R3P','R3R','R3S','R3T','R3X','R3Y','R3Z',
-                          ]
+from pmx.library import _perturbed_nucleotides
 
 
 def check_case(atoms):
