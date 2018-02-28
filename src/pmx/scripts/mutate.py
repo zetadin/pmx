@@ -36,13 +36,11 @@ free energy simulations.
 
 from __future__ import print_function
 import sys
-import os
 import argparse
-from glob import glob
 from pmx import library
 from pmx.model import Model
 from pmx.parser import read_and_format
-from pmx.utils import get_ff_path
+from pmx.utils import get_ff_path, ff_selection
 from pmx.alchemy import mutate
 
 # resinfo
@@ -107,32 +105,6 @@ def _ask_next():
     else:
         return _ask_next()
 
-
-def ff_selection(gmxlib=os.environ['GMXLIB']):
-    print('Choose a force field:\n')
-    print('  [i]    {0:40}{1}\n'.format('name', 'description'), end='')
-    print('  ---    {0:40}{1}\n'.format('----', '-----------'), end='')
-
-    ffs = [d for d in glob('{}/*.ff'.format(gmxlib)) if os.path.isdir(d)]
-
-    ffs_dict = {}
-    for i, ff in enumerate(ffs):
-        # get ff name
-        f = os.path.basename(ff).split('.')[0]
-        # store in dict
-        ffs_dict[i] = f
-        # print info
-        docfile = ff + '/forcefield.doc'
-        docstring = [l for l in open(docfile, 'r').readlines()][0]
-        print('  [{0}]    {1:40}{2}'.format(i, f, docstring), end='')
-
-    # allow choice of ff
-    print('')
-    print('Enter the index [i] of the chosen forcefield: ', end='')
-    i = int(raw_input())
-    ff = ffs_dict[i]
-
-    return ff
 
 # ===============================
 # Class for interactive selection
