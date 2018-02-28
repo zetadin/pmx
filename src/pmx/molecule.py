@@ -122,9 +122,9 @@ class Molecule(Atomselection):
         # determine type
         if self.resname in library._protein_residues_incl_pmx_mut:
             self.moltype = 'protein'
-        elif self.resname in library._dna_residues:
+        elif self.resname in library._dna_residues_incl_pmx_mut:
             self.moltype = 'dna'
-        elif self.resname in library._rna_residues:
+        elif self.resname in library._rna_residues_incl_pmx_mut:
             self.moltype = 'rna'
         elif self.resname in library._water:
             self.moltype = 'water'
