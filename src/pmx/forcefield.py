@@ -116,7 +116,6 @@ class TopolBase:
         self.include_itps = []
         self.has_include_itps = False
         self.read()
-        print self.include_itps
 
     # ==============
     # read functions
