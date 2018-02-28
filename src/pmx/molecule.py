@@ -133,6 +133,25 @@ class Molecule(Atomselection):
         else:
             self.moltype = 'unknown'
 
+    def is_hybrid(self):
+        """Checks whether the molecule/residue is a pmx hybrid.
+
+        Returns
+        -------
+        is_hybrid : bool
+            whether the molecule/residue is a pmx hybrid
+        """
+        # check it is not an empty Molecule
+        if self.resname != '':
+            if (self.resname in library._perturbed_nucleotides or
+               self.resname[1] == '2' or '2CM' in self.resname or
+               'CM2' in self.resname):  # special two letter cases
+                return True
+            else:
+                return False
+        else:
+            return False
+
     def has_atom(self, atom_name):
         if self.fetch(atom_name):
             return True
