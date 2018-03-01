@@ -1059,7 +1059,7 @@ class Topology(TopolBase):
     """
 
     def __init__(self, filename, is_itp=None, ff=None,
-                 assign_types=True, version='old'):
+                 assign_types=True, version='new'):
         TopolBase.__init__(self, filename, version)
 
         # is_itp is already an attribute of TopolBase that is assigned at init

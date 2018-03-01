@@ -664,7 +664,7 @@ class BondedParser:
 
 class NBParser:
 
-    def __init__(self, filename=None, version='old', ff='amber'):
+    def __init__(self, filename=None, version='new', ff='amber'):
         self.lines = []
         self.ff = ff
         self.filename = ''
