@@ -1195,7 +1195,6 @@ def main(args):
     top_file = args.intop
     outfile = args.outfile
     ff = args.ff
-    ff_path = get_ff_path(ff)
     scale_mass = args.scale_mass
 
     # if input is itp but output is top, rename output
@@ -1206,12 +1205,10 @@ def main(args):
     # load topology
     if top_file.split('.')[-1] == 'itp':
         print 'log_> Reading input .itp file "%s""' % (top_file)
-        topol = Topology(top_file, version='new',
-                         ff=ff, ffpath=ff_path)
+        topol = Topology(top_file, version='new', ff=ff)
     else:
         print 'log_> Reading input .top file "%s"' % (top_file)
-        topol = Topology(top_file, version='new',
-                         ff=ff)
+        topol = Topology(top_file, version='new', ff=ff)
 
     # fill the B states
     pmxtop = fill_bstate(topol=topol, ff=ff)
