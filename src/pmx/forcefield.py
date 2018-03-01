@@ -49,8 +49,8 @@ def TR(s):
     print "pmx.forcefield_> " + s
 
 
-def cpp_parse_file(fn, cpp_defs=[], cpp_path=[os.environ.get('GMXLIB')],
-                   itp=False, ffpath=None):
+def cpp_parse_file(fn,  itp=False, ffpath=None, cpp_defs=[],
+                   cpp_path=[os.environ.get('GMXLIB'), '%s/top' % os.environ.get('GMXDATA')]):
 
     """Expands a gromacs topology by including all force field files etc.
 
@@ -58,10 +58,10 @@ def cpp_parse_file(fn, cpp_defs=[], cpp_path=[os.environ.get('GMXLIB')],
     ----------
     fn : str
         topology file
-    cpp_defs : list
+    cpp_defs : list, optional
         ???
-    cpp_path : list
-        list of paths
+    cpp_path : list, optional
+        paths to force fields library
     """
 
     defs = []
@@ -71,17 +71,17 @@ def cpp_parse_file(fn, cpp_defs=[], cpp_path=[os.environ.get('GMXLIB')],
     for i in cpp_path:
         incs.append('-I%s' % i)
 
-    if itp:
+    if itp is True:
         cmd1 = 'cpp -traditional %s %s %s ' % (' '.join(defs), ' '.join(incs), fn)
         l1 = os.popen(cmd1, 'r').readlines()
         if ffpath is not None:
-            ffname = ffpath+'/forcefield.itp'
+            ffname = ffpath + '/forcefield.itp'
             cmd2 = 'cpp -traditional %s %s %s ' % (' '.join(defs), ' '.join(incs), ffname)
             l2 = os.popen(cmd2, 'r').readlines()
             return(l1+l2)
         else:
             return l1
-    else:
+    elif itp is False:
         cmd = 'cpp -traditional %s %s %s ' % (' '.join(defs), ' '.join(incs), fn)
         return os.popen(cmd, 'r').readlines()
 
@@ -1090,7 +1090,6 @@ class Topology(TopolBase):
     """
 
     def __init__(self, filename, assign_types=True, is_itp=None,
-                 cpp_path=[os.environ.get('GMXLIB')], cpp_defs=[],
                  version='old', ff='amber', ffpath=None):
         TopolBase.__init__(self, filename, version)
 
@@ -1100,8 +1099,7 @@ class Topology(TopolBase):
             self.is_itp = is_itp
 
         if assign_types:
-            l = cpp_parse_file(self.filename, cpp_defs=cpp_defs,
-                               cpp_path=cpp_path, itp=self.is_itp,
+            l = cpp_parse_file(self.filename, itp=self.is_itp,
                                ffpath=ffpath)
             l = kickOutComments(l, '#')
             l = kickOutComments(l, ';')
