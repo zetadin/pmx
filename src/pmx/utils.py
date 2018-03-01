@@ -368,3 +368,21 @@ class mtpError(Exception):
 
     def __str__(self):
         return repr(self.s)
+
+
+class MissingTopolParamError(Exception):
+    """Raised when certain parameters for terms defined in the topology cannot
+    ba found.
+    """
+    def __init__(self, s, atoms):
+        self.s = s
+        print('err_> {}'.format(s), file=sys.stderr)
+        print('err_>  name      resname      atomtype       atomtypeB       '
+              'bondtype       bondtypeB', file=sys.stderr)
+        for atom in atoms:
+            print('{0.name} {0.resname} {0.atomtype} {0.atomtypeB} {0.type} '
+                  '{0.typeB}'.format(atom), file=sys.stderr)
+        print('err_> Exiting', file=sys.stderr)
+
+    def __str__(self):
+        return repr(self.s)

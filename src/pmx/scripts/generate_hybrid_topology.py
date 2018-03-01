@@ -36,11 +36,11 @@ from copy import deepcopy
 from pmx.model import Model
 from pmx.forcefield import Topology
 from pmx.mutdb import read_mtp_entry
-from pmx.utils import mtpError, ff_selection
-from pmx.utils import get_mtp_file
+from pmx.utils import mtpError, MissingTopolParamError
+from pmx.utils import get_mtp_file, ff_selection
 
 
-def check_case(atoms):
+def _check_case(atoms):
     A = ''
     B = ''
     for a in atoms:
@@ -56,15 +56,6 @@ def check_case(atoms):
         else:
             B += 'A'
     return A, B
-
-
-def dump_atoms_and_exit(msg, atoms):
-    print >>sys.stderr, 'err_> ', msg
-    print >>sys.stderr, 'err_>  name      resname      atomtype       atomtypeB       bondtype       bondtypeB'
-    for atom in atoms:
-        print >>sys.stderr, atom.name, atom.resname, atom.atomtype, atom.atomtypeB, atom.type, atom.typeB
-    print >>sys.stderr, 'err_> Exiting'
-    sys.exit(1)
 
 
 def atoms_morphe(atoms):
@@ -284,7 +275,7 @@ def find_bonded_entries(topol):
     count = 0
     for b in topol.bonds:
         a1, a2, func = b
-        A, B = check_case([a1, a2])
+        A, B = _check_case([a1, a2])
         if a1.atomtypeB is not None or a2.atomtypeB is not None:
             count += 1
             error_occured = False
@@ -338,7 +329,7 @@ def find_angle_entries(topol):
         if a1.atomtypeB is not None or \
            a2.atomtypeB is not None or \
            a3.atomtypeB is not None:
-            A, B = check_case([a1, a2, a3])
+            A, B = _check_case([a1, a2, a3])
             count += 1
             if 'D' in A and 'D' in B:  # fake angle
                 if func == 5:
@@ -378,9 +369,11 @@ def find_angle_entries(topol):
                     bstate = astate
                     a.extend([astate, bstate])
             if astate is None:
-                dump_atoms_and_exit("No angle entry (state A)", [a1, a2, a3])
+                raise MissingTopolParamError("No angle entry (state A)",
+                                             [a1, a2, a3])
             if bstate is None:
-                dump_atoms_and_exit("No angle entry (state B)", [a1, a2, a3])
+                raise MissingTopolParamError("No angle entry (state B)",
+                                             [a1, a2, a3])
 
     print('log_> Making angles for state B -> %d angles with perturbed atoms'
           % count)
@@ -504,7 +497,7 @@ def find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
             backup_d = d[:6]
 
             if atoms_morphe([a1, a2, a3, a4]):
-                A, B = check_case(d[:4])
+                A, B = _check_case(d[:4])
                 if A != 'AAAA' and B != 'AAAA':
                     nfake += 1
                     # these are fake dihedrals
@@ -793,7 +786,7 @@ def find_predefined_dihedrals(topol, rlist, rdic, ffbonded,
                         if 'dih_' not in dx[5]:
                             continue
 
-                    A, B = check_case(al[:4])
+                    A, B = _check_case(al[:4])
                     paramA = topol.BondedParams.get_dihedral_param(al[0].type,
                                                                    al[1].type,
                                                                    al[2].type,
