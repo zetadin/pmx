@@ -8,9 +8,9 @@ from subprocess import call
 def main():
     path = os.path.abspath(model.__file__)
     dir_path = os.path.dirname(path)
-    gmxlib = os.path.join(dir_path, 'data/mutff45dna')
+    gmxlib = os.path.join(dir_path, 'data/mutff')
 
-    print('\n  In order to be able to use the hybrid/alchemical force fields \n'e
+    print('\n  In order to be able to use the hybrid/alchemical force fields \n'
           '  available in pmx, the environment variable GMXLIB needs to be set.\n')
 
     print('  The path to your pmx force field library is the following:')
