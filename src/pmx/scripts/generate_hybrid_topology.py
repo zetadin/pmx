@@ -38,7 +38,6 @@ from pmx.forcefield import Topology
 from pmx.mutdb import read_mtp_entry
 from pmx.utils import mtpError, ff_selection
 from pmx.utils import get_mtp_file
-from pmx.library import _perturbed_nucleotides
 
 
 def check_case(atoms):
@@ -945,14 +944,6 @@ def find_predefined_dihedrals(topol, rlist, rdic, ffbonded,
     topol.dihedrals.extend(dih9)
 
 
-def is_hybrid_residue(resname):
-    if (resname in _perturbed_nucleotides or resname[1] == '2' or
-       '2CM' in resname or 'CM2' in resname):  # special two letter cases
-        return True
-    else:
-        return False
-
-
 def _change_outfile_format(filename, ext):
     head, tail = os.path.split(filename)
     name, ex = os.path.splitext(tail)
@@ -976,7 +967,7 @@ def get_hybrid_residues(m, ff, version):
     rdic = {}
     rlist = []
     for res in m.residues:
-        if is_hybrid_residue(res.resname):
+        if res.is_hybrid():
             rlist.append(res)
             # get topol params for hybrid
             mtp_file = get_mtp_file(res, ff)
@@ -1115,6 +1106,7 @@ def write_split_top(pmxtop, outfile='pmxtop.top', scale_mass=False,
 
         print 'log_> Making "qoff" topology : "%s"' % out_file_qoff
     contQ = deepcopy(qA)
+    # BUG: program crashes here - also in the proline branch
     pmxtop.write(out_file_qoff, stateQ='AB', stateTypes='AA', dummy_qB='off',
                  scale_mass=scale_mass, target_qB=qA, stateBonded='AA',
                  full_morphe=False)
@@ -1213,10 +1205,10 @@ def main(args):
     # if input is itp but output is else, rename output
     if top_file_ext == 'itp' and outfile.split('.')[-1] != 'itp':
         out_file = _change_outfile_format(outfile, 'itp')
-        print 'log_> Setting outfile name to %s' % out_file
+        print('log_> Setting outfile name to %s' % out_file)
 
     # load topology file
-    print 'log_> Reading input .%s file "%s""' % (top_file_ext, top_file)
+    print('log_> Reading input .%s file "%s""' % (top_file_ext, top_file))
     topol = Topology(top_file, ff=ff, version='new')
     # fill the B states
     pmxtop = fill_bstate(topol=topol, verbose=True)
