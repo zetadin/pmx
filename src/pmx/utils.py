@@ -110,19 +110,32 @@ def get_ff_path(ff, verbose=False):
         absolute path to the force field
     """
     ff_path = None
-    if not os.path.isdir(ff):
-        gmxlib = os.environ.get('GMXLIB')
-        p = os.path.join(gmxlib, ff)
-        pff = p+'.ff'
-        if os.path.isdir(p):
-            ff_path = p
-        elif os.path.isdir(pff):
-            ff_path = pff
-        else:
-            print >>sys.stderr, ' Error: forcefield path "%s" not found' % ff
-            sys.exit(0)
-    else:
+    # if ff is in current folder, take that path
+    if os.path.isdir(ff):
         ff_path = ff
+    # otherwise look into GMXLIB and GMXDATA
+    else:
+        # if GMXLIB is defined, look in there first
+        if "GMXLIB" in os.environ:
+            gmxlib = os.environ.get('GMXLIB')
+            p = os.path.join(gmxlib, ff)
+            pff = p+'.ff'
+            if os.path.isdir(p):
+                ff_path = p
+            elif os.path.isdir(pff):
+                ff_path = pff
+        # then look into GMXDATA/top
+        if "GMXDATA" in os.environ:
+            gmxdata = "%s/top" % os.environ.get('GMXDATA')
+            p = os.path.join(gmxdata, ff)
+            pff = p+'.ff'
+            if os.path.isdir(p):
+                ff_path = p
+            elif os.path.isdir(pff):
+                ff_path = pff
+        # if path still not defined, we have a problem
+        if ff_path is None:
+            raise ValueError('forcefield path "%s" not found' % ff)
 
     if verbose is True:
         print('Opening forcefield: %s' % ff_path)
