@@ -41,7 +41,7 @@ from pmx.utils import mtpError, MissingTopolParamError
 from pmx.utils import get_mtp_file, ff_selection
 
 
-def proline_dihedral_decouplings(topol, rlist, rdic):
+def _proline_dihedral_decouplings(topol, rlist, rdic):
     for r in rlist:
         if 'P' in r.resname:
             # identify in which state proline sits
@@ -145,7 +145,7 @@ def proline_dihedral_decouplings(topol, rlist, rdic):
                             dih[5] = [func, dih[6][1], 0.0, dih[6][-1]]
 
 
-def proline_decouplings(topol, rlist, rdic):
+def _proline_decouplings(topol, rlist, rdic):
     for r in rlist:
         if 'P' in r.resname:
             # identify in which state proline sits
@@ -240,7 +240,7 @@ def proline_decouplings(topol, rlist, rdic):
                             dih[5] = [func, dih[6][1], 0.0, dih[6][-1]]
 
 
-def find_bonded_entries(topol):
+def _find_bonded_entries(topol):
     count = 0
     for b in topol.bonds:
         a1, a2, func = b
@@ -289,7 +289,7 @@ def find_bonded_entries(topol):
           % count)
 
 
-def find_angle_entries(topol):
+def _find_angle_entries(topol):
     count = 0
     for a in topol.angles:
         a1, a2, a3, func = a
@@ -348,88 +348,7 @@ def find_angle_entries(topol):
           % count)
 
 
-def check_dih_ILDN_OPLS(topol, rlist, rdic, a1, a2, a3, a4):
-    counter = 0
-    for r in rlist:
-        if r.id == a2.resnr:
-            dih = rdic[r.resname][3]
-            for d in dih:
-                if counter == 1:
-                    break
-                al = []
-                for name in d[:4]:
-                    atom = r.fetch(name)[0]
-                    al.append(atom)
-
-                if (a1.id == al[0].id and a2.id == al[1].id and
-                   a3.id == al[2].id and a4.id == al[3].id) or \
-                   (a1.id == al[3].id and a2.id == al[2].id and
-                   a3.id == al[1].id and a4.id == al[0].id):
-                    # ---------------
-                    # checks for OPLS
-                    # ---------------
-                    if d[4].startswith('dih_') and d[5].startswith('dih_'):
-                        counter = 42
-                        break
-                    elif d[4].startswith('dih_') and 'un' in d[5]:
-                        counter = 2
-                        break
-                    elif 'un' in d[4] and d[5].startswith('dih_'):
-                        counter = 3
-                        break
-                    # ---------------
-                    # checks for ILDN
-                    # ---------------
-                    if d[4].startswith('torsion') and d[5].startswith('torsion'):
-                        counter = 42
-                        break
-                    elif d[4].startswith('torsion') and 'un' in d[5]:
-                        counter = 2
-                        break
-                    elif 'un' in d[4] and d[5].startswith('torsion'):
-                        counter = 3
-                        break
-                    elif 'un' in d[4]:
-                        counter = 1
-                        break
-    return counter
-
-
-def is_dih_undef(visited_dih, d):
-    encountered = 0
-    undef = 0
-    for dih in visited_dih:
-        if (dih[0].id == d[0].id and dih[1].id == d[1].id
-           and dih[2].id == d[2].id and dih[3].id == d[3].id):
-            if (dih[-1] == 'undefA'):
-                undef = 1
-                break
-            elif (dih[-1] == 'undefB'):
-                undef = 2
-                break
-            elif (dih[-1] == 'undefA_ildn'):
-                undef = 3
-                break
-            elif (dih[-1] == 'undefB_ildn'):
-                undef = 4
-                break
-            else:
-                encountered = 1
-                break
-
-    return (undef, encountered)
-
-
-def is_dih_encountered_strict(visited_dih, d, encountered):
-    for dih in visited_dih:
-        if (dih[0].id == d[0].id and dih[1].id == d[1].id
-           and dih[2].id == d[2].id and dih[3].id == d[3].id):
-            encountered = 1
-            break
-    return encountered
-
-
-def find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
+def _find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
     count = 0
     nfake = 0
     # here I will accumulate multiple entries of type 9 dihedrals
@@ -443,8 +362,8 @@ def find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
             undef = 0
             encountered = 0
 
-            undef, encountered = is_dih_undef(dih_predef_default, d)
-            encountered = is_dih_encountered_strict(visited_dih, d,
+            undef, encountered = _is_dih_undef(dih_predef_default, d)
+            encountered = _is_dih_encountered_strict(visited_dih, d,
                                                     encountered)
             if(encountered == 1):
                 continue
@@ -483,7 +402,7 @@ def find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
                                                                     a4.type,
                                                                     func)
                         # need to check if the dihedral has torsion pre-defined
-                        counter = check_dih_ILDN_OPLS(topol, rlist, rdic,
+                        counter = _check_dih_ILDN_OPLS(topol, rlist, rdic,
                                                       a1, a2, a3, a4)
                         if counter == 42:
                             continue
@@ -506,7 +425,7 @@ def find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
                                                                     a4.typeB,
                                                                     func)
                         # need to check if the dihedral has torsion pre-defined
-                        counter = check_dih_ILDN_OPLS(topol, rlist, rdic, a1, a2, a3, a4)
+                        counter = _check_dih_ILDN_OPLS(topol, rlist, rdic, a1, a2, a3, a4)
 
                         if counter == 42:
                             continue
@@ -556,7 +475,7 @@ def find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
                             continue
 
                         # need to check if the dihedral has torsion pre-defined
-                        counter = check_dih_ILDN_OPLS(topol, rlist, rdic,
+                        counter = _check_dih_ILDN_OPLS(topol, rlist, rdic,
                                                       a1, a2, a3, a4)
 
                         # torsion for both states defined, change nothing
@@ -653,13 +572,94 @@ def find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
     print('log_> Removed %d fake dihedrals' % nfake)
 
 
-def get_torsion_multiplicity(name):
+def _check_dih_ILDN_OPLS(topol, rlist, rdic, a1, a2, a3, a4):
+    counter = 0
+    for r in rlist:
+        if r.id == a2.resnr:
+            dih = rdic[r.resname][3]
+            for d in dih:
+                if counter == 1:
+                    break
+                al = []
+                for name in d[:4]:
+                    atom = r.fetch(name)[0]
+                    al.append(atom)
+
+                if (a1.id == al[0].id and a2.id == al[1].id and
+                   a3.id == al[2].id and a4.id == al[3].id) or \
+                   (a1.id == al[3].id and a2.id == al[2].id and
+                   a3.id == al[1].id and a4.id == al[0].id):
+                    # ---------------
+                    # checks for OPLS
+                    # ---------------
+                    if d[4].startswith('dih_') and d[5].startswith('dih_'):
+                        counter = 42
+                        break
+                    elif d[4].startswith('dih_') and 'un' in d[5]:
+                        counter = 2
+                        break
+                    elif 'un' in d[4] and d[5].startswith('dih_'):
+                        counter = 3
+                        break
+                    # ---------------
+                    # checks for ILDN
+                    # ---------------
+                    if d[4].startswith('torsion') and d[5].startswith('torsion'):
+                        counter = 42
+                        break
+                    elif d[4].startswith('torsion') and 'un' in d[5]:
+                        counter = 2
+                        break
+                    elif 'un' in d[4] and d[5].startswith('torsion'):
+                        counter = 3
+                        break
+                    elif 'un' in d[4]:
+                        counter = 1
+                        break
+    return counter
+
+
+def _is_dih_undef(visited_dih, d):
+    encountered = 0
+    undef = 0
+    for dih in visited_dih:
+        if (dih[0].id == d[0].id and dih[1].id == d[1].id
+           and dih[2].id == d[2].id and dih[3].id == d[3].id):
+            if (dih[-1] == 'undefA'):
+                undef = 1
+                break
+            elif (dih[-1] == 'undefB'):
+                undef = 2
+                break
+            elif (dih[-1] == 'undefA_ildn'):
+                undef = 3
+                break
+            elif (dih[-1] == 'undefB_ildn'):
+                undef = 4
+                break
+            else:
+                encountered = 1
+                break
+
+    return (undef, encountered)
+
+
+def _is_dih_encountered_strict(visited_dih, d, encountered):
+    for dih in visited_dih:
+        if (dih[0].id == d[0].id and dih[1].id == d[1].id
+           and dih[2].id == d[2].id and dih[3].id == d[3].id):
+            encountered = 1
+            break
+    return encountered
+
+
+def _get_torsion_multiplicity(name):
     foo = list(name)
     mult = int(foo[-1])
     return mult
 
 
-def explicit_defined_dihedrals(filename, ff):
+def _explicit_defined_dihedrals(filename, ff):
     """ get the #define dihedral entries explicitly for ILDN
     """
     l = open(filename).readlines()
@@ -681,7 +681,7 @@ def explicit_defined_dihedrals(filename, ff):
     return output
 
 
-def is_ildn_dih_encountered(ildn_used, d, encountered):
+def _is_ildn_dih_encountered(ildn_used, d, encountered):
     for dih in ildn_used:
         if (dih[0] == d[0] and dih[1] == d[1] and dih[2] == d[2]
            and dih[3] == d[3] and dih[4] == d[4]):
@@ -689,11 +689,11 @@ def is_ildn_dih_encountered(ildn_used, d, encountered):
     return encountered
 
 
-def find_predefined_dihedrals(topol, rlist, rdic, ffbonded,
-                              dih_predef_default, ff):
+def _find_predefined_dihedrals(topol, rlist, rdic, ffbonded,
+                               dih_predef_default, ff):
 
     dih9 = []  # here I will accumulate multiple entries of type 9 dihedrals
-    explicit_def = explicit_defined_dihedrals(ffbonded, ff)
+    explicit_def = _explicit_defined_dihedrals(ffbonded, ff)
     ildn_used = []  # ildn dihedrals that already were encountered
     opls_used = []  # opls dihedrals that already were encountered
 
@@ -734,9 +734,9 @@ def find_predefined_dihedrals(topol, rlist, rdic, ffbonded,
                     # is the dihedral already found for ILDN
                     encountered = 0
                     foobar = [dx[0].id, dx[1].id, dx[2].id, dx[3].id, d[4]]
-                    encountered = is_ildn_dih_encountered(ildn_used, foobar, encountered)
+                    encountered = _is_ildn_dih_encountered(ildn_used, foobar, encountered)
                     foobar = [dx[0].id, dx[1].id, dx[2].id, dx[3].id, d[5]]
-                    encountered = is_ildn_dih_encountered(ildn_used, foobar, encountered)
+                    encountered = _is_ildn_dih_encountered(ildn_used, foobar, encountered)
                     if encountered == 1:
                         continue
                     if 'tors' in d[4]:
@@ -746,9 +746,9 @@ def find_predefined_dihedrals(topol, rlist, rdic, ffbonded,
                     # check for opls
                     encountered = 0
                     foobar = [dx[0].id, dx[1].id, dx[2].id, dx[3].id, d[4]]
-                    encountered = is_ildn_dih_encountered(opls_used, foobar, encountered)
+                    encountered = _is_ildn_dih_encountered(opls_used, foobar, encountered)
                     foobar = [dx[0].id, dx[1].id, dx[2].id, dx[3].id, d[5]]
-                    encountered = is_ildn_dih_encountered(opls_used, foobar, encountered)
+                    encountered = _is_ildn_dih_encountered(opls_used, foobar, encountered)
                     if encountered == 1:
                         continue
                     if 'dih_' in d[4]:
@@ -913,8 +913,8 @@ def _change_outfile_format(filename, ext):
     return new_name
 
 
-def get_hybrid_residue(residue_name, mtp_file='ffamber99sb.mtp',
-                       version='old'):
+def _get_hybrid_residue(residue_name, mtp_file='ffamber99sb.mtp',
+                        version='old'):
     print('log_> Scanning database for %s ' % residue_name)
     resi, bonds, imps, diheds, rotdic = read_mtp_entry(residue_name,
                                                        filename=mtp_file,
@@ -925,7 +925,7 @@ def get_hybrid_residue(residue_name, mtp_file='ffamber99sb.mtp',
     return resi, bonds, imps, diheds, rotdic
 
 
-def get_hybrid_residues(m, ff, version):
+def _get_hybrid_residues(m, ff, version):
     rdic = {}
     rlist = []
     for res in m.residues:
@@ -933,7 +933,7 @@ def get_hybrid_residues(m, ff, version):
             rlist.append(res)
             # get topol params for hybrid
             mtp_file = get_mtp_file(res, ff)
-            mtp = get_hybrid_residue(res.resname, mtp_file, version)
+            mtp = _get_hybrid_residue(res.resname, mtp_file, version)
             rdic[res.resname] = mtp
             hybrid_res = mtp[0]
             atom_names = map(lambda a: a.name, hybrid_res.atoms)
@@ -945,7 +945,7 @@ def get_hybrid_residues(m, ff, version):
     return rlist, rdic
 
 
-def __add_extra_DNA_RNA_impropers(topol, rlist, func_type, stateA, stateB):
+def _add_extra_DNA_RNA_impropers(topol, rlist, func_type, stateA, stateB):
     extra_impropers = []
     for r in rlist:
         if r.resname in ['DAT', 'DAC', 'DGC', 'DGT', 'RAU', 'RAC', 'RGC', 'RGU']:
@@ -1001,21 +1001,21 @@ def fill_bstate(topol, verbose=False):
     # use model residue list
     pmxtop.residues = m.residues
     # get list of hybrid residues and their params
-    rlist, rdic = get_hybrid_residues(m=m, ff=ff, version='new')
+    rlist, rdic = _get_hybrid_residues(m=m, ff=ff, version='new')
     # correct b-states
     pmxtop.assign_fftypes()
     if verbose is True:
         for r in rlist:
             print('log_> Hybrid Residue -> %d | %s ' % (r.id, r.resname))
 
-    find_bonded_entries(pmxtop)
-    find_angle_entries(pmxtop)
+    _find_bonded_entries(pmxtop)
+    _find_angle_entries(pmxtop)
     dih_predef_default = []
-    find_predefined_dihedrals(pmxtop, rlist, rdic, ffbonded_file,
+    _find_predefined_dihedrals(pmxtop, rlist, rdic, ffbonded_file,
                               dih_predef_default, ff)
-    find_dihedral_entries(pmxtop, rlist, rdic, dih_predef_default)
+    _find_dihedral_entries(pmxtop, rlist, rdic, dih_predef_default)
 
-    __add_extra_DNA_RNA_impropers(pmxtop, rlist, 1, [180, 40, 2], [180, 40, 2])
+    _add_extra_DNA_RNA_impropers(pmxtop, rlist, 1, [180, 40, 2], [180, 40, 2])
 
     if verbose is True:
         print('log_> Total charge of state A = %.f' % pmxtop.get_qA())
@@ -1024,9 +1024,9 @@ def fill_bstate(topol, verbose=False):
     # if prolines are involved, break one bond (CD-CG)
     # and angles X-CD-CG, CD-CG-X
     # and dihedrals with CD and CG
-    proline_decouplings(pmxtop, rlist, rdic)
+    _proline_decouplings(pmxtop, rlist, rdic)
     # also decouple all dihedrals with [CD and N] and [CB and Calpha] for proline
-    proline_dihedral_decouplings(pmxtop, rlist, rdic)
+    _proline_dihedral_decouplings(pmxtop, rlist, rdic)
 
     return pmxtop
 
