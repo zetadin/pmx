@@ -42,6 +42,7 @@ from atom import Atom
 from molecule import Molecule
 from collections import OrderedDict
 from ffparser import BondedParser, NBParser, RTPParser
+from utils import get_ff_path
 import _pmx as _p
 
 
@@ -1084,9 +1085,9 @@ class Topology(TopolBase):
     Parameters
     ----------
     filename : str
+    is_itp : bool, optional
     ff : str, optional
     assign_types : bool, optional
-    is_itp : bool, optional
 
     Attributes
     ----------
@@ -1096,8 +1097,8 @@ class Topology(TopolBase):
     constrains : list
     """
 
-    def __init__(self, filename, assign_types=True, is_itp=None,
-                 version='old', ff='amber', ffpath=None):
+    def __init__(self, filename, is_itp=None, ff=None,
+                 assign_types=True, version='old'):
         TopolBase.__init__(self, filename, version)
 
         # is_itp is already an attribute of TopolBase that is assigned at init
@@ -1105,13 +1106,29 @@ class Topology(TopolBase):
         if is_itp is not None:
             self.is_itp = is_itp
 
+        # Similarly, the forcefield is determined automatically, but it can
+        # be defined explicitly via the ff parameter. If we have an itp file
+        # self.forcefield = '', then in this case ff is not optinal anymore
+        if ff is not None:
+            self.forcefield = ff
+
+        if self.forcefield == '':
+            raise ValueError('The topology file provided does not contain an '
+                             'include statement pointing towards a forcefield'
+                             '\nfile. This is likely because you are providing'
+                             ' a itp rather than a top file. Thus, you need to'
+                             '\nprovide the forcefield to use via the ff '
+                             'parameter.')
+        # get full path to ff
+        self.ffpath = get_ff_path(self.forcefield)
+
         if assign_types:
             fulltop = cpp_parse_file(self.filename, itp=self.is_itp,
-                                     ffpath=ffpath)
+                                     ffpath=self.ffpath)
             fulltop = kickOutComments(fulltop, '#')
             fulltop = kickOutComments(fulltop, ';')
             self.BondedParams = BondedParser(fulltop)
-            self.NBParams = NBParser(fulltop, version, ff=ff)
+            self.NBParams = NBParser(fulltop, version, ff=self.forcefield)
             self.assign_fftypes()
 
     def set_molecule(self, molname, n):
