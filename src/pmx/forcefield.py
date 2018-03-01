@@ -124,7 +124,7 @@ class TopolBase:
         self.qA = 0.
         self.qB = 0.
         self.include_itps = []
-        self.has_include_itps = False
+        self.forcefield = ''
         self.read()
 
     # ==============
@@ -510,6 +510,9 @@ class TopolBase:
                 self.posre.append([self.atoms[idx-1], func, rest])
 
     def read_include_itps(self, lines):
+        """Finds additional itp files included to in topology, and identifies
+        the forcefield if it is included.
+        """
         inc_lines = [l.strip() for l in lines if l[:8] == '#include']
         # exclude standard include statemets
         inc = []
@@ -517,6 +520,9 @@ class TopolBase:
             if (('posre' not in line) and ('.ff' not in line)):
                 f = line.split()[1].strip('"')
                 inc.append(f)
+            if 'forcefield.itp' in line:
+                ff = line.split()[1].strip('"').split('/')[0].split('.')[0]
+                self.forcefield = ff
 
         if len(inc) > 0:
             self.has_include_itps = True
@@ -1078,8 +1084,9 @@ class Topology(TopolBase):
     Parameters
     ----------
     filename : str
-    topfile : str, optional
+    ff : str, optional
     assign_types : bool, optional
+    is_itp : bool, optional
 
     Attributes
     ----------
@@ -1099,12 +1106,12 @@ class Topology(TopolBase):
             self.is_itp = is_itp
 
         if assign_types:
-            l = cpp_parse_file(self.filename, itp=self.is_itp,
-                               ffpath=ffpath)
-            l = kickOutComments(l, '#')
-            l = kickOutComments(l, ';')
-            self.BondedParams = BondedParser(l)
-            self.NBParams = NBParser(l, version, ff=ff)
+            fulltop = cpp_parse_file(self.filename, itp=self.is_itp,
+                                     ffpath=ffpath)
+            fulltop = kickOutComments(fulltop, '#')
+            fulltop = kickOutComments(fulltop, ';')
+            self.BondedParams = BondedParser(fulltop)
+            self.NBParams = NBParser(fulltop, version, ff=ff)
             self.assign_fftypes()
 
     def set_molecule(self, molname, n):
