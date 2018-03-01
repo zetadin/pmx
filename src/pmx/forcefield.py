@@ -534,7 +534,7 @@ class TopolBase:
     # ===============
     def write(self, outfile, stateBonded='AB', stateTypes='AB', stateQ='AB',
               scale_mass=False, dummy_qA='on', dummy_qB='on', target_qB=None,
-              full_morphe=True):
+              full_morphe=True, verbose=False):
         """Write the topology file.
         """
         # open file for writing
@@ -551,7 +551,7 @@ class TopolBase:
             self.write_atoms(fp, charges=stateQ, atomtypes=stateTypes,
                              dummy_qA=dummy_qA, dummy_qB=dummy_qB,
                              scale_mass=scale_mass, target_qB=target_qB,
-                             full_morphe=full_morphe)
+                             full_morphe=full_morphe, verbose=verbose)
             self.write_bonds(fp, state=stateBonded)
             if self.have_constraints:
                 self.write_constraints(fp)
@@ -591,7 +591,7 @@ class TopolBase:
 
     def write_atoms(self, fp, charges='AB', atomtypes='AB', dummy_qA='on',
                     dummy_qB='on', scale_mass=True, target_qB=[],
-                    full_morphe=True):
+                    full_morphe=True, verbose=False):
 
         self.qA = 0
         self.qB = 0
@@ -601,8 +601,9 @@ class TopolBase:
                     target_chargeB = target_qB.pop(0)
                 except:
                     target_chargeB = 0
-                TR('Making target charge %g for residue %s' %
-                   (round(target_chargeB, 5), r.resname))
+                if verbose is True:
+                    TR('Making target charge %g for residue %s' %
+                       (round(target_chargeB, 5), r.resname))
                 for atom in r.atoms:
                     if _atoms_morphe([atom]):
                         # we move the charges from state A to state B
@@ -651,19 +652,24 @@ class TopolBase:
                 qA_tot = sum(map(lambda a: a.qqA, r.atoms))  # unused variable
                 qB_tot = sum(map(lambda a: a.qqB, r.atoms))
                 if round(qB_tot, 5) != round(target_chargeB, 5):
-                    TR('State B has total charge of %g' % round(qB_tot, 5))
-                    TR('Applying charge correction to ensure integer charges')
+                    if verbose is True:
+                        TR('State B has total charge of %g' % round(qB_tot, 5))
+                        TR('Applying charge correction to ensure integer charges')
                     latom = _last_perturbed_atom(r)
-                    TR('Selecting atom %d-%s (%s) as perturbed atom with highest order'
-                        % (latom.id, latom.name, latom.resname))
+                    if verbose is True:
+                        TR('Selecting atom %d-%s (%s) as perturbed atom with highest order'
+                           % (latom.id, latom.name, latom.resname))
                     newqB = latom.qqB-(qB_tot-target_chargeB)
-                    TR('Changing chargeB of atom %s from %g to %g'
-                        % (latom.name, latom.qqB, newqB))
+                    if verbose is True:
+                        TR('Changing chargeB of atom %s from %g to %g'
+                           % (latom.name, latom.qqB, newqB))
                     latom.qqB = newqB
                     qB_tot = sum(map(lambda a: a.qqB, r.atoms))
-                    TR('New total charge of B-state is %g' % round(qB_tot, 5))
+                    if verbose is True:
+                        TR('New total charge of B-state is %g' % round(qB_tot, 5))
                 else:
-                    TR('No corrections applied to ensure integer charges')
+                    if verbose is True:
+                        TR('No corrections applied to ensure integer charges')
 
         print >>fp, '\n [ atoms ]'
         print >>fp, ';   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB'

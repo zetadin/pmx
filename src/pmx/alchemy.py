@@ -217,7 +217,7 @@ def fill_bstate(topol, recursive=True, verbose=False):
     ffbonded_file = os.path.join(topol.ffpath, 'ffbonded.itp')
 
     # main function that returns the Topology with filled B states
-    def process_topol(topol, ff, ffbonded_file):
+    def process_topol(topol, ff, ffbonded_file, verbose=False):
         pmxtop = deepcopy(topol)
         # create model with residue list
         m = Model(atoms=pmxtop.atoms)
@@ -232,12 +232,13 @@ def fill_bstate(topol, recursive=True, verbose=False):
             for r in rlist:
                 print('log_> Hybrid Residue -> %d | %s ' % (r.id, r.resname))
 
-        _find_bonded_entries(pmxtop)
-        _find_angle_entries(pmxtop)
+        _find_bonded_entries(pmxtop, verbose=verbose)
+        _find_angle_entries(pmxtop, verbose=verbose)
         dih_predef_default = []
         _find_predefined_dihedrals(pmxtop, rlist, rdic, ffbonded_file,
                                    dih_predef_default, ff)
-        _find_dihedral_entries(pmxtop, rlist, rdic, dih_predef_default)
+        _find_dihedral_entries(pmxtop, rlist, rdic, dih_predef_default,
+                               verbose=verbose)
 
         _add_extra_DNA_RNA_impropers(pmxtop, rlist, 1, [180, 40, 2], [180, 40, 2])
 
@@ -256,7 +257,8 @@ def fill_bstate(topol, recursive=True, verbose=False):
     # -------------
     # Main topology
     # -------------
-    pmx_top = process_topol(topol=topol, ff=ff, ffbonded_file=ffbonded_file)
+    pmx_top = process_topol(topol=topol, ff=ff, ffbonded_file=ffbonded_file,
+                            verbose=verbose)
 
     # ------------------------------------
     # itps too if asked for and if present
@@ -272,7 +274,8 @@ def fill_bstate(topol, recursive=True, verbose=False):
             topol2 = Topology(itp_filename, ff=ff, version='new')
             # fill b states
             pmx_itp = process_topol(topol=topol2, ff=ff,
-                                    ffbonded_file=ffbonded_file)
+                                    ffbonded_file=ffbonded_file,
+                                    verbose=verbose)
             pmx_itps.append(pmx_itp)
 
     return pmx_top, pmx_itps
@@ -644,7 +647,7 @@ def _proline_decouplings(topol, rlist, rdic):
                             dih[5] = [func, dih[6][1], 0.0, dih[6][-1]]
 
 
-def _find_bonded_entries(topol):
+def _find_bonded_entries(topol, verbose=False):
     count = 0
     for b in topol.bonds:
         a1, a2, func = b
@@ -689,11 +692,12 @@ def _find_bonded_entries(topol):
                 error_occured = True
             if error_occured:
                 sys.exit(1)
-    print('log_> Making bonds for state B -> %d bonds with perturbed atoms'
-          % count)
+    if verbose is True:
+        print('log_> Making bonds for state B -> %d bonds with perturbed atoms'
+              % count)
 
 
-def _find_angle_entries(topol):
+def _find_angle_entries(topol, verbose=False):
     count = 0
     for a in topol.angles:
         a1, a2, a3, func = a
@@ -748,11 +752,13 @@ def _find_angle_entries(topol):
                 raise MissingTopolParamError("No angle entry (state B)",
                                              [a1, a2, a3])
 
-    print('log_> Making angles for state B -> %d angles with perturbed atoms'
-          % count)
+    if verbose is True:
+        print('log_> Making angles for state B -> %d angles with perturbed atoms'
+              % count)
 
 
-def _find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
+def _find_dihedral_entries(topol, rlist, rdic, dih_predef_default,
+                           verbose=False):
     count = 0
     nfake = 0
     # here I will accumulate multiple entries of type 9 dihedrals
@@ -972,8 +978,9 @@ def _find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
 
 
     topol.dihedrals.extend(dih9)
-    print('log_> Making dihedrals for state B -> %d dihedrals with perturbed atoms' % count)
-    print('log_> Removed %d fake dihedrals' % nfake)
+    if verbose is True:
+        print('log_> Making dihedrals for state B -> %d dihedrals with perturbed atoms' % count)
+        print('log_> Removed %d fake dihedrals' % nfake)
 
 
 def _check_dih_ILDN_OPLS(topol, rlist, rdic, a1, a2, a3, a4):
@@ -1133,7 +1140,6 @@ def _find_predefined_dihedrals(topol, rlist, rdic, ffbonded,
                     # the following checks are needed for amber99sb*-ildn
                     # do not overwrite proper (type9) with improper (type4)
                     if 'default-star' in d[4] and dx[4] == 9:
-                        print('%s' % d[4])
                         continue
                     # is the dihedral already found for ILDN
                     encountered = 0
