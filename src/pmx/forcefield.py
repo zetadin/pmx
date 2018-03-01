@@ -1085,9 +1085,17 @@ class Topology(TopolBase):
     Parameters
     ----------
     filename : str
+        topology file
     is_itp : bool, optional
+        whether the topology provided is an itp file. If not provided,
+        this is automatically determined by the file extension (itp vs top).
     ff : str, optional
+        force field to use. If not provided, it is determined based on the
+        forcefield.itp include statement in the top file. If you are providing
+        an itp file without a reference to the force field, and assign_types is
+        set to True, then you also need to provide a force field name.
     assign_types : bool, optional
+        whether to assign atom types for the atoms in the Topology.
 
     Attributes
     ----------
