@@ -1014,63 +1014,11 @@ def __add_extra_DNA_RNA_impropers(topol, rlist, func_type, stateA, stateB):
     topol.dihedrals += extra_impropers
 
 
-# =============
-# Input Options
-# =============
-def parse_options():
-    parser = argparse.ArgumentParser(description='''
-This script fills in the B state to a topology file (itp or top) according to
-the hybrid residues present in the file. If you provide a top file with
-include statemets, the script will run through the included itp files too.
+#
+# main func
+#
 
-You need to use this script after having mutated a structure file with pmx mutate,
-and after having passed that mutated structure through pdb2gmx.
-''')
-
-    parser.add_argument('-p',
-                        metavar='topol',
-                        dest='intop',
-                        type=str,
-                        help='Input topology file (itp or top). '
-                        'Default is "topol.top"',
-                        default='topol.top')
-    parser.add_argument('-o',
-                        metavar='outfile',
-                        dest='outfile',
-                        type=str,
-                        help='Output topology file. '
-                        'Default is "pmxtop.top"',
-                        default='pmxtop.top')
-    parser.add_argument('-ff',
-                        metavar='ff',
-                        dest='ff',
-                        type=str.lower,
-                        help='Force field to use. If none is provided, \n'
-                        'a list of available ff will be shown.',
-                        default=None)
-    parser.add_argument('--split',
-                        dest='split',
-                        help='Write two separate topologies for vdw and q '
-                        'morphing.',
-                        default=False,
-                        action='store_true')
-    parser.add_argument('--scale_mass',
-                        dest='scale_mass',
-                        help='Scale the masses of morphing atoms so that '
-                        'dummies have a mass of 1.',
-                        default=False,
-                        action='store_true')
-
-    args, unknown = parser.parse_known_args()
-
-    # ff selection
-    if args.ff is None:
-        args.ff = ff_selection()
-
-    return args
-
-
-def fill_bstate(topol, ff):
+def fill_bstate(topol):
     """Fills the bstate of a topology file containing pmx hybrid residues. This
     can be either a top or itp file. If the top file contains itp file via
     include statements, the function will iterate through all of them to look
@@ -1080,8 +1028,6 @@ def fill_bstate(topol, ff):
     ----------
     topol : Topology
         input Topology instance.
-    ff : str
-        name of the force field to be used
 
     Returns
     -------
@@ -1090,8 +1036,8 @@ def fill_bstate(topol, ff):
     """
 
     # ff setup
-    ff_path = get_ff_path(ff)
-    ffbonded_file = os.path.join(ff_path, 'ffbonded.itp')
+    ff = topol.forcefield
+    ffbonded_file = os.path.join(topol.ffpath, 'ffbonded.itp')
 
     # -------------------------
     # Start working on topology
@@ -1166,8 +1112,8 @@ def write_split_top(pmxtop, outfile='pmxtop.top', scale_mass=False,
     print 'log_> Making "qoff" topology : "%s"' % out_file_qoff
     contQ = deepcopy(qA)
     pmxtop.write(out_file_qoff, stateQ='AB', stateTypes='AA', dummy_qB='off',
-                scale_mass=scale_mass, target_qB=qA, stateBonded='AA',
-                full_morphe=False)
+                 scale_mass=scale_mass, target_qB=qA, stateBonded='AA',
+                 full_morphe=False)
     print 'log_> Charge of state A: %g' % pmxtop.qA
     print 'log_> Charge of state B: %g' % pmxtop.qB
 
@@ -1175,19 +1121,78 @@ def write_split_top(pmxtop, outfile='pmxtop.top', scale_mass=False,
     print 'log_> Making "vdw" topology : "%s"' % out_file_vdw
     contQ = deepcopy(qA)
     pmxtop.write(out_file_vdw, stateQ='BB', stateTypes='AB', dummy_qA='off',
-                dummy_qB='off', scale_mass=scale_mass,
-                target_qB=contQ, stateBonded='AB', full_morphe=False)
+                 dummy_qB='off', scale_mass=scale_mass,
+                 target_qB=contQ, stateBonded='AB', full_morphe=False)
     print 'log_> Charge of state A: %g' % pmxtop.qA
     print 'log_> Charge of state B: %g' % pmxtop.qB
     print '------------------------------------------------------'
 
     print 'log_> Making "qon" topology : "%s"' % out_file_qon
     pmxtop.write(out_file_qon, stateQ='BB', stateTypes='BB', dummy_qA='off',
-                dummy_qB='on', scale_mass=scale_mass, target_qB=qB,
-                stateBonded='BB', full_morphe=False)
+                 dummy_qB='on', scale_mass=scale_mass, target_qB=qB,
+                 stateBonded='BB', full_morphe=False)
     print 'log_> Charge of state A: %g' % pmxtop.qA
     print 'log_> Charge of state B: %g' % pmxtop.qB
     print '------------------------------------------------------'
+
+
+# =============
+# Input Options
+# =============
+def parse_options():
+    parser = argparse.ArgumentParser(description='''
+This script fills in the B state to a topology file (itp or top) according to
+the hybrid residues present in the file. If you provide a top file with
+include statemets, the script will run through the included itp files too.
+
+You need to use this script after having mutated a structure file with pmx mutate,
+and after having passed that mutated structure through pdb2gmx.
+''')
+
+    parser.add_argument('-p',
+                        metavar='topol',
+                        dest='intop',
+                        type=str,
+                        help='Input topology file (itp or top). '
+                        'Default is "topol.top"',
+                        default='topol.top')
+    parser.add_argument('-o',
+                        metavar='outfile',
+                        dest='outfile',
+                        type=str,
+                        help='Output topology file. '
+                        'Default is "pmxtop.top"',
+                        default='pmxtop.top')
+    parser.add_argument('-ff',
+                        metavar='ff',
+                        dest='ff',
+                        type=str.lower,
+                        help='Force field to use. If -p is a top file, it is '
+                        'not necessary to specify the forcefield, as it will '
+                        'be deremined automatically. If -p is an itp file, '
+                        'then -ff is needed, and if it not provided a list of '
+                        'available ff will be shown.',
+                        default=None)
+    parser.add_argument('--split',
+                        dest='split',
+                        help='Write two separate topologies for vdw and q '
+                        'morphing.',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--scale_mass',
+                        dest='scale_mass',
+                        help='Scale the masses of morphing atoms so that '
+                        'dummies have a mass of 1.',
+                        default=False,
+                        action='store_true')
+
+    args, unknown = parser.parse_known_args()
+
+    # ff selection is required if file provided is an itp
+    if args.intop.split('.')[-1] == 'itp' and args.ff is None:
+        args.ff = ff_selection()
+
+    return args
 
 
 def main(args):
@@ -1198,7 +1203,7 @@ def main(args):
     ff = args.ff
     scale_mass = args.scale_mass
 
-    # if input is itp but output is top, rename output
+    # if input is itp but output is else, rename output
     if top_file_ext == 'itp' and outfile.split('.')[-1] != 'itp':
         out_file = _change_outfile_format(outfile, 'itp')
         print 'log_> Setting outfile name to %s' % out_file
@@ -1207,7 +1212,7 @@ def main(args):
     print 'log_> Reading input .%s file "%s""' % (top_file_ext, top_file)
     topol = Topology(top_file, ff=ff, version='new')
     # fill the B states
-    pmxtop = fill_bstate(topol=topol, ff=ff)
+    pmxtop = fill_bstate(topol=topol)
     # write hybrid topology
     pmxtop.write(outfile, scale_mass=scale_mass)
 
