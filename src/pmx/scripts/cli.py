@@ -17,6 +17,7 @@ class PmxCli(object):
 
     Available commands are:
         mutate     Mutate protein or DNA/RNA
+        filltop    FIll hybrid topology with B states
         analyse    Estimate free energy from Gromacs xvg files''',
             formatter_class=RawTextHelpFormatter)
 
@@ -34,6 +35,10 @@ class PmxCli(object):
     def mutate(self):
         import mutate
         mutate.entry_point()
+
+    def filltop(self):
+        import generate_hybrid_topology
+        generate_hybrid_topology.entry_point()
 
     def analyse(self):
         import analyze_dgdl
