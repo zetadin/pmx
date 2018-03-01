@@ -39,7 +39,7 @@ import sys
 from glob import glob
 import types
 import numpy as np
-from re import split as resplit
+import re
 
 
 # =============
@@ -333,8 +333,48 @@ def gauss_func(A, mean, dev, x):
 
 def natural_sort(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
-    alphanum_key = lambda key: [convert(c) for c in resplit('([0-9]+)', key)]
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
     return sorted(l, key=alphanum_key)
+
+
+def multiple_replace(text, word_dic, isfile=False):
+    """Takes a text and replace words that match a key in a dictionary with
+    the associated value, returning the modified text.
+
+    Parameters
+    ----------
+    text : str
+        input text
+    word_dic : dict
+        dictionary where keys strings are replaced by their value strings
+    isfile : bool, optional
+        if isfile is True, the input 'text' will be considered a textfile,
+        which will be opened, the patterns replaced, and written again.
+
+    Returns
+    -------
+    newtext : str
+        output text with strings replaced
+
+    Examples
+    --------
+    >>> a = 'hello, John'
+    >>> multiple_replace(a, {'hello':'goodbye', 'John':'Mark'})
+    'goodbye, Mark'
+
+    """
+
+    rc = re.compile('|'.join(map(re.escape, word_dic)))
+    def translate(match):
+        return word_dic[match.group(0)]
+
+    if isfile is False:
+        return rc.sub(translate, text)
+    elif isfile is True:
+        f = open(text, 'r').read()
+        newf = rc.sub(translate, f)
+        with open(text, 'w') as out:
+            out.write(newf)
 
 
 # ========================
