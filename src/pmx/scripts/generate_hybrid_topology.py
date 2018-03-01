@@ -36,7 +36,7 @@ from copy import deepcopy
 from pmx.model import Model
 from pmx.forcefield import Topology
 from pmx.mutdb import read_mtp_entry
-from pmx.utils import mtpError, get_ff_path, ff_selection
+from pmx.utils import mtpError, ff_selection
 from pmx.utils import get_mtp_file
 from pmx.library import _perturbed_nucleotides
 
@@ -545,7 +545,7 @@ def find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
                                                                     a4.typeB,
                                                                     func)
                         # need to check if the dihedral has torsion pre-defined
-                        counter = check_dih_ILDN_OPLS(topol,rlist,rdic, a1, a2, a3, a4)
+                        counter = check_dih_ILDN_OPLS(topol, rlist, rdic, a1, a2, a3, a4)
 
                         if counter == 42:
                             continue
@@ -1018,7 +1018,7 @@ def __add_extra_DNA_RNA_impropers(topol, rlist, func_type, stateA, stateB):
 # main func
 #
 
-def fill_bstate(topol):
+def fill_bstate(topol, verbose=False):
     """Fills the bstate of a topology file containing pmx hybrid residues. This
     can be either a top or itp file. If the top file contains itp file via
     include statements, the function will iterate through all of them to look
@@ -1051,8 +1051,9 @@ def fill_bstate(topol):
     rlist, rdic = get_hybrid_residues(m=m, ff=ff, version='new')
     # correct b-states
     pmxtop.assign_fftypes()
-    for r in rlist:
-        print('log_> Hybrid Residue -> %d | %s ' % (r.id, r.resname))
+    if verbose is True:
+        for r in rlist:
+            print('log_> Hybrid Residue -> %d | %s ' % (r.id, r.resname))
 
     find_bonded_entries(pmxtop)
     find_angle_entries(pmxtop)
@@ -1063,8 +1064,9 @@ def fill_bstate(topol):
 
     __add_extra_DNA_RNA_impropers(pmxtop, rlist, 1, [180, 40, 2], [180, 40, 2])
 
-    print('log_> Total charge of state A = %.f' % pmxtop.get_qA())
-    print('log_> Total charge of state B = %.f' % pmxtop.get_qB())
+    if verbose is True:
+        print('log_> Total charge of state A = %.f' % pmxtop.get_qA())
+        print('log_> Total charge of state B = %.f' % pmxtop.get_qB())
 
     # if prolines are involved, break one bond (CD-CG)
     # and angles X-CD-CG, CD-CG-X
@@ -1107,33 +1109,38 @@ def write_split_top(pmxtop, outfile='pmxtop.top', scale_mass=False,
     qA = pmxtop.get_hybrid_qA()
     qB = pmxtop.get_hybrid_qB()
 
-    print '------------------------------------------------------'
-    print 'log_> Creating splitted topologies............'
-    print 'log_> Making "qoff" topology : "%s"' % out_file_qoff
+    if verbose is True:
+        print '------------------------------------------------------'
+        print 'log_> Creating splitted topologies............'
+
+        print 'log_> Making "qoff" topology : "%s"' % out_file_qoff
     contQ = deepcopy(qA)
     pmxtop.write(out_file_qoff, stateQ='AB', stateTypes='AA', dummy_qB='off',
                  scale_mass=scale_mass, target_qB=qA, stateBonded='AA',
                  full_morphe=False)
-    print 'log_> Charge of state A: %g' % pmxtop.qA
-    print 'log_> Charge of state B: %g' % pmxtop.qB
-
-    print '------------------------------------------------------'
-    print 'log_> Making "vdw" topology : "%s"' % out_file_vdw
+    if verbose is True:
+        print 'log_> Charge of state A: %g' % pmxtop.qA
+        print 'log_> Charge of state B: %g' % pmxtop.qB
+    if verbose is True:
+        print '------------------------------------------------------'
+        print 'log_> Making "vdw" topology : "%s"' % out_file_vdw
     contQ = deepcopy(qA)
     pmxtop.write(out_file_vdw, stateQ='BB', stateTypes='AB', dummy_qA='off',
                  dummy_qB='off', scale_mass=scale_mass,
                  target_qB=contQ, stateBonded='AB', full_morphe=False)
-    print 'log_> Charge of state A: %g' % pmxtop.qA
-    print 'log_> Charge of state B: %g' % pmxtop.qB
-    print '------------------------------------------------------'
+    if verbose is True:
+        print 'log_> Charge of state A: %g' % pmxtop.qA
+        print 'log_> Charge of state B: %g' % pmxtop.qB
+        print '------------------------------------------------------'
 
-    print 'log_> Making "qon" topology : "%s"' % out_file_qon
+        print 'log_> Making "qon" topology : "%s"' % out_file_qon
     pmxtop.write(out_file_qon, stateQ='BB', stateTypes='BB', dummy_qA='off',
                  dummy_qB='on', scale_mass=scale_mass, target_qB=qB,
                  stateBonded='BB', full_morphe=False)
-    print 'log_> Charge of state A: %g' % pmxtop.qA
-    print 'log_> Charge of state B: %g' % pmxtop.qB
-    print '------------------------------------------------------'
+    if verbose is True:
+        print 'log_> Charge of state A: %g' % pmxtop.qA
+        print 'log_> Charge of state B: %g' % pmxtop.qB
+        print '------------------------------------------------------'
 
 
 # =============
@@ -1212,7 +1219,7 @@ def main(args):
     print 'log_> Reading input .%s file "%s""' % (top_file_ext, top_file)
     topol = Topology(top_file, ff=ff, version='new')
     # fill the B states
-    pmxtop = fill_bstate(topol=topol)
+    pmxtop = fill_bstate(topol=topol, verbose=True)
     # write hybrid topology
     pmxtop.write(outfile, scale_mass=scale_mass)
 
