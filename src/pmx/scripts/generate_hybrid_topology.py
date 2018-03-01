@@ -1192,24 +1192,25 @@ def write_split_top(pmxtop, outfile='pmxtop.top', scale_mass=False,
 
 def main(args):
 
-    scale_mass = args.scale_mass
     top_file = args.intop
     outfile = args.outfile
     ff = args.ff
     ff_path = get_ff_path(ff)
+    scale_mass = args.scale_mass
 
     # if input is itp but output is top, rename output
     if top_file.split('.')[-1] == 'itp' and outfile.split('.')[-1] != 'itp':
         out_file = _change_outfile_format(outfile, 'itp')
         print 'log_> Setting outfile name to %s' % out_file
 
+    # load topology
     if top_file.split('.')[-1] == 'itp':
         print 'log_> Reading input .itp file "%s""' % (top_file)
-        topol = Topology(top_file, topfile=None, version='new',
+        topol = Topology(top_file, version='new',
                          ff=ff, ffpath=ff_path)
     else:
         print 'log_> Reading input .top file "%s"' % (top_file)
-        topol = Topology(top_file, topfile=top_file, version='new',
+        topol = Topology(top_file, version='new',
                          ff=ff)
 
     # fill the B states

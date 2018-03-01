@@ -70,6 +70,7 @@ def cpp_parse_file(fn, cpp_defs=[], cpp_path=[os.environ.get('GMXLIB')],
         defs.append('-D%s' % d)
     for i in cpp_path:
         incs.append('-I%s' % i)
+
     if itp:
         cmd1 = 'cpp -traditional %s %s %s ' % (' '.join(defs), ' '.join(incs), fn)
         l1 = os.popen(cmd1, 'r').readlines()
@@ -1088,17 +1089,20 @@ class Topology(TopolBase):
     constrains : list
     """
 
-    def __init__(self, filename, topfile=None, assign_types=True,
+    def __init__(self, filename, assign_types=True, is_itp=None,
                  cpp_path=[os.environ.get('GMXLIB')], cpp_defs=[],
                  version='old', ff='amber', ffpath=None):
         TopolBase.__init__(self, filename, version)
-        bItp = False
-        if topfile is None:
-            topfile = filename
-            bItp = True
+
+        # is_itp is already an attribute of TopolBase that is assigned at init
+        # however, if is_itp explicitly set, then overwrite attribute
+        if is_itp is not None:
+            self.is_itp = is_itp
+
         if assign_types:
-            l = cpp_parse_file(topfile, cpp_defs=cpp_defs, cpp_path=cpp_path,
-                               itp=bItp, ffpath=ffpath)
+            l = cpp_parse_file(self.filename, cpp_defs=cpp_defs,
+                               cpp_path=cpp_path, itp=self.is_itp,
+                               ffpath=ffpath)
             l = kickOutComments(l, '#')
             l = kickOutComments(l, ';')
             self.BondedParams = BondedParser(l)
