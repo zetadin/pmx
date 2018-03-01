@@ -257,6 +257,8 @@ def fill_bstate(topol, recursive=True, verbose=False):
     # -------------
     # Main topology
     # -------------
+    print('\nlog_> Reading input %s file "%s"'
+          % (topol.filename.split('.')[-1], topol.filename))
     pmx_top = process_topol(topol=topol, ff=ff, ffbonded_file=ffbonded_file,
                             verbose=verbose)
 
@@ -1329,7 +1331,7 @@ def _get_hybrid_residue(residue_name, mtp_file='ffamber99sb.mtp',
     return resi, bonds, imps, diheds, rotdic
 
 
-def _get_hybrid_residues(m, ff, version, verbose=False):
+def _get_hybrid_residues(m, ff, version='new', verbose=False):
     rdic = {}
     rlist = []
     for res in m.residues:
@@ -1337,7 +1339,10 @@ def _get_hybrid_residues(m, ff, version, verbose=False):
             rlist.append(res)
             # get topol params for hybrid
             mtp_file = get_mtp_file(res, ff)
-            mtp = _get_hybrid_residue(res.resname, mtp_file, version, verbose)
+            mtp = _get_hybrid_residue(residue_name=res.resname,
+                                      mtp_file=mtp_file,
+                                      version=version,
+                                      verbose=verbose)
             rdic[res.resname] = mtp
             hybrid_res = mtp[0]
             atom_names = map(lambda a: a.name, hybrid_res.atoms)

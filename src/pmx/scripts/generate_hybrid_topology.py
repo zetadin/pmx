@@ -129,7 +129,6 @@ def main(args):
         print('log_> Setting outfile name to %s' % outfile)
 
     # load topology file
-    print('\nlog_> Reading input .%s file "%s""' % (top_file_ext, top_file))
     topol = Topology(top_file, ff=ff, version='new')
 
     # fill the B states
