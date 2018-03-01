@@ -18,6 +18,7 @@ list of examples:
    :maxdepth: 1
 
    mutate
+   hybrid_topology
    analysis
 
 
