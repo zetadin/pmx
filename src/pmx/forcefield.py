@@ -52,7 +52,16 @@ def TR(s):
 def cpp_parse_file(fn, cpp_defs=[], cpp_path=[os.environ.get('GMXLIB')],
                    itp=False, ffpath=None):
 
-    """File parser using cpp?
+    """Expands a gromacs topology by including all force field files etc.
+
+    Parameters
+    ----------
+    fn : str
+        topology file
+    cpp_defs : list
+        ???
+    cpp_path : list
+        list of paths
     """
 
     defs = []
@@ -64,13 +73,13 @@ def cpp_parse_file(fn, cpp_defs=[], cpp_path=[os.environ.get('GMXLIB')],
     if itp:
         cmd1 = 'cpp -traditional %s %s %s ' % (' '.join(defs), ' '.join(incs), fn)
         l1 = os.popen(cmd1, 'r').readlines()
-        if ffpath is None:
+        if ffpath is not None:
             ffname = ffpath+'/forcefield.itp'
             cmd2 = 'cpp -traditional %s %s %s ' % (' '.join(defs), ' '.join(incs), ffname)
             l2 = os.popen(cmd2, 'r').readlines()
             return(l1+l2)
         else:
-            return(l1)
+            return l1
     else:
         cmd = 'cpp -traditional %s %s %s ' % (' '.join(defs), ' '.join(incs), fn)
         return os.popen(cmd, 'r').readlines()
@@ -1064,6 +1073,19 @@ class ITPFile(TopolBase):
 
 class Topology(TopolBase):
     """Topology class.
+
+    Parameters
+    ----------
+    filename : str
+    topfile : str, optional
+    assign_types : bool, optional
+
+    Attributes
+    ----------
+    atoms : list
+    residues : list
+    bonds : list
+    constrains : list
     """
 
     def __init__(self, filename, topfile=None, assign_types=True,
@@ -1071,7 +1093,7 @@ class Topology(TopolBase):
                  version='old', ff='amber', ffpath=None):
         TopolBase.__init__(self, filename, version)
         bItp = False
-        if not topfile:
+        if topfile is None:
             topfile = filename
             bItp = True
         if assign_types:
