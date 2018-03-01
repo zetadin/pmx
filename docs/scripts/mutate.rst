@@ -1,3 +1,5 @@
+.. _script_mutate:
+
 Mutate
 ------
 

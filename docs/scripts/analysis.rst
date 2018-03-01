@@ -1,5 +1,5 @@
-Analysis
---------
+Analyse
+-------
 
 The ``pmx analyse`` script can be used to analyse the xvg output from Gromacs.
 The tutorial [add link] discusses the analysis of the calculations more in detail. ::

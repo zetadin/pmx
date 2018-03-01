@@ -17,7 +17,7 @@ class PmxCli(object):
 
     Available commands are:
         mutate     Mutate protein or DNA/RNA
-        filltop    FIll hybrid topology with B states
+        filltop    Fill hybrid topology with B states
         analyse    Estimate free energy from Gromacs xvg files''',
             formatter_class=RawTextHelpFormatter)
 

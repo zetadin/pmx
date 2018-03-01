@@ -3,7 +3,7 @@
 Scripts
 =======
 
-pmx provides a few command line scripts that can be used to setup and analyse
+**pmx** provides a few command line scripts that can be used to setup and analyse
 free energy calculations. After installing the library, ``pmx``
 should be in your  ``$PATH``. You can check this with the following command. ::
 
@@ -20,6 +20,7 @@ The ``pmx`` help will show the scripts available. ::
 
     Available commands are:
         mutate     Mutate protein or DNA/RNA
+        filltop    Fill hybrid topology with B states
         analyse    Estimate free energy from Gromacs xvg files
 
     optional arguments:
@@ -31,6 +32,7 @@ A description of these scripts can be found here:
    :maxdepth: 1
 
    mutate
+   filltop
    analysis
 
 In the :ref:`examples` you can find instead how the same tasks can be carried out

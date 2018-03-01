@@ -78,14 +78,14 @@ mutate, and after having passed that mutated structure through pdb2gmx.
                         type=str.lower,
                         help='Force field to use. If -p is a top file, it is '
                         'not necessary to specify the forcefield, as it will '
-                        'be deremined automatically. If -p is an itp file, '
+                        'be determined automatically. If -p is an itp file, '
                         'then -ff is needed, and if it not provided a list of '
                         'available ff will be shown.',
                         default=None)
     parser.add_argument('--split',
                         dest='split',
-                        help='Write two separate topologies for vdw and q '
-                        'morphing.',
+                        help='Write separate topologies for the vdW and charge'
+                        ' transformations.',
                         default=False,
                         action='store_true')
     parser.add_argument('--scale_mass',
