@@ -596,7 +596,7 @@ class TopolBase:
         self.qA = 0
         self.qB = 0
         for r in self.residues:
-            if self.__is_perturbed_residue(r):
+            if _is_perturbed_residue(r):
                 try:
                     target_chargeB = target_qB.pop(0)
                 except:
@@ -604,7 +604,7 @@ class TopolBase:
                 TR('Making target charge %g for residue %s' %
                    (round(target_chargeB, 5), r.resname))
                 for atom in r.atoms:
-                    if self.__atoms_morphe([atom]):
+                    if _atoms_morphe([atom]):
                         # we move the charges from state A to state B
                         if charges == 'AB':
                             atom.qqA = atom.q
@@ -653,7 +653,7 @@ class TopolBase:
                 if round(qB_tot, 5) != round(target_chargeB, 5):
                     TR('State B has total charge of %g' % round(qB_tot, 5))
                     TR('Applying charge correction to ensure integer charges')
-                    latom = self.__last_perturbed_atom(r)
+                    latom = _last_perturbed_atom(r)
                     TR('Selecting atom %d-%s (%s) as perturbed atom with highest order'
                         % (latom.id, latom.name, latom.resname))
                     newqB = latom.qqB-(qB_tot-target_chargeB)
@@ -669,7 +669,7 @@ class TopolBase:
         print >>fp, ';   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB'
         al = self.atoms
         for atom in al:
-            if self.__atoms_morphe([atom]):
+            if _atoms_morphe([atom]):
 
                 if atomtypes == 'AB':
                     atA = atom.atomtype
@@ -846,7 +846,7 @@ class TopolBase:
                                                         d[2].id, d[3].id,
                                                         d[4], d[5])
             elif len(d) == 7:
-                A, B = self.__check_case(d[:4])
+                A, B = _check_case(d[:4])
                 ast = d[5]
                 bs = d[6]
                 if ast is None or bs is None:
@@ -969,53 +969,6 @@ class TopolBase:
     # ===============
     # other functions
     # ===============
-    def __check_case(self, atoms):
-            A = ''
-            B = ''
-            for a in atoms:
-                if a.atomtype.startswith('DUM'):
-                    A += 'D'
-                else:
-                    A += 'A'
-                if a.atomtypeB is not None:
-                    if a.atomtypeB.startswith('DUM'):
-                        B += 'D'
-                    else:
-                        B += 'A'
-                else:
-                    B += 'A'
-            return A, B
-
-    def __atoms_morphe(self, atoms):
-        for atom in atoms:
-            if atom.atomtypeB is not None and (atom.q != atom.qB or
-                                               atom.m != atom.mB or
-                                               atom.atomtype != atom.atomtypeB):
-                return True
-        return False
-
-    def __atomtypes_morphe(self, atoms):
-        for atom in atoms:
-            if atom.atomtypeB is not None and atom.atomtype != atom.atomtypeB:
-                return True
-        return False
-
-    def __is_perturbed_residue(self, residue):
-        if self.__atoms_morphe(residue.atoms):
-            return True
-        return False
-
-    def __last_perturbed_atom(self, r):
-        last_atom = None
-        for atom in r.atoms:
-            if self.__atoms_morphe([atom]) and atom.name not in ['N', 'CA', 'C', 'O', 'H']:
-                if not atom.atomtype.startswith('DUM') and not atom.atomtypeB.startswith('DUM'):
-                    last_atom = atom
-        if last_atom is None:
-            print >>sys.stderr, 'Error: Could not find a perturbed atom to put rest charges on !'
-            sys.exit(1)
-        return last_atom
-
     def get_qA(self):
         """Returns the total charge of state A.
         """
@@ -1065,7 +1018,7 @@ class TopolBase:
         for r in rlist:
             qb = 0
             for atom in r.atoms:
-                if self.__atoms_morphe([atom]):
+                if _atoms_morphe([atom]):
                     qb += atom.qB
                 else:
                     qb += atom.q
@@ -1449,6 +1402,65 @@ class MDP:
 # ==============================================================================
 # FUNCTIONS
 # ==============================================================================
+
+# -----------------
+# "check" functions
+# -----------------
+def _check_case(atoms):
+        A = ''
+        B = ''
+        for a in atoms:
+            if a.atomtype.startswith('DUM'):
+                A += 'D'
+            else:
+                A += 'A'
+            if a.atomtypeB is not None:
+                if a.atomtypeB.startswith('DUM'):
+                    B += 'D'
+                else:
+                    B += 'A'
+            else:
+                B += 'A'
+        return A, B
+
+
+def _atoms_morphe(atoms):
+    for atom in atoms:
+        if atom.atomtypeB is not None and (atom.q != atom.qB or
+                                           atom.m != atom.mB or
+                                           atom.atomtype != atom.atomtypeB):
+            return True
+    return False
+
+
+def _atomtypes_morphe(atoms):
+    for atom in atoms:
+        if atom.atomtypeB is not None and atom.atomtype != atom.atomtypeB:
+            return True
+    return False
+
+
+def _is_perturbed_residue(residue):
+    if _atoms_morphe(residue.atoms):
+        return True
+    return False
+
+
+def _last_perturbed_atom(r):
+    last_atom = None
+    for atom in r.atoms:
+        if _atoms_morphe([atom]) and atom.name not in ['N', 'CA', 'C', 'O', 'H']:
+            if not atom.atomtype.startswith('DUM') and not atom.atomtypeB.startswith('DUM'):
+                last_atom = atom
+    if last_atom is None:
+        print >>sys.stderr, 'Error: Could not find a perturbed atom to put rest charges on !'
+        sys.exit(1)
+    return last_atom
+
+
+# -----------------------
+# Amber related functions
+# -----------------------
 def make_amber_residue_names(model):
     """ Function that does this...
     """
@@ -1555,7 +1567,9 @@ def assign_ffamber99sb_params(m):
     rtp.assign_dihedral_params(m, bo.directives)
 
 
+# ---------------------------
 # functions to get the energy
+# ---------------------------
 # should these be methods in the Model class?
 def bond_energy(m):
     return _p.total_bond_energy(m.bond_list)

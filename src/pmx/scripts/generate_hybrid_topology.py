@@ -35,41 +35,10 @@ import argparse
 from copy import deepcopy
 from pmx.model import Model
 from pmx.forcefield import Topology
+from pmx.forcefield import _check_case, _atoms_morphe
 from pmx.mutdb import read_mtp_entry
 from pmx.utils import mtpError, MissingTopolParamError
 from pmx.utils import get_mtp_file, ff_selection
-
-
-def _check_case(atoms):
-    A = ''
-    B = ''
-    for a in atoms:
-        if a.atomtype.startswith('DUM'):
-            A += 'D'
-        else:
-            A += 'A'
-        if a.atomtypeB is not None:
-            if a.atomtypeB.startswith('DUM'):
-                B += 'D'
-            else:
-                B += 'A'
-        else:
-            B += 'A'
-    return A, B
-
-
-def atoms_morphe(atoms):
-    for atom in atoms:
-        if atom.atomtypeB is not None and (atom.q != atom.qB or atom.m != atom.mB or atom.atomtype != atom.atomtypeB):
-            return True
-    return False
-
-
-def types_morphe(atoms):
-    for atom in atoms:
-        if atom.atomtypeB is not None and atom.atomtype != atom.atomtypeB:
-            return True
-    return False
 
 
 def proline_dihedral_decouplings(topol, rlist, rdic):
@@ -496,7 +465,7 @@ def find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
 
             backup_d = d[:6]
 
-            if atoms_morphe([a1, a2, a3, a4]):
+            if _atoms_morphe([a1, a2, a3, a4]):
                 A, B = _check_case(d[:4])
                 if A != 'AAAA' and B != 'AAAA':
                     nfake += 1
