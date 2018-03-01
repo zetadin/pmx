@@ -374,7 +374,8 @@ def main(args):
                    mut_resid=mut[0],
                    mut_resname=mut[1],
                    ff=ff,
-                   refB=infileB)
+                   refB=infileB,
+                   verbose=True)
     # if not provided, interactive selection
     else:
         do_more = True
@@ -384,7 +385,8 @@ def main(args):
                    mut_resid=sele.mut_resid,
                    mut_resname=sele.mut_resname,
                    ff=ff,
-                   refB=infileB)
+                   refB=infileB,
+                   verbose=True)
             if not _ask_next():
                 do_more = False
 

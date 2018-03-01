@@ -21,12 +21,12 @@ __all__ = ['mutate', 'fill_bstate', 'write_split_top']
 # ==============
 # Main Functions
 # ==============
-def mutate(m, mut_resid, mut_resname, ff, refB=None):
-    """Creates an hybrid structure file.
+def mutate(m, mut_resid, mut_resname, ff, refB=None, verbose=False):
+    """Creates an hybrid structure file. Model is modified in place.
 
     Parameters
     ----------
-    m : Model object
+    m : Model
         The model to be mutated. See :py:class:`pmx.model.Model`.
     mut_resid : int
         The ID of the residue to be mutated.
@@ -34,16 +34,17 @@ def mutate(m, mut_resid, mut_resname, ff, refB=None):
         The target residue.
     ff : str
         The forcefield to use.
-    refB : str (optional)
+    refB : str, optional
         Reference structure file of the B state in PDB or GRO format. If it is
         provided, the dummy atoms will be built based on the position of the
         atoms in this structure. This option is available only for Protein
         mutations.
+    verbose : bool, optional
+        whether to print info
 
     Returns
     -------
-    Model is modified in place.
-
+    None
     """
 
     # check selection is valid
@@ -57,14 +58,17 @@ def mutate(m, mut_resid, mut_resname, ff, refB=None):
     # Mutation if Protein
     if residue.moltype == 'protein':
         new_aa_name = _convert_aa_name(mut_resname)
-        apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB)
+        apply_aa_mutation(m=m, residue=residue, new_aa_name=new_aa_name,
+                          mtp_file=mtp_file, refB=refB, verbose=verbose)
     # Mutation if DNA or RNA
     elif residue.moltype in ['dna', 'rna']:
         new_nuc_name = mut_resname.upper()
-        apply_nuc_mutation(m, residue, new_nuc_name, mtp_file)
+        apply_nuc_mutation(m=m, residue=residue, new_nuc_name=new_nuc_name,
+                           mtp_file=mtp_file, verbose=verbose)
 
 
-def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None):
+def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None,
+                      verbose=False):
 
     if residue.resname == 'ILE':
         _rename_ile(residue)
@@ -78,10 +82,13 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None):
         olkey = _check_OPLS_LYS(residue)
 
     hybrid_residue_name = olkey+'2'+new_aa_name
-    print('log_> Residue to mutate: %d | %s | %s ' % (residue.id, residue.resname, residue.chain_id))
-    print('log_> Mutation to apply: %s->%s' % (olkey, new_aa_name))
-    print('log_> Hybrid residue name: %s' % hybrid_residue_name)
-    hybrid_res, bonds, imps, diheds, rotdic = get_hybrid_residue(hybrid_residue_name, mtp_file)
+    if verbose is True:
+        print('log_> Residue to mutate: %d | %s | %s ' % (residue.id, residue.resname, residue.chain_id))
+        print('log_> Mutation to apply: %s->%s' % (olkey, new_aa_name))
+        print('log_> Hybrid residue name: %s' % hybrid_residue_name)
+    hybrid_res, bonds, imps, diheds, rotdic = get_hybrid_residue(hybrid_residue_name,
+                                                                 mtp_file,
+                                                                 verbose)
     bb_super(residue, hybrid_res)
 
     # VG rename residue atoms
@@ -89,7 +96,8 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None):
     hash2 = _rename_to_match_library(hybrid_res)
     _set_conformation(residue, hybrid_res, rotdic)
     if refB is not None:
-        print("log_> Set Bstate geometry according to the provided structure")
+        if verbose is True:
+            print("log_> Set Bstate geometry according to the provided structure")
         mB = Model(refB, bPDBTER=True, for_gmx=True)
         residueB = mB.residues[residue.id-1]
         bb_super(residue, residueB)
@@ -103,29 +111,36 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None):
     # VG rename residue atoms back
 
     m.replace_residue(residue, hybrid_res)
-    print('log_> Inserted hybrid residue %s at position %d (chain %s)' %
-          (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
+    if verbose is True:
+        print('log_> Inserted hybrid residue %s at position %d (chain %s)' %
+              (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
 
 
-def apply_nuc_mutation(m, residue, new_nuc_name, mtp_file):
+def apply_nuc_mutation(m, residue, new_nuc_name, mtp_file, verbose=False):
 
     hybrid_residue_name, resname1, resname2 = get_nuc_hybrid_resname(residue, new_nuc_name)
-    print 'log_> Residue to mutate: %d | %s | %s ' % (residue.id, residue.resname, residue.chain_id)
-    print 'log_> Mutation to apply: %s->%s' % (residue.resname[1], new_nuc_name)
-    print 'log_> Hybrid residue name: %s' % hybrid_residue_name
-    hybrid_res, bonds, imps, diheds, rotdic = get_hybrid_residue(hybrid_residue_name, mtp_file)
+    if verbose is True:
+        print 'log_> Residue to mutate: %d | %s | %s ' % (residue.id, residue.resname, residue.chain_id)
+        print 'log_> Mutation to apply: %s->%s' % (residue.resname[1], new_nuc_name)
+        print 'log_> Hybrid residue name: %s' % hybrid_residue_name
+    hybrid_res, bonds, imps, diheds, rotdic = get_hybrid_residue(hybrid_residue_name,
+                                                                 mtp_file,
+                                                                 verbose)
 
     nuc_super(residue, hybrid_res, resname1, resname2)
     for atom in hybrid_res.atoms:
         if atom.name[0] != 'D':
             atom.x = residue[atom.name].x
     m.replace_residue(residue, hybrid_res)
-    print('log_> Inserted hybrid residue %s at position %d (chain %s)' %
-          (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
+    if verbose is True:
+        print('log_> Inserted hybrid residue %s at position %d (chain %s)' %
+              (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
 
 
-def get_hybrid_residue(residue_name, mtp_file='ffamber99sb.mtp'):
-    print('log_> Scanning database for %s ' % residue_name)
+def get_hybrid_residue(residue_name, mtp_file='ffamber99sb.mtp',
+                       verbose=False):
+    if verbose is True:
+        print('log_> Scanning database for %s ' % residue_name)
     resi, bonds, imps, diheds, rotdic = read_mtp_entry(residue_name,
                                                        filename=mtp_file,
                                                        version='new')
