@@ -39,6 +39,7 @@ from pmx.forcefield import _check_case, _atoms_morphe
 from pmx.mutdb import read_mtp_entry
 from pmx.utils import mtpError, MissingTopolParamError
 from pmx.utils import get_mtp_file, ff_selection
+from pmx.utils import multiple_replace
 
 
 def _proline_dihedral_decouplings(topol, rlist, rdic):
@@ -364,7 +365,7 @@ def _find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
 
             undef, encountered = _is_dih_undef(dih_predef_default, d)
             encountered = _is_dih_encountered_strict(visited_dih, d,
-                                                    encountered)
+                                                     encountered)
             if(encountered == 1):
                 continue
 
@@ -403,7 +404,7 @@ def _find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
                                                                     func)
                         # need to check if the dihedral has torsion pre-defined
                         counter = _check_dih_ILDN_OPLS(topol, rlist, rdic,
-                                                      a1, a2, a3, a4)
+                                                       a1, a2, a3, a4)
                         if counter == 42:
                             continue
 
@@ -476,7 +477,7 @@ def _find_dihedral_entries(topol, rlist, rdic, dih_predef_default):
 
                         # need to check if the dihedral has torsion pre-defined
                         counter = _check_dih_ILDN_OPLS(topol, rlist, rdic,
-                                                      a1, a2, a3, a4)
+                                                       a1, a2, a3, a4)
 
                         # torsion for both states defined, change nothing
                         if counter == 42:
@@ -662,10 +663,10 @@ def _get_torsion_multiplicity(name):
 def _explicit_defined_dihedrals(filename, ff):
     """ get the #define dihedral entries explicitly for ILDN
     """
-    l = open(filename).readlines()
+    lines = open(filename).readlines()
     output = {}
     ffnamelower = ff.lower()
-    for line in l:
+    for line in lines:
         if line.startswith('#define'):
             entr = line.split()
             name = entr[1]
@@ -970,72 +971,108 @@ def _add_extra_DNA_RNA_impropers(topol, rlist, func_type, stateA, stateB):
 #
 # main func
 #
-
-def fill_bstate(topol, verbose=False):
+def fill_bstate(topol, recursive=True, verbose=False):
     """Fills the bstate of a topology file containing pmx hybrid residues. This
-    can be either a top or itp file. If the top file contains itp file via
-    include statements, the function will iterate through all of them to look
-    for hybrid residues.
+    can be either a top or itp file. If the file contains other itp files via
+    include statements, the function can iterate through them if the recursive
+    flag is set to True.
+
+    It returns a Topology instance with b states filled for the input topol
+    instance, and optionally a list of additional Topology instances for the
+    included itp files. If there are no itp files, or if recursive is set to
+    False, then an empty list is returned.
 
     Parameters
     ----------
     topol : Topology
-        input Topology instance.
+        input Topology instance
+    recursive : bool, optional
+        whether to fill b states also for all itp files included in the
+        topology file. Default is True.
+    verbose : bool
+        whether to print out info. Default is False.
 
     Returns
     -------
-    pmxtop : Topology
-        output Topology instance with bstates assigned
+    top, itps : obj, list of obj
+        output Topology instance with b states assigned (top), and
+        list of Topology instances for the additional itp files (itps)
+        included in the input topology.
     """
 
     # ff setup
     ff = topol.forcefield
     ffbonded_file = os.path.join(topol.ffpath, 'ffbonded.itp')
 
-    # -------------------------
-    # Start working on topology
-    # -------------------------
-    pmxtop = deepcopy(topol)
-    # create model with residue list
-    m = Model(atoms=pmxtop.atoms)
-    # use model residue list
-    pmxtop.residues = m.residues
-    # get list of hybrid residues and their params
-    rlist, rdic = _get_hybrid_residues(m=m, ff=ff, version='new')
-    # correct b-states
-    pmxtop.assign_fftypes()
-    if verbose is True:
-        for r in rlist:
-            print('log_> Hybrid Residue -> %d | %s ' % (r.id, r.resname))
+    # main function that returns the Topology with filled B states
+    def process_topol(topol, ff, ffbonded_file):
+        pmxtop = deepcopy(topol)
+        # create model with residue list
+        m = Model(atoms=pmxtop.atoms)
+        # use model residue list
+        pmxtop.residues = m.residues
+        # get list of hybrid residues and their params
+        rlist, rdic = _get_hybrid_residues(m=m, ff=ff, version='new')
+        # correct b-states
+        pmxtop.assign_fftypes()
+        if verbose is True:
+            for r in rlist:
+                print('log_> Hybrid Residue -> %d | %s ' % (r.id, r.resname))
 
-    _find_bonded_entries(pmxtop)
-    _find_angle_entries(pmxtop)
-    dih_predef_default = []
-    _find_predefined_dihedrals(pmxtop, rlist, rdic, ffbonded_file,
-                              dih_predef_default, ff)
-    _find_dihedral_entries(pmxtop, rlist, rdic, dih_predef_default)
+        _find_bonded_entries(pmxtop)
+        _find_angle_entries(pmxtop)
+        dih_predef_default = []
+        _find_predefined_dihedrals(pmxtop, rlist, rdic, ffbonded_file,
+                                   dih_predef_default, ff)
+        _find_dihedral_entries(pmxtop, rlist, rdic, dih_predef_default)
 
-    _add_extra_DNA_RNA_impropers(pmxtop, rlist, 1, [180, 40, 2], [180, 40, 2])
+        _add_extra_DNA_RNA_impropers(pmxtop, rlist, 1, [180, 40, 2], [180, 40, 2])
 
-    if verbose is True:
-        print('log_> Total charge of state A = %.f' % pmxtop.get_qA())
-        print('log_> Total charge of state B = %.f' % pmxtop.get_qB())
+        if verbose is True:
+            print('log_> Total charge of state A = %.f' % pmxtop.get_qA())
+            print('log_> Total charge of state B = %.f' % pmxtop.get_qB())
 
-    # if prolines are involved, break one bond (CD-CG)
-    # and angles X-CD-CG, CD-CG-X
-    # and dihedrals with CD and CG
-    _proline_decouplings(pmxtop, rlist, rdic)
-    # also decouple all dihedrals with [CD and N] and [CB and Calpha] for proline
-    _proline_dihedral_decouplings(pmxtop, rlist, rdic)
+        # if prolines are involved, break one bond (CD-CG)
+        # and angles X-CD-CG, CD-CG-X
+        # and dihedrals with CD and CG
+        _proline_decouplings(pmxtop, rlist, rdic)
+        # also decouple all dihedrals with [CD and N] and [CB and Calpha] for proline
+        _proline_dihedral_decouplings(pmxtop, rlist, rdic)
+        return pmxtop
 
-    return pmxtop
+    # -------------
+    # Main topology
+    # -------------
+    pmx_top = process_topol(topol=topol, ff=ff, ffbonded_file=ffbonded_file)
+
+    # ------------------------------------
+    # itps too if asked for and if present
+    # ------------------------------------
+    itps = topol.include_itps
+    pmx_itps = []
+    if recursive is True and len(itps) > 0:
+        for itp in itps:
+            if verbose is True:
+                print('\nlog_> Reading input itp file "%s""' % (itp))
+            itp_path = os.path.dirname(os.path.relpath(topol.filename))
+            itp_filename = os.path.join(itp_path, itp)
+            topol2 = Topology(itp_filename, ff=ff, version='new')
+            # fill b states
+            pmx_itp = process_topol(topol=topol2, ff=ff,
+                                    ffbonded_file=ffbonded_file)
+            pmx_itps.append(pmx_itp)
+
+    return pmx_top, pmx_itps
 
 
 def write_split_top(pmxtop, outfile='pmxtop.top', scale_mass=False,
                     verbose=False):
-    """Write three topology files to be used for three separate free energy
+    """
+    WARNING: Appears to be currently broken
+
+    Write three topology files to be used for three separate free energy
     calculations: charges off, vdw on, changes on. This can be useful when one
-    wants to avoid using a soft-core for the electrostatic interactions
+    wants to avoid using a soft-core for the electrostatic interactions.
 
     Parameters
     ----------
@@ -1104,10 +1141,11 @@ def parse_options():
     parser = argparse.ArgumentParser(description='''
 This script fills in the B state to a topology file (itp or top) according to
 the hybrid residues present in the file. If you provide a top file with
-include statemets, the script will run through the included itp files too.
+include statemets, by default the script will run through the included itp
+files too; this can turned off using the --norecursive flag.
 
-You need to use this script after having mutated a structure file with pmx mutate,
-and after having passed that mutated structure through pdb2gmx.
+You need to use this script after having mutated a structure file with pmx
+mutate, and after having passed that mutated structure through pdb2gmx.
 ''')
 
     parser.add_argument('-p',
@@ -1146,6 +1184,13 @@ and after having passed that mutated structure through pdb2gmx.
                         'dummies have a mass of 1.',
                         default=False,
                         action='store_true')
+    parser.add_argument('--norecursive',
+                        dest='recursive',
+                        help='Whether to fill the B states also for all itp '
+                        'files included in the provided topology file. '
+                        'Default is True. This flag sets it to False.',
+                        default=True,
+                        action='store_false')
 
     args, unknown = parser.parse_known_args()
 
@@ -1163,19 +1208,39 @@ def main(args):
     outfile = args.outfile
     ff = args.ff
     scale_mass = args.scale_mass
+    recursive = args.recursive
 
     # if input is itp but output is else, rename output
     if top_file_ext == 'itp' and outfile.split('.')[-1] != 'itp':
-        out_file = _change_outfile_format(outfile, 'itp')
-        print('log_> Setting outfile name to %s' % out_file)
+        outfile = _change_outfile_format(outfile, 'itp')
+        print('log_> Setting outfile name to %s' % outfile)
 
     # load topology file
-    print('log_> Reading input .%s file "%s""' % (top_file_ext, top_file))
+    print('\nlog_> Reading input .%s file "%s""' % (top_file_ext, top_file))
     topol = Topology(top_file, ff=ff, version='new')
+
     # fill the B states
-    pmxtop = fill_bstate(topol=topol, verbose=True)
+    pmxtop, pmxitps = fill_bstate(topol=topol, recursive=recursive,
+                                  verbose=True)
+
+    # write hybrid itps if present
+    replace = {}
+    if len(pmxitps) > 0:
+        for pmxitp in pmxitps:
+            itp_fn = os.path.basename(pmxitp.filename)
+            out_fn = 'pmx_%s' % itp_fn
+            # store old/new itp names for replacement in top file
+            replace[itp_fn] = out_fn
+            print('\nlog_> Writing itp file "%s""' % out_fn)
+            pmxitp.write(out_fn, scale_mass=scale_mass)
+
     # write hybrid topology
+    print('\nlog_> Writing topology file "%s""' % outfile)
     pmxtop.write(outfile, scale_mass=scale_mass)
+
+    # if we modified itp files included in top, fix top file
+    if len(pmxitps) > 0:
+        multiple_replace(outfile, replace, isfile=True)
 
     # separated topologies
     if args.split is True:
