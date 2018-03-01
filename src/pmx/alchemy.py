@@ -99,9 +99,10 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None,
         print('log_> Residue to mutate: %d | %s | %s ' % (residue.id, residue.resname, residue.chain_id))
         print('log_> Mutation to apply: %s->%s' % (olkey, new_aa_name))
         print('log_> Hybrid residue name: %s' % hybrid_residue_name)
-    hybrid_res, bonds, imps, diheds, rotdic = get_hybrid_residue(hybrid_residue_name,
-                                                                 mtp_file,
-                                                                 verbose)
+    hybrid_res, bonds, imps, diheds, rotdic = _get_hybrid_residue(residue_name=hybrid_residue_name,
+                                                                  mtp_file=mtp_file,
+                                                                  version='new',
+                                                                  verbose=False)
     bb_super(residue, hybrid_res)
 
     # VG rename residue atoms
@@ -136,9 +137,10 @@ def apply_nuc_mutation(m, residue, new_nuc_name, mtp_file, verbose=False):
         print 'log_> Residue to mutate: %d | %s | %s ' % (residue.id, residue.resname, residue.chain_id)
         print 'log_> Mutation to apply: %s->%s' % (residue.resname[1], new_nuc_name)
         print 'log_> Hybrid residue name: %s' % hybrid_residue_name
-    hybrid_res, bonds, imps, diheds, rotdic = get_hybrid_residue(hybrid_residue_name,
-                                                                 mtp_file,
-                                                                 verbose)
+    hybrid_res, bonds, imps, diheds, rotdic = _get_hybrid_residue(residue_name=hybrid_residue_name,
+                                                                  mtp_file=mtp_file,
+                                                                  version='new',
+                                                                  verbose=False)
 
     nuc_super(residue, hybrid_res, resname1, resname2)
     for atom in hybrid_res.atoms:
@@ -148,19 +150,6 @@ def apply_nuc_mutation(m, residue, new_nuc_name, mtp_file, verbose=False):
     if verbose is True:
         print('log_> Inserted hybrid residue %s at position %d (chain %s)' %
               (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
-
-
-def get_hybrid_residue(residue_name, mtp_file='ffamber99sb.mtp',
-                       verbose=False):
-    if verbose is True:
-        print('log_> Scanning database for %s ' % residue_name)
-    resi, bonds, imps, diheds, rotdic = read_mtp_entry(residue_name,
-                                                       filename=mtp_file,
-                                                       version='new')
-    if len(resi.atoms) == 0:
-        raise(mtpError("Hybrid residue %s not found in %s" %
-                       (residue_name, mtp_file)))
-    return resi, bonds, imps, diheds, rotdic
 
 
 def get_nuc_hybrid_resname(residue, new_nuc_name):
@@ -235,7 +224,8 @@ def fill_bstate(topol, recursive=True, verbose=False):
         # use model residue list
         pmxtop.residues = m.residues
         # get list of hybrid residues and their params
-        rlist, rdic = _get_hybrid_residues(m=m, ff=ff, version='new')
+        rlist, rdic = _get_hybrid_residues(m=m, ff=ff, version='new',
+                                           verbose=verbose)
         # correct b-states
         pmxtop.assign_fftypes()
         if verbose is True:
@@ -1321,8 +1311,9 @@ def _find_predefined_dihedrals(topol, rlist, rdic, ffbonded,
 
 
 def _get_hybrid_residue(residue_name, mtp_file='ffamber99sb.mtp',
-                        version='old'):
-    print('log_> Scanning database for %s ' % residue_name)
+                        version='new', verbose=False):
+    if verbose is True:
+        print('log_> Scanning database for %s ' % residue_name)
     resi, bonds, imps, diheds, rotdic = read_mtp_entry(residue_name,
                                                        filename=mtp_file,
                                                        version=version)
@@ -1332,7 +1323,7 @@ def _get_hybrid_residue(residue_name, mtp_file='ffamber99sb.mtp',
     return resi, bonds, imps, diheds, rotdic
 
 
-def _get_hybrid_residues(m, ff, version):
+def _get_hybrid_residues(m, ff, version, verbose=False):
     rdic = {}
     rlist = []
     for res in m.residues:
@@ -1340,7 +1331,7 @@ def _get_hybrid_residues(m, ff, version):
             rlist.append(res)
             # get topol params for hybrid
             mtp_file = get_mtp_file(res, ff)
-            mtp = _get_hybrid_residue(res.resname, mtp_file, version)
+            mtp = _get_hybrid_residue(res.resname, mtp_file, version, verbose)
             rdic[res.resname] = mtp
             hybrid_res = mtp[0]
             atom_names = map(lambda a: a.name, hybrid_res.atoms)
