@@ -21,50 +21,63 @@ __all__ = ['mutate', 'fill_bstate', 'write_split_top']
 # ==============
 # Main Functions
 # ==============
-def mutate(m, mut_resid, mut_resname, ff, refB=None, verbose=False):
+def mutate(m, mut_resid, mut_resname, ff, refB=None, inplace=False,
+           verbose=False):
     """Creates an hybrid structure file. Model is modified in place.
 
     Parameters
     ----------
     m : Model
-        The model to be mutated. See :py:class:`pmx.model.Model`.
+        the model to be mutated. See :py:class:`pmx.model.Model`.
     mut_resid : int
-        The ID of the residue to be mutated.
+        the ID of the residue to be mutated.
     mut_resname : str
-        The target residue.
+        the target residue.
     ff : str
-        The forcefield to use.
+        the forcefield to use.
     refB : str, optional
-        Reference structure file of the B state in PDB or GRO format. If it is
+        reference structure file of the B state in PDB or GRO format. If it is
         provided, the dummy atoms will be built based on the position of the
         atoms in this structure. This option is available only for Protein
         mutations.
+    inplace : bool, optional
+        whether to modify the input Model in place. Default is False.
     verbose : bool, optional
-        whether to print info
+        whether to print info. Defaul is False.
 
     Returns
     -------
-    None
+    m2 : Model
+        model with mutated residues. If argument 'inplace' is True, nothing is
+        returned.
     """
 
+    if inplace is True:
+        m2 = m
+    elif inplace is False:
+        m2 = deepcopy(m)
+
     # check selection is valid
-    if not _check_residue_range(m, mut_resid):
+    if not _check_residue_range(m2, mut_resid):
         raise RangeCheckError(mut_resid)
     # get the residue
-    residue = m.residues[mut_resid - 1]
+    residue = m2.residues[mut_resid - 1]
     # get the correct mtp file
     mtp_file = get_mtp_file(residue, ff)
 
     # Mutation if Protein
     if residue.moltype == 'protein':
         new_aa_name = _convert_aa_name(mut_resname)
-        apply_aa_mutation(m=m, residue=residue, new_aa_name=new_aa_name,
+        apply_aa_mutation(m=m2, residue=residue, new_aa_name=new_aa_name,
                           mtp_file=mtp_file, refB=refB, verbose=verbose)
     # Mutation if DNA or RNA
     elif residue.moltype in ['dna', 'rna']:
         new_nuc_name = mut_resname.upper()
-        apply_nuc_mutation(m=m, residue=residue, new_nuc_name=new_nuc_name,
+        apply_nuc_mutation(m=m2, residue=residue, new_nuc_name=new_nuc_name,
                            mtp_file=mtp_file, verbose=verbose)
+
+    if inplace is False:
+        return m2
 
 
 def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None,
