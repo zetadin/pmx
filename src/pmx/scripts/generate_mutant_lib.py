@@ -894,7 +894,7 @@ def update_bond_lists(r1, badic):
             while atom.bonds:
                 at = atom.bonds.pop(0)
                 print atom.name, '->', at.name
-                if at.name in badic.has_key:
+                if at.name in badic:
                     aa = r1.fetch(badic[at.name])[0]
                     new_list.append(aa)
                 else:
