@@ -1,4 +1,4 @@
-AMBER99SB14
+Amber99sb-star-ildn for DNA
 
 ********************************************************************
 * Amber99sb-ildn is an improvement to Amber99SB by                 *
@@ -9,4 +9,3 @@ AMBER99SB14
 * Improved side-chain torsion potentials for the Amber ff99SB      *
 * protein force field, Proteins 78:1950–1958 (2010)                *
 ********************************************************************
-

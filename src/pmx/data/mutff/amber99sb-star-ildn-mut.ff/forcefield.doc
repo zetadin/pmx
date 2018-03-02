@@ -1,4 +1,4 @@
-DNA_AAMBER99SB_ILDN_STAR_AA_MUTATION_FORCEFIELD
+Amber99sb-star-ildn (Best & Hummer 2009 combined with Lindorff-Larsen et al. 2010)
 
 ********************************************************************
 * Amber99sb-ildn is an improvement to Amber99SB by                 *
@@ -9,4 +9,3 @@ DNA_AAMBER99SB_ILDN_STAR_AA_MUTATION_FORCEFIELD
 * Improved side-chain torsion potentials for the Amber ff99SB      *
 * protein force field, Proteins 78:1950–1958 (2010)                *
 ********************************************************************
-

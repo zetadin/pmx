@@ -1,4 +1,4 @@
-DNA_MUTATION CHARMM36m all-atom force field (November 2016)
+Charmm36m all-atom force field (November 2016)
 
 *******************************************************************************
 *                    CHARMM36 port writted by                                 *
@@ -8,7 +8,7 @@ DNA_MUTATION CHARMM36m all-atom force field (November 2016)
 *                    www.mackerell.umaryland.edu/CHARMM_ff_params.html        *
 *******************************************************************************
 
-Parameters taken from CHARMM36 and CGenFF 3.0.1 
+Parameters taken from CHARMM36 and CGenFF 3.0.1
   Included are topologies and parameters from
     top_all36_prot.rtf          par_all36m_prot.prm
     top_all36_na.rtf            par_all36_na.prm
@@ -41,7 +41,7 @@ for folded and intrinsically disordered proteins, Nature Methods, 2016, DOI:
 ! CHARMM36
 Best, R. B. et al. Optimization of the Additive CHARMM All-Atom Protein
 Force Field Targeting Improved Sampling of the Backbone phi, psi and Side-Chain
-chi1 and chi2 Dihedral Angles, Journal of Chemical Theory and Computation, 
+chi1 and chi2 Dihedral Angles, Journal of Chemical Theory and Computation,
 2012, 8: 3257-3273.
 
 MacKerell, Jr., A.D., Feig, M., Brooks, III, C.L. Extending the
@@ -50,8 +50,8 @@ of gas-phase quantum mechanics in reproducing protein conformational
 distributions in molecular dynamics simulations, Journal of
 Computational Chemistry, 2004, 25: 1400-1415.
 
-MacKerell, Jr., A.D.,  et al. All-atom empirical potential for 
-molecular modeling and dynamics Studies of proteins, Journal of 
+MacKerell, Jr., A.D.,  et al. All-atom empirical potential for
+molecular modeling and dynamics Studies of proteins, Journal of
 Physical Chemistry B, 1998, 102, 3586-3616.
 
 ! phosphotyrosine
@@ -100,9 +100,9 @@ Denning, E.J., Priyakumar, U.D., Nilsson, L., and MacKerell Jr., A.D.,
 RNA: Update of the CHARMM all-atom additive force field for RNA,"
 JCC, 32: 1929-1943, 2011, PMC3082605
 
-Hart, K., Foloppe, N., Baker, C.M., Denning, E.J., Nilsson, L. 
-and MacKerell Jr., A.D. "Optimization of the CHARMM additive force 
-field for DNA: Improved treatment of the BI/BII conformational 
+Hart, K., Foloppe, N., Baker, C.M., Denning, E.J., Nilsson, L.
+and MacKerell Jr., A.D. "Optimization of the CHARMM additive force
+field for DNA: Improved treatment of the BI/BII conformational
 equilibrium," JCTC, 8:348-362, 2012, PMC3285246
 
 ** Carbohydrates
@@ -126,9 +126,9 @@ hexopyranoses," Journal of Chemical Theory and Computation, 5,
 2353-2370, 2009, DOI: 10.1021/ct900242e
 
 ! furanose monosaccharides
-Hatcher, E. R.; Guvench, O. and MacKerell, Jr., A.D. 
-"CHARMM Additive All-Atom Force Field for Aldopentofuranose 
-Carbohydrates and Fructofuranose." Journal of Physical Chemistry B. 
+Hatcher, E. R.; Guvench, O. and MacKerell, Jr., A.D.
+"CHARMM Additive All-Atom Force Field for Aldopentofuranose
+Carbohydrates and Fructofuranose." Journal of Physical Chemistry B.
 113:12466-76, 2009, PMID: 19694450
 
 ! glycosidic linkages involving furanoses
@@ -137,10 +137,10 @@ Force Field for Glycosidic Linkages in Carbohydrates Involving Furanoses,"
 Journal of Physical Chemistry B, 114: 12981-12994, 2010, PMID: 20845956
 
 ! carbohydrate derivatives and glycosidic linkages for glycoproteins
-Guvench, O., Mallajosyula, S.S. Raman, E.P., Hatcher, E. Vanommeslaeghe, K., 
-Foster, T.J., Jamison II, F.W., and MacKerell, Jr., A.D. "CHARMM additive 
-all-atom force field for carbohydrate derivatives and their utility in 
-polysaccharide and carbohydrate-protein modeling," JCTC, 7: 3162-3180, 2011. 
+Guvench, O., Mallajosyula, S.S. Raman, E.P., Hatcher, E. Vanommeslaeghe, K.,
+Foster, T.J., Jamison II, F.W., and MacKerell, Jr., A.D. "CHARMM additive
+all-atom force field for carbohydrate derivatives and their utility in
+polysaccharide and carbohydrate-protein modeling," JCTC, 7: 3162-3180, 2011.
 PMC3224046
 
 ! O-glycan linkages
@@ -157,12 +157,12 @@ carbohydrates" JCTC, 8: 759-776, 2012.
 ** CHARMM General Force Field
 
 Vanommeslaeghe, K. et al. CHARMM General Force Field: A Force Field for Drug-Like
-Molecules Compatible with the CHARMM All-Atom Additive Biological Force Fields, 
-Journal of Computational Chemistry, 2010, 31: 671-690. 
+Molecules Compatible with the CHARMM All-Atom Additive Biological Force Fields,
+Journal of Computational Chemistry, 2010, 31: 671-690.
 
-Yu, W., He, X., Vanommeslaeghe, K., and MacKerell, Jr., A.D. Extension of the CHARMM 
-general force field to sulfonyl-containing compounds and its utility in biomolecular 
-simulations, J. Comput. Chem. 2012, 33, 2451-2468. 
+Yu, W., He, X., Vanommeslaeghe, K., and MacKerell, Jr., A.D. Extension of the CHARMM
+general force field to sulfonyl-containing compounds and its utility in biomolecular
+simulations, J. Comput. Chem. 2012, 33, 2451-2468.
 
 !halogens with lone pairs
 Gutierrez, I.S., Lin, F.-Y., Vanommeslaeghe, K., Lemkul, J.A., Armacost, K.A.,
@@ -176,5 +176,3 @@ Bjelkmar, P., Larsson, P., Cuendet, M. A, Bess, B., Lindahl, E.
 Implementation of the CHARMM force field in GROMACS: Analysis of protein
 stability effects from correction maps, virtual interaction sites, and
 water models, Journal of Chemical Theory and Computation, 2010, 6: 459-466.
-
-
