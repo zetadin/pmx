@@ -63,13 +63,15 @@ def show_ff(gmxlib=None):
     print('  ---    {0:40}{1}\n'.format('----', '-----------'), end='')
 
     ffs = [d for d in glob('{}/*.ff'.format(gmxlib)) if os.path.isdir(d)]
+    ffs = natural_sort(ffs)
+
     for i, ff in enumerate(ffs):
         # get ff name
         f = os.path.basename(ff).split('.')[0]
         # print info
         docfile = ff + '/forcefield.doc'
         docstring = [l for l in open(docfile, 'r').readlines()][0]
-        print('  [{0}]    {1:40}{2}'.format(i, f, docstring), end='')
+        print('  [{0}]    {1:40}{2}'.format(i+1, f, docstring), end='')
 
 
 def ffopen(filename, mode='r', backup=True):
@@ -182,17 +184,18 @@ def ff_selection(gmxlib=os.environ['GMXLIB']):
     print('  ---    {0:40}{1}\n'.format('----', '-----------'), end='')
 
     ffs = [d for d in glob('{}/*.ff'.format(gmxlib)) if os.path.isdir(d)]
+    ffs = natural_sort(ffs)
 
     ffs_dict = {}
     for i, ff in enumerate(ffs):
         # get ff name
         f = os.path.basename(ff).split('.')[0]
         # store in dict
-        ffs_dict[i] = f
+        ffs_dict[i+1] = f
         # print info
         docfile = ff + '/forcefield.doc'
         docstring = [l for l in open(docfile, 'r').readlines()][0]
-        print('  [{0}]    {1:40}{2}'.format(i, f, docstring), end='')
+        print('  [{0}]    {1:40}{2}'.format(i+1, f, docstring), end='')
 
     # allow choice of ff
     print('')
