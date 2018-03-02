@@ -93,19 +93,19 @@ class Model(Atomselection):
     filename : str
         filename of input structure
     pdbline : ??
-        ...describe
+        ...describe - what is pdbline?
     renumber_atoms : bool
         ...describe
     renumber_residues : bool
         ...describe
     bPDBTER : bool
-        ...describe
+        flag indicating input PDB file has TER lines(?). Default is True.
     bNoNewID : bool
         ...describe
     for_gmx : bool
-        Rename atoms and scale coordinates. It is suggested to set this to True
+        rename atoms and scale coordinates. Set this to True
         if the Model is then written to file and used as input for Gromacs
-        (pdb2gmx).
+        (pdb2gmx). Default is False.
 
 
     Attributes
@@ -125,8 +125,8 @@ class Model(Atomselection):
         a mix of molecules are in the system.
     """
     def __init__(self, filename=None, pdbline=None, renumber_atoms=True,
-                 renumber_residues=True, bPDBTER=False, bNoNewID=True,
-                 for_gmx=False, **kwargs):
+                 renumber_residues=True, bPDBTER=True, bNoNewID=True,
+                 for_gmx=True, **kwargs):
 
         Atomselection.__init__(self)
         self.title = 'PMX MODEL'
@@ -142,7 +142,7 @@ class Model(Atomselection):
             setattr(self, key, val)
 
         if filename is not None:
-            self.read(filename, bPDBTER, bNoNewID)
+            self.read(filename=filename, bPDBTER=bPDBTER, bNoNewID=bNoNewID)
         if pdbline is not None:
             self.__readPDB(pdbline=pdbline)
         if self.atoms:
@@ -301,10 +301,10 @@ class Model(Atomselection):
 
     def __readPDB(self, fname=None, pdbline=None):
         if pdbline:
-            l = pdbline.split('\n')
+            lines = pdbline.split('\n')
         else:
-            l = open(fname, 'r').readlines()
-        for line in l:
+            lines = open(fname, 'r').readlines()
+        for line in lines:
             if line[:4] == 'ATOM' or line[:6] == 'HETATM':
                 a = Atom().readPDBString(line)
                 self.atoms.append(a)
@@ -315,11 +315,13 @@ class Model(Atomselection):
         self.unity = 'A'
         return self
 
+    # TODO: make readPDB and readPDBTER a single function. It seems like
+    # readPDBTER is more general PDB reader?
     def __readPDBTER(self, fname=None, pdbline=None, bNoNewID=True):
         if pdbline:
-            l = pdbline.split('\n')
+            lines = pdbline.split('\n')
         else:
-            l = open(fname, 'r').readlines()
+            lines = open(fname, 'r').readlines()
 
         chainIDstring = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ'
                          'abcdefghijklmnoprstuvwxyz'
@@ -331,7 +333,7 @@ class Model(Atomselection):
         usedChainIDs = ''
         atomcount = 1
 
-        for line in l:
+        for line in lines:
             if 'TER' in line:
                 bNewChain = True
             if (line[:4] == 'ATOM') or (line[:6] == 'HETATM'):
@@ -457,10 +459,12 @@ class Model(Atomselection):
     def read(self, filename, bPDBTER=False, bNoNewID=True):
         ext = filename.split('.')[-1]
         if ext == 'pdb':
-            if bPDBTER:
-                return self.__readPDBTER(filename, None, bNoNewID)
+            if bPDBTER is True:
+                return self.__readPDBTER(fname=filename,
+                                         pdbline=None,
+                                         bNoNewID=bNoNewID)
             else:
-                return self.__readPDB(filename)
+                return self.__readPDB(fname=filename)
         elif ext == 'gro':
             return self.__readGRO(filename)
         else:
