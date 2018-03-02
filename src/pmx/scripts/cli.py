@@ -37,8 +37,8 @@ class PmxCli(object):
         mutate.entry_point()
 
     def filltop(self):
-        import generate_hybrid_topology
-        generate_hybrid_topology.entry_point()
+        import fill_topology_bstates
+        fill_topology_bstates.entry_point()
 
     def analyse(self):
         import analyze_dgdl
