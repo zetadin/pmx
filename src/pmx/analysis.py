@@ -8,7 +8,7 @@ from scipy.special import erf
 from utils import data2gauss, gauss_func
 
 __all__ = ['read_dgdl_files', 'integrate_dgdl',
-           'ks_norm_test', 'make_cgi_plot']
+           'ks_norm_test', 'plot_work_dist']
 
 
 def read_dgdl_files(lst, lambda0=0, invert_values=False, verbose=True):
