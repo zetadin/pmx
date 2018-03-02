@@ -3,7 +3,7 @@
 from __future__ import print_function, division
 from pmx.parser import read_and_format
 from pmx.estimators import Jarz, Crooks, BAR
-from pmx.analysis import read_dgdl_files, make_cgi_plot, ks_norm_test
+from pmx.analysis import read_dgdl_files, plot_work_dist, ks_norm_test
 from pmx.utils import natural_sort
 from pmx import __version__
 import sys
@@ -549,8 +549,8 @@ def main(args):
     if 'cgi' in methods and args.cgi_plot is not None:
         if quiet is False:
             print('\n   Plotting histograms......')
-        make_cgi_plot(args.cgi_plot, res_ab, res_ba, cgi.dg, cgi.err_boot1,
-                      args.nbins, args.dpi)
+        plot_work_dist(fname=args.cgi_plot, wf=res_ab, wr=res_ba, dG=cgi.dg,
+                       dGerr=cgi.err_boot1, nbins=args.nbins, dpi=args.dpi)
 
     if quiet is True:
         print('Done')
