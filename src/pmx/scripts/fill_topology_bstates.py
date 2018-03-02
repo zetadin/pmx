@@ -79,7 +79,7 @@ mutate, and after having passed that mutated structure through pdb2gmx.
                         help='Force field to use. If -p is a top file, it is '
                         'not necessary to specify the forcefield, as it will '
                         'be determined automatically. If -p is an itp file, '
-                        'then -ff is needed, and if it not provided a list of '
+                        'then -ff is needed, and if not provided a list of '
                         'available ff will be shown.',
                         default=None)
     parser.add_argument('--split',
