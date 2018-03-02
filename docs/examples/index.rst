@@ -3,16 +3,10 @@
 Examples
 ========
 
-here we will put examples on the use of the library
+Here are some examples on how to use the **pmx** library to carry out the key
+steps in the setup and analysis of alchemical free energy calculations. Using
+the API is useful if you want to automate the setup for many calculations.
 
-e.g. code:
-
-.. code:: bash
-
-   $ python something
-
-
-list of examples:
 
 .. toctree::
    :maxdepth: 1
@@ -22,5 +16,6 @@ list of examples:
    analysis
 
 
-In the :ref:`scripts` you can find how these tasks can be carried out
-using the ``pmx`` command line tool.
+Another way to setup the files needed for the calculations is via the
+:ref:`command line tools<scripts>`, which may be more convenient to use for a
+small number of calculations.

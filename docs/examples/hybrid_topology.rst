@@ -1,5 +1,5 @@
-Hybrid Topology
----------------
+Generate Hybrid Topology
+------------------------
 
 Example on the use of **pmx** to prepare an hybrid topology. This is after running
 pdb2gmx on the mutant structure and obtaining a topology file from Gromacs.
