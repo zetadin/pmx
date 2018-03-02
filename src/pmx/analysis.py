@@ -214,8 +214,35 @@ def ks_norm_test(data, alpha=0.05, refks=None):
     return (1-q), lam0, check, bOk
 
 
-def make_cgi_plot(fname, data1, data2, result, err, nbins, dpi=300):
-    '''Plots work distributions and results for Crooks Gaussian Intersection'''
+def plot_work_dist(wf, wr, fname='Wdist.png', nbins=20, dG=None, dGerr=None,
+                   units='kJ/mol', dpi=300):
+    '''Plots forward and reverse work distributions. Optionally, it adds the
+    estimate of the free energy change and its uncertainty on the plot.
+
+    Parameters
+    ----------
+    wf : list
+        list of forward work values.
+    wr : list
+        list of reverse work values.
+    fname : str, optional
+        filename of the saved image. Default is 'Wdist.png'.
+    nbins : int, optional
+        number of bins to use for the histogram. Default is 20.
+    dG : float, optional
+        free energy estimate.
+    dGerr : float, optional
+        uncertainty of the free energy estimate.
+    units : str, optional
+        the units of dG and dGerr. Default is 'kJ/mol'.
+    dpi : int
+        resolution of the saved image file.
+
+    Returns
+    -------
+    None
+
+    '''
 
     def smooth(x, window_len=11, window='hanning'):
 
@@ -240,24 +267,24 @@ def make_cgi_plot(fname, data1, data2, result, err, nbins, dpi=300):
         return y[window_len-1:-window_len+1]
 
     plt.figure(figsize=(8, 6))
-    x1 = range(len(data1))
-    x2 = range(len(data2))
+    x1 = range(len(wf))
+    x2 = range(len(wr))
     if x1 > x2:
         x = x1
     else:
         x = x2
-    mf, devf, Af = data2gauss(data1)
-    mb, devb, Ab = data2gauss(data2)
+    mf, devf, Af = data2gauss(wf)
+    mb, devb, Ab = data2gauss(wr)
 
-    maxi = max(data1+data2)
-    mini = min(data1+data2)
+    maxi = max(wf+wr)
+    mini = min(wf+wr)
 
-    sm1 = smooth(np.array(data1))
-    sm2 = smooth(np.array(data2))
+    sm1 = smooth(np.array(wf))
+    sm2 = smooth(np.array(wr))
     plt.subplot(1, 2, 1)
-    plt.plot(x1, data1, 'g-', linewidth=2, label="Forward (0->1)", alpha=.3)
+    plt.plot(x1, wf, 'g-', linewidth=2, label="Forward (0->1)", alpha=.3)
     plt.plot(x1, sm1, 'g-', linewidth=3)
-    plt.plot(x2, data2, 'b-', linewidth=2, label="Backward (1->0)", alpha=.3)
+    plt.plot(x2, wr, 'b-', linewidth=2, label="Backward (1->0)", alpha=.3)
     plt.plot(x2, sm2, 'b-', linewidth=3)
     plt.legend(shadow=True, fancybox=True, loc='upper center',
                prop={'size': 12})
@@ -269,9 +296,9 @@ def make_cgi_plot(fname, data1, data2, result, err, nbins, dpi=300):
     for val in xl.spines.values():
         val.set_lw(2)
     plt.subplot(1, 2, 2)
-    plt.hist(data1, bins=nbins, orientation='horizontal', facecolor='green',
+    plt.hist(wf, bins=nbins, orientation='horizontal', facecolor='green',
              alpha=.75, normed=True)
-    plt.hist(data2, bins=nbins, orientation='horizontal', facecolor='blue',
+    plt.hist(wr, bins=nbins, orientation='horizontal', facecolor='blue',
              alpha=.75, normed=True)
 
     x = np.arange(mini, maxi, .5)
@@ -282,12 +309,21 @@ def make_cgi_plot(fname, data1, data2, result, err, nbins, dpi=300):
     plt.plot(y1, x, 'g--', linewidth=2)
     plt.plot(y2, x, 'b--', linewidth=2)
     size = max([max(y1), max(y2)])
-    res_x = [result, result]
+    res_x = [dG, dG]
     res_y = [0, size*1.2]
-    plt.plot(res_y, res_x, 'k--', linewidth=2,
-             label=r'$\Delta$G = %.2f $\pm$ %.2f kJ/mol' % (result, err))
-    plt.legend(shadow=True, fancybox=True, loc='upper center',
-               prop={'size': 12})
+    if dG is not None and dGerr is not None:
+        plt.plot(res_y, res_x, 'k--', linewidth=2,
+                 label=r'$\Delta$G = %.2f $\pm$ %.2f kJ/mol' % (dG, dGerr))
+        plt.legend(shadow=True, fancybox=True, loc='upper center',
+                   prop={'size': 12})
+    elif dG is not None and dGerr is None:
+        plt.plot(res_y, res_x, 'k--', linewidth=2,
+                 label=r'$\Delta$G = %.2f kJ/mol' % dG)
+        plt.legend(shadow=True, fancybox=True, loc='upper center',
+                   prop={'size': 12})
+    else:
+        plt.plot(res_y, res_x, 'k--', linewidth=2)
+
     plt.xticks([])
     plt.yticks([])
     xl = plt.gca()
@@ -299,11 +335,11 @@ def make_cgi_plot(fname, data1, data2, result, err, nbins, dpi=300):
 
 def _check_dgdl(fn, lambda0, verbose=True):
     '''Prints some info about a dgdl.xvg file.'''
-    l = open(fn).readlines()
-    if not l:
+    lines = open(fn).readlines()
+    if not lines:
         return None
     r = []
-    for line in l:
+    for line in lines:
         if line[0] not in '#@&':
             r.append([float(x) for x in line.split()])
     ndata = len(r)
