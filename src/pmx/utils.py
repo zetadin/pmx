@@ -178,10 +178,14 @@ def get_mtp_file(residue, ff):
     return mtp_file
 
 
-def ff_selection(gmxlib=os.environ['GMXLIB']):
+def ff_selection(gmxlib=None):
     print('Choose a force field:\n')
     print('  [i]    {0:40}{1}\n'.format('name', 'description'), end='')
     print('  ---    {0:40}{1}\n'.format('----', '-----------'), end='')
+
+    # if no gmxlib argument passed, then get $GMXLIB
+    if gmxlib is None:
+        gmxlib = os.environ['GMXLIB']
 
     ffs = [d for d in glob('{}/*.ff'.format(gmxlib)) if os.path.isdir(d)]
     ffs = natural_sort(ffs)
