@@ -11,4 +11,15 @@ API Reference
 
 .. autoclass:: pmx.atom.Atom
    :members:
+   :undoc-members:
    :noindex:
+
+   .. rubric:: Methods
+
+   .. autoautosummary:: pmx.atom.Atom
+       :methods:
+
+   .. rubric:: Attributes
+
+   .. autoautosummary:: pmx.atom.Atom
+       :attributes:

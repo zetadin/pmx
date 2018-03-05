@@ -63,6 +63,9 @@ class Atom:
 
     Parameters
     ----------
+    line : str
+    mol2line : str
+
 
     Attributes
     ----------
