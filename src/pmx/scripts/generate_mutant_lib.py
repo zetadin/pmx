@@ -1579,34 +1579,31 @@ Also, atomtype and non-bonded parameter files for the introduced dummies are gen
 #
 # MAIN
 #
+# TODO list:
+# 1) try simplify functions args
+# 2) make main a func
+# 3) automate generation of whole library
+#
+
 args = parse_options()
+
+align = args.align
+cbeta = args.cbeta
+bH2heavy = args.h2heavy
+moltype = args.moltype
 
 if "charmm" in args.ft.lower():
     bCharmm = True
 else:
     bCharmm = False
 
-align = args.align
-cbeta = args.cbeta
-bH2heavy = args.h2heavy
-
-if args.moltype == 'dna':
-    bDNA = True
-else:
-    bDNA = False
-
-if args.moltype == 'rna':
-    bRNA = True
-else:
-    bRNA = False
-
 ffpath = get_ff_path(args.ff)
 
-if bDNA:
+if moltype == 'dna':
     rtpfile = os.path.join(ffpath, 'dna.rtp')
-elif bRNA:
+elif moltype == 'rna':
     rtpfile = os.path.join(ffpath, 'rna.rtp')
-else:
+elif moltype == 'protein':
     rtpfile = os.path.join(ffpath, 'aminoacids.rtp')
 
 m1 = Model(args.pdb1)
@@ -1617,26 +1614,27 @@ aa1 = nm1.split('.')[0].split('_')[0]
 aa2 = nm2.split('.')[0].split('_')[0]
 
 rr_name = aa1+'2'+aa2
-if bDNA:
+if moltype == 'dna':
     rr_name = dna_mutation_naming(aa1, aa2)
-elif bRNA:
+elif moltype == 'rna':
     rr_name = rna_mutation_naming(aa1, aa2)
 
 m1.get_symbol()
 m2.get_symbol()
-if not (bDNA or bRNA):
+if moltype not in ['dna', 'rna']:
     m1.get_order()
     m2.get_order()
 m1.rename_atoms()
 m2.rename_atoms()
-if bDNA:
+
+if moltype == 'dna':
     rename_atoms_dna(m1)
     rename_atoms_dna(m2)
-elif bRNA:
+elif moltype == 'rna':
     rename_atoms_rna(m1)
     rename_atoms_rna(m2)
 
-if bCharmm:
+if bCharmm is True:
     rename_atoms_charmm(m1)
     rename_atoms_charmm(m2)
     rename_res_charmm(m1)
@@ -1645,16 +1643,17 @@ if bCharmm:
 r1 = m1.residues[0]
 r2 = m2.residues[0]
 
-if not (bDNA or bRNA):
+if moltype not in ['dna', 'rna']:
     r1.get_mol2_types()
     r2.get_mol2_types()
 r1.get_real_resname()
 r2.get_real_resname()
-if(align):
+
+if align is True:
     align_sidechains(r1, r2)
 
-r1.resnA = r1.resname[0]+r1.resname[1:].lower()
-r1.resnB = r2.resname[0]+r2.resname[1:].lower()
+r1.resnA = r1.resname[0] + r1.resname[1:].lower()
+r1.resnB = r2.resname[0] + r2.resname[1:].lower()
 
 rtp = RTPParser(rtpfile)
 bond_neigh = assign_rtp_entries(r1, rtp)
@@ -1662,7 +1661,11 @@ assign_rtp_entries(r2, rtp)
 assign_mass_atp(r1, r2, os.path.join(ffpath, 'atomtypes.atp'))
 
 
-#######################
+# ------------------------------
+# figure out degenerate resnames
+# ------------------------------
+
+# TODO: these apply only to proteins, no need to go through this for DNA/RNA
 resn1_dih = m1.residues[0].resname
 if (resn1_dih == 'HIS' or resn1_dih == 'HID' or resn1_dih == 'HIE' or
    resn1_dih == 'HIP' or resn1_dih == 'HISE' or resn1_dih == 'HISD' or
@@ -1696,7 +1699,7 @@ elif resn2_dih == 'CYSH':
 
 hash1 = {}
 hash2 = {}
-if align and not (bDNA or bRNA):
+if align is True and moltype not in ['dna', 'rna']:
     dihed1 = get_dihedrals(resn1_dih)
     dihed2 = get_dihedrals(resn2_dih)
     max_rot = max_rotation(dihed2)
@@ -1726,7 +1729,7 @@ assign_branch(r2)
 # -------------
 # nucleic acids
 # -------------
-if bDNA:
+if moltype == 'dna':
     if ((('5' in r1.resname) and ('5' not in r2.resname)) or
        (('3' in r1.resname) and ('3' not in r2.resname)) or
        (('5' in r2.resname) and ('5' not in r1.resname)) or
@@ -1755,7 +1758,8 @@ if bDNA:
     else:
         print "PURINE <-> PURINE	PYRIMIDINE <-> PYRIMIDINE"
         atom_pairs, dummies = make_pairs(r1, r2, bCharmm, bH2heavy, bDNA=True)
-elif bRNA:
+
+elif moltype == 'rna':
     if ((('5' in r1.resname) and ('5' not in r2.resname)) or
        (('3' in r1.resname) and ('3' not in r2.resname)) or
        (('5' in r2.resname) and ('5' not in r1.resname)) or
@@ -1773,7 +1777,7 @@ elif bRNA:
         atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_rna_3term_pair_list)
     else:
         print "PURINE <-> PURINE	PYRIMIDINE <-> PYRIMIDINE"
-        atom_pairs, dummies = make_pairs(r1, r2,bCharmm, bH2heavy, bDNA=False, bRNA=True)
+        atom_pairs, dummies = make_pairs(r1, r2, bCharmm, bH2heavy, bDNA=False, bRNA=True)
 
 # -------------
 # nucleic acids
@@ -1894,7 +1898,7 @@ dihi_list = generate_dihedral_entries(dih1, dih2, r1, atom_pairs)
 # impropers
 ii_list = generate_improp_entries(im1, im2, r1)
 
-if not (bDNA or bRNA):
+if moltype not in ['dna', 'rna']:
     rot = make_rotations(r1, resn1_dih, resn2_dih)
 
 r1.set_resname(rr_name)
@@ -1905,7 +1909,7 @@ write_rtp(rtp_out, r1, ii_list, dihi_list, bond_neigh, cmap)
 r1.write(rr_name + '.pdb')
 mtp_out = open(rr_name+'.mtp', 'w')
 
-if bDNA or bRNA:
+if moltype in ['dna', 'rna']:
     write_mtp(mtp_out, r1, ii_list, False, dihi_list)
 else:
     write_mtp(mtp_out, r1, ii_list, rot, dihi_list)
