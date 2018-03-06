@@ -9,17 +9,14 @@ of methods that can be used to calculate distances, angles and dihedrals.
 API Reference
 -------------
 
-.. autoclass:: pmx.atom.Atom
-   :members:
-   :undoc-members:
+.. currentmodule:: pmx.atom
+
+.. autoclass:: Atom
    :noindex:
 
    .. rubric:: Methods
 
-   .. autoautosummary:: pmx.atom.Atom
-       :methods:
-
-   .. rubric:: Attributes
-
-   .. autoautosummary:: pmx.atom.Atom
-       :attributes:
+   .. autosummary::
+      readPDBString
+      dist
+      dist2

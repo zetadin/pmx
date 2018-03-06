@@ -1,10 +1,15 @@
 Modules
 =======
 
-.. automodule:: pmx
-    :members:
-    :undoc-members:
-    :show-inheritance:
+**pmx** is a essentially a collection of classes and functions that allow the
+manipulation of molecular structure and topology files. It has been thought to
+be mainly used in conjunction with the Gromacs simulation package. In fact,
+pmx makes use of some Gromacs functions to read/write trajectory data and to
+allow fast neighborsearching from a python script. With time, **pmx** has also
+become a library for alchemical free energy  calculations.
+Here below are the main Modules that the user might
+want to use to facilitate the setup and analysis of alchemical free energy
+calculations in Gromacs.
 
 pmx.alchemy
 -----------
@@ -22,18 +27,10 @@ pmx.analysis
     :undoc-members:
     :show-inheritance:
 
-pmx.atom
---------
+pmx.estimators
+--------------
 
-.. automodule:: pmx.atom
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pmx.atomselection
------------------
-
-.. automodule:: pmx.atomselection
+.. automodule:: pmx.estimators
     :members:
     :undoc-members:
     :show-inheritance:
@@ -46,18 +43,18 @@ pmx.builder
     :undoc-members:
     :show-inheritance:
 
-pmx.chain
+pmx.utils
 ---------
 
-.. automodule:: pmx.chain
+.. automodule:: pmx.utils
     :members:
     :undoc-members:
     :show-inheritance:
 
-pmx.estimators
---------------
+pmx.atomselection
+-----------------
 
-.. automodule:: pmx.estimators
+.. automodule:: pmx.atomselection
     :members:
     :undoc-members:
     :show-inheritance:
@@ -66,14 +63,6 @@ pmx.ffparser
 ------------
 
 .. automodule:: pmx.ffparser
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pmx.forcefield
---------------
-
-.. automodule:: pmx.forcefield
     :members:
     :undoc-members:
     :show-inheritance:
@@ -94,42 +83,10 @@ pmx.library
     :undoc-members:
     :show-inheritance:
 
-pmx.model
----------
-
-.. automodule:: pmx.model
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pmx.molecule
-------------
-
-.. automodule:: pmx.molecule
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 pmx.mutdb
 ---------
 
 .. automodule:: pmx.mutdb
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pmx.ndx
--------
-
-.. automodule:: pmx.ndx
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pmx.options
------------
-
-.. automodule:: pmx.options
     :members:
     :undoc-members:
     :show-inheritance:
@@ -158,26 +115,10 @@ pmx.tCNC
     :undoc-members:
     :show-inheritance:
 
-pmx.utils
----------
-
-.. automodule:: pmx.utils
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 pmx.xdrfile
 -----------
 
 .. automodule:: pmx.xdrfile
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pmx.xtc
--------
-
-.. automodule:: pmx.xtc
     :members:
     :undoc-members:
     :show-inheritance:
