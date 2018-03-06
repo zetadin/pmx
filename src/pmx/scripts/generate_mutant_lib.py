@@ -9,7 +9,6 @@ from pmx.model import Model
 from pmx.atom import Atom
 from pmx.geometry import Rotation
 from pmx.ffparser import RTPParser, NBParser
-from pmx.utils import get_ff_path
 from pmx.parser import kickOutComments, readSection, parseList
 
 standard_pair_list = [
@@ -359,8 +358,8 @@ use_standard_dna_3term_pair_list = {
     'DT3': [ 'DA3','DG3'],
     }
 
-res_with_rings = [ 'HIS','HID','HIE','HIP','HISE','HISH','HIS1','HSE','HSD','HSP',
-		   'PHE','TYR','TRP' ]
+res_with_rings = ['HIS','HID','HIE','HIP','HISE','HISH','HIS1','HSE','HSD','HSP',
+                  'PHE','TYR','TRP']
 
 res_diff_Cb = [ 'THR', 'ALA', 'VAL', 'ILE' ]
 
@@ -1345,9 +1344,9 @@ def rename_to_match_library(m, bCharmm=False):
             atom.name = atom.name[1:]+atom.name[0]
         if bCharmm:
             print atom.name
-            if (atom.resname == 'CYS') and (atom.name == 'HG1'):
+            if atom.resname == 'CYS' and atom.name == 'HG1':
                 atom.name = 'HG'
-            if (atom.resname == 'SER') and (atom.name == 'HG1'):
+            if atom.resname == 'SER' and atom.name == 'HG1':
                 atom.name = 'HG'
         name_hash[atom.name] = foo
     return name_hash
@@ -1528,7 +1527,7 @@ Also, atomtype and non-bonded parameter files for the introduced dummies are gen
                         metavar='ff',
                         dest='ff',
                         type=str,
-                        help='',
+                        help='path to mutation forcefield',
                         default='')
     parser.add_argument('-fatp',
                         metavar='fatp',
@@ -1543,12 +1542,6 @@ Also, atomtype and non-bonded parameter files for the introduced dummies are gen
                         help='',
                         default='fnb.itp')
     # Options
-    parser.add_argument('-ft',
-                        metavar='ft',
-                        dest='ft',
-                        type=str,
-                        help='path to mutation forcefield',
-                        default='amber99sbmut')
     parser.add_argument('--moltype',
                         metavar='moltype',
                         dest='moltype',
@@ -1591,13 +1584,17 @@ align = args.align
 cbeta = args.cbeta
 bH2heavy = args.h2heavy
 moltype = args.moltype
+ffpath = args.ff  # rel path of force field folder
+# infer name of ff from the folder name
+ffname = os.path.abspath(args.ff).split('/')[-1].split('.')[0]
 
-if "charmm" in args.ft.lower():
+print args.ff
+print ffname
+
+if "charmm" in ffname:
     bCharmm = True
 else:
     bCharmm = False
-
-ffpath = get_ff_path(args.ff)
 
 if moltype == 'dna':
     rtpfile = os.path.join(ffpath, 'dna.rtp')
@@ -1867,7 +1864,7 @@ else:
 merge_molecules(r1, dummies)
 make_bstate_dummies(r1)
 
-write_atp_fnb(args.fatp, args.fnb, r1, args.ft, ffpath)
+write_atp_fnb(args.fatp, args.fnb, r1, ffname, ffpath)
 abdic, badic = make_transition_dics(atom_pairs, r1)
 
 update_bond_lists(r1, badic)
