@@ -10,6 +10,7 @@ from pmx.atom import Atom
 from pmx.geometry import Rotation
 from pmx.ffparser import RTPParser, NBParser
 from pmx.parser import kickOutComments, readSection, parseList
+from pmx.library import _ext_one_letter
 
 standard_pair_list = [
     ('N','N'),
@@ -1584,12 +1585,9 @@ align = args.align
 cbeta = args.cbeta
 bH2heavy = args.h2heavy
 moltype = args.moltype
-ffpath = args.ff  # rel path of force field folder
+ffpath = args.ff  # relative path of force field folder
 # infer name of ff from the folder name
 ffname = os.path.abspath(args.ff).split('/')[-1].split('.')[0]
-
-print args.ff
-print ffname
 
 if "charmm" in ffname:
     bCharmm = True
@@ -1603,12 +1601,18 @@ elif moltype == 'rna':
 elif moltype == 'protein':
     rtpfile = os.path.join(ffpath, 'aminoacids.rtp')
 
+# Create Models
 m1 = Model(args.pdb1)
 m2 = Model(args.pdb2)
-nm1 = args.pdb1
-nm2 = args.pdb2
-aa1 = nm1.split('.')[0].split('_')[0]
-aa2 = nm2.split('.')[0].split('_')[0]
+# check models
+assert len(m1.residues) == 1
+assert len(m2.residues) == 1
+# Get 3-letter resname from models
+nm1 = m1.residues[0].resname
+nm2 = m2.residues[0].resname
+# Convert 3-letter names to 1-letter ones
+aa1 = _ext_one_letter[nm1]
+aa2 = _ext_one_letter[nm2]
 
 rr_name = aa1+'2'+aa2
 if moltype == 'dna':
