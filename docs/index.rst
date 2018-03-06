@@ -25,6 +25,12 @@ calculations for protein, nucleic acid, and small molecule mutations.
    classes/index
    api/modules
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Other Tools
+
+   Protein webserver <http://pmx.mpibpc.mpg.de/webserver.html>
+   DNA webserver <http://pmx.mpibpc.mpg.de/dna_webserver.html>
 
 Citations
 ---------
