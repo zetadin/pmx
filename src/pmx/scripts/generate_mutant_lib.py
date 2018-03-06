@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 import sys
 import os
+import argparse
+import tempfile
+from copy import deepcopy
 from pmx import library
 from pmx.model import Model
 from pmx.atom import Atom
@@ -8,9 +11,6 @@ from pmx.geometry import Rotation
 from pmx.ffparser import RTPParser, NBParser
 from pmx.utils import get_ff_path
 from pmx.parser import kickOutComments, readSection, parseList
-from pmx.options import Commandline, Option, FileOption
-import tempfile
-from copy import deepcopy
 
 standard_pair_list = [
     ('N','N'),
@@ -1492,64 +1492,115 @@ def rename_res_charmm(m):
 # =============
 # Input Options
 # =============
-files= [
-   FileOption("-pdb1", "r",["pdb"],"a1.pdb",""),
-   FileOption("-pdb2", "r",["pdb"],"a2.pdb",""),
-   FileOption("-opdb1", "w",["pdb"],"r1.pdb",""),
-   FileOption("-opdb2", "w",["pdb"],"r2.pdb",""),
-   FileOption("-ff", "dir",["ff"],"amber99sbmut", "path to mutation forcefield"),
-#   FileOption("-ff", "r",["rtp"],"aminoacids.rtp",""),
-#   FileOption("-ffnb", "r",["itp"],"ffnonbonded.itp",""),
-#   FileOption("-ffatp", "r",["atp"],"atomtypes.atp",""),
-   FileOption("-fatp", "w",["atp"],"types.atp",""),
-   FileOption("-fnb", "w",["itp"],"fnb.itp",""),
-]
+def parse_options():
+    parser = argparse.ArgumentParser(description='''
+The script creates hybrid structure and topology database entries (mtp and rtp).
+Input: two pdb files aligned on the backbone and path to the force field files.
+Output: hybrid structure, hybrid topology entries as .rtp and .mtp files.
+Also, atomtype and non-bonded parameter files for the introduced dummies are generated
+''')
 
-options=[
-   Option( "-ft", "string", "charmm" , "force field type (charmm, amber99sb, amber99sb*-ildn, oplsaa"),
-   Option( "-align", "bool", True, "align side chains"),
-   Option( "-cbeta", "bool", False, "morphing up to Cbeta atom"),
-   Option( "-H2heavy", "bool", True, "allow morphing between hydrogens and heavy atoms"),
-   Option( "-dna", "bool", False, "generate hybrid residue for the DNA nucleotides"),
-   Option( "-rna", "bool", False, "generate hybrid residue for the RNA nucleotides"),
-	]
+    parser.add_argument('-pdb1',
+                        metavar='pdb1',
+                        dest='pdb1',
+                        type=str,
+                        help='',
+                        default='a1.pdb')
+    parser.add_argument('-pdb2',
+                        metavar='pdb2',
+                        dest='pdb2',
+                        type=str,
+                        help='',
+                        default='a2.pdb')
+    parser.add_argument('-opdb1',
+                        metavar='opdb1',
+                        dest='opdb1',
+                        type=str,
+                        help='',
+                        default='r1.pdb')
+    parser.add_argument('-opdb2',
+                        metavar='opdb2',
+                        dest='opdb2',
+                        type=str,
+                        help='',
+                        default='r2.pdb')
+    parser.add_argument('-ff',
+                        metavar='ff',
+                        dest='ff',
+                        type=str,
+                        help='',
+                        default='')
+    parser.add_argument('-fatp',
+                        metavar='fatp',
+                        dest='fatp',
+                        type=str,
+                        help='',
+                        default='types.atp')
+    parser.add_argument('-fnb',
+                        metavar='fnb',
+                        dest='fnb',
+                        type=str,
+                        help='',
+                        default='fnb.itp')
+    # Options
+    parser.add_argument('-ft',
+                        metavar='ft',
+                        dest='ft',
+                        type=str,
+                        help='path to mutation forcefield',
+                        default='amber99sbmut')
+    parser.add_argument('--moltype',
+                        metavar='moltype',
+                        dest='moltype',
+                        type=str.lower,
+                        help='protein, dna, rna',
+                        choices=['protein', 'dna', 'rna'],
+                        default='protein')
+    parser.add_argument('--noalign',
+                        dest='align',
+                        help='',
+                        default=True,
+                        action='store_false')
+    parser.add_argument('--cbeta',
+                        dest='cbeta',
+                        help='',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--noH2H',
+                        dest='h2heavy',
+                        help='',
+                        default=True,
+                        action='store_false')
 
-help_text = ('The script creates hybrid structure (.pdb) and topology database entries (.rtp, .mtp).',
-                'Input: two pdb files aligned on the backbone and path to the force field files.',
-                'Output: hybrid structure, hybrid topology entries as .rtp and .mtp files.',
-                'Also, atomtype and non-bonded parameter files for the introduced dummies are generated.',
-                '',
-                '',
-                'Please cite:',
-                'Vytautas Gapsys, Servaas Michielssens, Daniel Seeliger and Bert L. de Groot.',
-                'Automated Protein Structure and Topology Generation for Alchemical Perturbations.',
-		'J. Comput. Chem. 2015, 36, 348-354. DOI: 10.1002/jcc.23804',
-                '',
-                'Old pmx (pymacs) version:',
-                'Daniel Seeliger and Bert L. de Groot. Protein Thermostability Calculations Using',
-                'Alchemical Free Energy Simulations, Biophysical Journal, 98(10):2309-2316 (2010)',
-                '',
-                '',
-                '',
-            )
+    args, unknown = parser.parse_known_args()
+    return args
 
 
-cmdl = Commandline( sys.argv, options = options,
-		     fileoptions = files,
-                     program_desc = help_text,
-                     check_for_existing_files = False )
+#
+# MAIN
+#
+args = parse_options()
 
-if "charmm" in cmdl['-ft'].lower():
+if "charmm" in args.ft.lower():
     bCharmm = True
 else:
     bCharmm = False
-align = cmdl['-align']
-cbeta = cmdl['-cbeta']
-bH2heavy = cmdl['-H2heavy']
-bDNA = cmdl['-dna']
-bRNA = cmdl['-rna']
 
-ffpath = get_ff_path(cmdl['-ff'])
+align = args.align
+cbeta = args.cbeta
+bH2heavy = args.h2heavy
+
+if args.moltype == 'dna':
+    bDNA = True
+else:
+    bDNA = False
+
+if args.moltype == 'rna':
+    bRNA = True
+else:
+    bRNA = False
+
+ffpath = get_ff_path(args.ff)
 
 if bDNA:
     rtpfile = os.path.join(ffpath, 'dna.rtp')
@@ -1558,10 +1609,10 @@ elif bRNA:
 else:
     rtpfile = os.path.join(ffpath, 'aminoacids.rtp')
 
-m1 = Model(cmdl['-pdb1'])
-m2 = Model(cmdl['-pdb2'])
-nm1 = cmdl['-pdb1']
-nm2 = cmdl['-pdb2']
+m1 = Model(args.pdb1)
+m2 = Model(args.pdb2)
+nm1 = args.pdb1
+nm2 = args.pdb2
 aa1 = nm1.split('.')[0].split('_')[0]
 aa2 = nm2.split('.')[0].split('_')[0]
 
@@ -1661,8 +1712,8 @@ if align and not (bDNA or bRNA):
     rename_back(m1, hash1)
     rename_back(m2, hash2)
 
-r1.write(cmdl['-opdb1'])
-r2.write(cmdl['-opdb2'])
+r1.write(args.opdb1)
+r2.write(args.opdb2)
 
 assign_branch(r1)
 assign_branch(r2)
@@ -1812,7 +1863,7 @@ else:
 merge_molecules(r1, dummies)
 make_bstate_dummies(r1)
 
-write_atp_fnb(cmdl["-fatp"], cmdl["-fnb"], r1, cmdl['-ft'], ffpath)
+write_atp_fnb(args.fatp, args.fnb, r1, args.ft, ffpath)
 abdic, badic = make_transition_dics(atom_pairs, r1)
 
 update_bond_lists(r1, badic)
