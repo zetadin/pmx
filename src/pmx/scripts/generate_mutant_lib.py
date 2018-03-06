@@ -662,7 +662,28 @@ def find_closest_atom(atom1, atom_list, merged_atoms, bH2heavy=True):
         return None, None
 
 
-def make_predefined_pairs(mol1, mol2, pair_list):
+def merge_by_names(mol1, mol2):
+    print 'Making atom pairs.........MERGE BY NAMES......'
+    atom_pairs = []
+    merged_atoms1 = []
+    merged_atoms2 = []
+    for at1 in mol1.atoms:
+        try:
+            at2 = mol2.fetch(at1.name)[0]
+            at1.atomtypeB = at2.atomtype
+            at1.qB = at2.q
+            at1.mB = at2.m
+            at1.nameB = at2.name
+            merged_atoms1.append(at1)
+            merged_atoms2.append(at2)
+            atom_pairs.append([at1, at2])
+        except:
+            pass
+    dummies = mol2.fetch_atoms(map(lambda a: a.name, merged_atoms1), inv=True)
+    return atom_pairs, dummies
+
+
+def _make_predefined_pairs(mol1, mol2, pair_list):
     # make main chain + cb pairs
     print 'Making atom pairs.........'
     atom_pairs = []
@@ -688,27 +709,6 @@ def make_predefined_pairs(mol1, mol2, pair_list):
         merged_atoms2.append(at2)
         atom_pairs.append([at1, at2])
 
-    dummies = mol2.fetch_atoms(map(lambda a: a.name, merged_atoms1), inv=True)
-    return atom_pairs, dummies
-
-
-def merge_by_names(mol1, mol2):
-    print 'Making atom pairs.........MERGE BY NAMES......'
-    atom_pairs = []
-    merged_atoms1 = []
-    merged_atoms2 = []
-    for at1 in mol1.atoms:
-        try:
-            at2 = mol2.fetch(at1.name)[0]
-            at1.atomtypeB = at2.atomtype
-            at1.qB = at2.q
-            at1.mB = at2.m
-            at1.nameB = at2.name
-            merged_atoms1.append(at1)
-            merged_atoms2.append(at2)
-            atom_pairs.append([at1, at2])
-        except:
-            pass
     dummies = mol2.fetch_atoms(map(lambda a: a.name, merged_atoms1), inv=True)
     return atom_pairs, dummies
 
@@ -1740,9 +1740,9 @@ _assign_branch(r2)
 #                            selecting pair lists
 # ==============================================================================
 
-# -------------
-# nucleic acids
-# -------------
+# ------------------------------------------------------------------------------
+#                                     DNA
+# ------------------------------------------------------------------------------
 if moltype == 'dna':
     if ((('5' in r1.resname) and ('5' not in r2.resname)) or
        (('3' in r1.resname) and ('3' not in r2.resname)) or
@@ -1754,26 +1754,29 @@ if moltype == 'dna':
     if r1.resname in use_standard_dna_pair_list and r2.resname in use_standard_dna_pair_list[r1.resname]:
         print "PURINE <-> PYRIMIDINE"
         if bCharmm:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_dna_pair_list_charmm)
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_pair_list_charmm)
         else:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_dna_pair_list)
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_pair_list)
     elif r1.resname in use_standard_dna_5term_pair_list and r2.resname in use_standard_dna_5term_pair_list[r1.resname]:
         print "PURINE <-> PYRIMIDINE: 5term"
         if bCharmm:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_dna_5term_pair_list_charmm)
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_5term_pair_list_charmm)
         else:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_dna_5term_pair_list)
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_5term_pair_list)
     elif r1.resname in use_standard_dna_3term_pair_list and r2.resname in use_standard_dna_3term_pair_list[r1.resname]:
         print "PURINE <-> PYRIMIDINE: 3term"
         if bCharmm:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_dna_3term_pair_list_charmm)
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_3term_pair_list_charmm)
         else:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_dna_3term_pair_list)
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_3term_pair_list)
     else:
         print "PURINE <-> PURINE	PYRIMIDINE <-> PYRIMIDINE"
         atom_pairs, dummies = _make_pairs(mol1=r1, mol2=r2,
                                           bCharmm=bCharmm, bH2heavy=bH2heavy)
 
+# ------------------------------------------------------------------------------
+#                                     RNA
+# ------------------------------------------------------------------------------
 elif moltype == 'rna':
     if ((('5' in r1.resname) and ('5' not in r2.resname)) or
        (('3' in r1.resname) and ('3' not in r2.resname)) or
@@ -1783,102 +1786,105 @@ elif moltype == 'rna':
         sys.exit(0)
     if r1.resname in use_standard_rna_pair_list and r2.resname in use_standard_rna_pair_list[r1.resname]:
         print "PURINE <-> PYRIMIDINE"
-        atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_rna_pair_list)
+        atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_rna_pair_list)
     elif r1.resname in use_standard_rna_5term_pair_list and r2.resname in use_standard_rna_5term_pair_list[r1.resname]:
         print "PURINE <-> PYRIMIDINE: 5term"
-        atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_rna_5term_pair_list)
+        atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_rna_5term_pair_list)
     elif r1.resname in use_standard_rna_3term_pair_list and r2.resname in use_standard_rna_3term_pair_list[r1.resname]:
         print "PURINE <-> PYRIMIDINE: 3term"
-        atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_rna_3term_pair_list)
+        atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_rna_3term_pair_list)
     else:
         print "PURINE <-> PURINE	PYRIMIDINE <-> PYRIMIDINE"
         atom_pairs, dummies = _make_pairs(mol1=r1, mol2=r2,
                                           bCharmm=bCharmm, bH2heavy=bH2heavy)
 
-# ----------------
-# protein residues
-# ----------------
-
-# ring-res 2 ring-res
-elif r1.resname in use_standard_pair_list and r2.resname in use_standard_pair_list[r1.resname]:
-    print "ENTERED STANDARD"
-    if bCharmm:
-        if cbeta:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
-        else:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_list_charmm)
-    else:
-        if cbeta:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_listC)
-        else:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_list)
-
-# ring-res 2 non-ring-res: T,A,V,I
-elif (r1.resname in res_with_rings and r2.resname in res_diff_Cb) or \
-     (r2.resname in res_with_rings and r1.resname in res_diff_Cb):
-    print "ENTERED T,A,V,I"
-    if bCharmm:
-        atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
-    else:
-        atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_listC)
-
-# proline
-elif (r1.resname in res_pro) or (r2.resname in res_pro):
-    print "ENTERED P"
-    if (r1.resname in res_gly) or (r2.resname in res_gly):
-        print "subENTERED G"
-        atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_listGlyPro)
-    else:
-        atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_listPro)
-# glycine
-elif r1.resname in res_gly or r2.resname in res_gly:
-    print "ENTERED G"
-    if bCharmm:
-        atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_list_charmmD)
-    else:
-        atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_listD)
-
-# ringed residues by atom names
-elif r1.resname in merge_by_name_list and r2.resname in merge_by_name_list[r1.resname]:
-    if cbeta:
+# ------------------------------------------------------------------------------
+#                                     Proteins
+# ------------------------------------------------------------------------------
+elif moltype == 'protein':
+    # ring-res 2 ring-res
+    if r1.resname in use_standard_pair_list and r2.resname in use_standard_pair_list[r1.resname]:
+        print "ENTERED STANDARD"
         if bCharmm:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
+            if cbeta:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
+            else:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmm)
         else:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_listC)
-    else:
-        print "ENTERED MERGE BY NAMES"
-        atom_pairs, dummies = merge_by_names(r1, r2)
+            if cbeta:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
+            else:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list)
 
-# ring-res 2 non-ring-res
-elif r1.resname in res_with_rings or r2.resname in res_with_rings:
-    print "ENTERED RINGS"
-    if bCharmm:
+    # ring-res 2 non-ring-res: T,A,V,I
+    elif (r1.resname in res_with_rings and r2.resname in res_diff_Cb) or \
+         (r2.resname in res_with_rings and r1.resname in res_diff_Cb):
+        print "ENTERED T,A,V,I"
+        if bCharmm:
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
+        else:
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
+
+    # proline
+    elif (r1.resname in res_pro) or (r2.resname in res_pro):
+        print "ENTERED P"
+        if (r1.resname in res_gly) or (r2.resname in res_gly):
+            print "subENTERED G"
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listGlyPro)
+        else:
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listPro)
+
+    # glycine
+    elif r1.resname in res_gly or r2.resname in res_gly:
+        print "ENTERED G"
+        if bCharmm:
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmD)
+        else:
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listD)
+
+    # ringed residues by atom names
+    elif r1.resname in merge_by_name_list and r2.resname in merge_by_name_list[r1.resname]:
         if cbeta:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
+            if bCharmm:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
+            else:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
         else:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_list_charmmB)
+            print "ENTERED MERGE BY NAMES"
+            atom_pairs, dummies = merge_by_names(r1, r2)
+
+    # ring-res 2 non-ring-res
+    elif r1.resname in res_with_rings or r2.resname in res_with_rings:
+        print "ENTERED RINGS"
+        if bCharmm:
+            if cbeta:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
+            else:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmB)
+        else:
+            if cbeta:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
+            else:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listB)
+
+    # all others
     else:
+        print "ENTERED SIMPLE"
         if cbeta:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_listC)
-        else:
-            atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_listB)
-else:
-    print "ENTERED SIMPLE"
-    if cbeta:
-        if r1.resname == 'GLY' or r2.resname == 'GLY':
-            if bCharmm:
-                atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_list_charmmD)
+            if r1.resname == 'GLY' or r2.resname == 'GLY':
+                if bCharmm:
+                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmD)
+                else:
+                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listD)
             else:
-                atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_listD)
+                if bCharmm:
+                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
+                else:
+                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
         else:
-            if bCharmm:
-                atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
-            else:
-                atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_listC)
-    else:
-        atom_pairs, dummies = _make_pairs(mol1=r1, mol2=r2,
-                                          bCharmm=bCharmm, bH2heavy=bH2heavy)
-# ==============================================================================
+            atom_pairs, dummies = _make_pairs(mol1=r1, mol2=r2,
+                                              bCharmm=bCharmm,
+                                              bH2heavy=bH2heavy)
 
 
 merge_molecules(r1, dummies)
