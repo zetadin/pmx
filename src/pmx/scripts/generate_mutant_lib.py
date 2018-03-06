@@ -442,7 +442,7 @@ dna_names = {
 # ==============================================================================
 # Functions
 # ==============================================================================
-def dna_mutation_naming(aa1, aa2):
+def _dna_mutation_naming(aa1, aa2):
     rr_name = 'D'+aa1[-1]+aa2[-1]
     dict_key = aa1+'_'+aa2
     if dict_key in dna_names.keys():
@@ -450,7 +450,7 @@ def dna_mutation_naming(aa1, aa2):
     return(rr_name)
 
 
-def rna_mutation_naming(aa1, aa2):
+def _rna_mutation_naming(aa1, aa2):
     rr_name = 'R'+aa1[-1]+aa2[-1]
     dict_key = aa1+'_'+aa2
     if dict_key in dna_names.keys():
@@ -466,6 +466,18 @@ def max_rotation(dihedrals):
         if d[-2] == 0 and d[-1] != -1:
             return d[-1]
     return m+1
+
+
+# this could be incorporated into Model
+def _rename_atoms_nucleic_acids(m):
+    for atom in m.atoms:
+        aname = atom.name
+        if len(aname) == 4:
+            if aname[0].isdigit() is True or aname[0] == '\'':
+                first = aname[0]
+                rest = aname[1:]
+                new = rest+first
+                atom.name = new
 
 
 def get_dihedrals(resname):
@@ -542,28 +554,6 @@ def align_sidechains(r1, r2):
     for i in range(r1.nchi()):
         phi = r1.get_chi(i+1, degree=True)
         r2.set_chi(i+1, phi)
-
-
-def rename_atoms_dna(m):
-    for atom in m.atoms:
-        aname = atom.name
-        if len(aname) == 4:
-            if aname[0].isdigit() is True or aname[0] == '\'':
-                first = aname[0]
-                rest = aname[1:]
-                new = rest+first
-                atom.name = new
-
-
-def rename_atoms_rna(m):
-    for atom in m.atoms:
-        aname = atom.name
-        if len(aname) == 4:
-            if aname[0].isdigit() is True or aname[0] == '\'':
-                first = aname[0]
-                rest = aname[1:]
-                new = rest+first
-                atom.name = new
 
 
 def assign_rtp_entries(mol, rtp):
@@ -1614,26 +1604,30 @@ nm2 = m2.residues[0].resname
 aa1 = _ext_one_letter[nm1]
 aa2 = _ext_one_letter[nm2]
 
-rr_name = aa1+'2'+aa2
-if moltype == 'dna':
-    rr_name = dna_mutation_naming(aa1, aa2)
-elif moltype == 'rna':
-    rr_name = rna_mutation_naming(aa1, aa2)
 
+if moltype == 'protein':
+    rr_name = aa1 + '2' + aa2
+elif moltype == 'dna':
+    rr_name = _dna_mutation_naming(aa1, aa2)
+elif moltype == 'rna':
+    rr_name = _rna_mutation_naming(aa1, aa2)
+
+# Get element of all atoms in models
 m1.get_symbol()
 m2.get_symbol()
-if moltype not in ['dna', 'rna']:
+
+# get order (number of bonds away from mainchain) if protein library
+if moltype == 'protein':
     m1.get_order()
     m2.get_order()
-m1.rename_atoms()
-m2.rename_atoms()
 
-if moltype == 'dna':
-    rename_atoms_dna(m1)
-    rename_atoms_dna(m2)
-elif moltype == 'rna':
-    rename_atoms_rna(m1)
-    rename_atoms_rna(m2)
+# rename atoms
+if moltype == 'protein':
+    m1.rename_atoms()
+    m2.rename_atoms()
+elif moltype in ['dna', 'rna']:
+    _rename_atoms_nucleic_acids(m1)
+    _rename_atoms_nucleic_acids(m2)
 
 if bCharmm is True:
     rename_atoms_charmm(m1)
