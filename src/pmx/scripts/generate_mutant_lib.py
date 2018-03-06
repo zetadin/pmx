@@ -1459,7 +1459,18 @@ def write_atp_fnb(fn_atp, fn_nb, r, ff, ffpath):
 
 
 # charmm uses HN instead of H for backbone H on N
-def rename_atoms_charmm(m):
+def _rename_model_charmm(m):
+    rename = {'HIE': 'HSE', 'HID': 'HSD', 'HIP': 'HSP', 'ASH': 'ASPP',
+              'GLH': 'GLUP', 'LYN': 'LSN'}
+
+    # rename residues
+    for res in m.residues:
+        if res.resname in rename:
+            res.resname = rename[res.resname]
+            for atom in res.atoms:
+                atom.resname = res.resname
+
+    # rename atoms
     for atom in m.atoms:
         if atom.name == 'H':
             atom.name = 'HN'
@@ -1467,16 +1478,6 @@ def rename_atoms_charmm(m):
             atom.name = '1HG'
         if atom.name == 'HG' and atom.resname == 'SER':
             atom.name = '1HG'
-
-
-def rename_res_charmm(m):
-    rename = {'HIE': 'HSE', 'HID': 'HSD', 'HIP': 'HSP', 'ASH': 'ASPP',
-              'GLH': 'GLUP', 'LYN': 'LSN'}
-    for res in m.residues:
-        if res.resname in rename:
-            res.resname = rename[res.resname]
-            for atom in res.atoms:
-                atom.resname = res.resname
 
 
 # =============
@@ -1629,11 +1630,10 @@ elif moltype in ['dna', 'rna']:
     _rename_atoms_nucleic_acids(m1)
     _rename_atoms_nucleic_acids(m2)
 
+# If it is a Charmm ff, then rename atoms and residues
 if bCharmm is True:
-    rename_atoms_charmm(m1)
-    rename_atoms_charmm(m2)
-    rename_res_charmm(m1)
-    rename_res_charmm(m2)
+    _rename_model_charmm(m1)
+    _rename_model_charmm(m2)
 
 r1 = m1.residues[0]
 r2 = m2.residues[0]
