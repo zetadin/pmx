@@ -458,16 +458,6 @@ def _rna_mutation_naming(aa1, aa2):
     return(rr_name)
 
 
-def max_rotation(dihedrals):
-    m = 0
-    for d in dihedrals:
-        if d[-2] == 1 and d[-1] > 0:
-            m = d[-1]
-        if d[-2] == 0 and d[-1] != -1:
-            return d[-1]
-    return m+1
-
-
 # this could be incorporated into Model
 def _rename_atoms_nucleic_acids(m):
     for atom in m.atoms:
@@ -478,6 +468,24 @@ def _rename_atoms_nucleic_acids(m):
                 rest = aname[1:]
                 new = rest+first
                 atom.name = new
+
+
+def _align_sidechains(r1, r2):
+    # if you add new force field, check pmx/molecule.py, make sure res is
+    # correctly set into get_real_resname
+    for i in range(r1.nchi()):
+        phi = r1.get_chi(i+1, degree=True)
+        r2.set_chi(i+1, phi)
+
+
+def max_rotation(dihedrals):
+    m = 0
+    for d in dihedrals:
+        if d[-2] == 1 and d[-1] > 0:
+            m = d[-1]
+        if d[-2] == 0 and d[-1] != -1:
+            return d[-1]
+    return m+1
 
 
 def get_dihedrals(resname):
@@ -548,15 +556,7 @@ def tag(atom):
     return '%-20s' % s
 
 
-def align_sidechains(r1, r2):
-    # if you add new force field, check pmx/molecule.py, make sure res is
-    # correctly set into get_real_resname
-    for i in range(r1.nchi()):
-        phi = r1.get_chi(i+1, degree=True)
-        r2.set_chi(i+1, phi)
-
-
-def assign_rtp_entries(mol, rtp):
+def _assign_rtp_entries(mol, rtp):
     entr = rtp[mol.resname]
     neigh = []
     # atoms
@@ -586,7 +586,7 @@ def assign_rtp_entries(mol, rtp):
     return neigh
 
 
-def assign_branch(mol):
+def _assign_branch(mol):
     for atom in mol.atoms:
         if atom.long_name[-1] == ' ':
             atom.branch = 0
@@ -713,21 +713,27 @@ def merge_by_names(mol1, mol2):
     return atom_pairs, dummies
 
 
-def make_pairs(mol1, mol2, bCharmm, bH2heavy=True, bDNA=False, bRNA=False):
+def _make_pairs(mol1, mol2, bCharmm=False, bH2heavy=True):
+    # make sure the 2 mol inputs have the same moltype
+    assert mol1.moltype == mol2.moltype
+    # determine the molecule type we are dealing with
+    moltype = mol1.moltype
     # make main chain + cb pairs
     print 'Making atom pairs.........'
     mol1.batoms = []
     merged_atoms1 = []
     merged_atoms2 = []
     atom_pairs = []
-    if bDNA or bRNA:
+
+    if moltype in ['dna', 'rna']:
         mc_list = []
-    elif bCharmm:
-        mc_list = ['N', 'CA', 'C', 'O', 'HN', 'HA', 'CB']
-        gly_mc_list = ['N', 'CA', 'C', 'O', 'HN', '1HA', '2HA']
-    else:
-        mc_list = ['N', 'CA', 'C', 'O', 'H', 'HA', 'CB']
-        gly_mc_list = ['N', 'CA', 'C', 'O', 'H', '1HA', '2HA']
+    elif moltype == 'protein':
+        if bCharmm is True:
+            mc_list = ['N', 'CA', 'C', 'O', 'HN', 'HA', 'CB']
+            gly_mc_list = ['N', 'CA', 'C', 'O', 'HN', '1HA', '2HA']
+        else:
+            mc_list = ['N', 'CA', 'C', 'O', 'H', 'HA', 'CB']
+            gly_mc_list = ['N', 'CA', 'C', 'O', 'H', '1HA', '2HA']
 
     if mol1.resname == 'GLY':
         atoms1 = mol1.fetchm(gly_mc_list)
@@ -749,7 +755,7 @@ def make_pairs(mol1, mol2, bCharmm, bH2heavy=True, bDNA=False, bRNA=False):
         atom_pairs.append([at1, at2])
     # now go for the rest of the side chain
 
-    if bDNA or bRNA:
+    if moltype in ['dna', 'rna']:
         # identify atom morphes by distances
         atoms1 = mol1.atoms
         atoms2 = mol2.atoms
@@ -761,7 +767,7 @@ def make_pairs(mol1, mol2, bCharmm, bH2heavy=True, bDNA=False, bRNA=False):
                 merged_atoms1.append(at1)
                 atom_pairs.append([at1, aa])
                 print "here ", at1.name, aa.name
-    else:
+    elif moltype == 'protein':
         for k in [1, 2]:
             print '-- Searching branch', k
             done_branch = False
@@ -1299,7 +1305,7 @@ def assign_mass(r1, r2, ffnonbonded, bCharmm, ff):
         atom.m = NBParams.atomtypes[atom.atomtype]['mass']
 
 
-def assign_mass_atp(r1, r2, ffatomtypes):
+def _assign_mass_atp(r1, r2, ffatomtypes):
     fp = open(ffatomtypes, "r")
     lst = fp.readlines()
     lst = kickOutComments(lst, ';')
@@ -1585,6 +1591,7 @@ if "charmm" in ffname:
 else:
     bCharmm = False
 
+# select rtp file depending on library type
 if moltype == 'dna':
     rtpfile = os.path.join(ffpath, 'dna.rtp')
 elif moltype == 'rna':
@@ -1635,66 +1642,76 @@ if bCharmm is True:
     _rename_model_charmm(m1)
     _rename_model_charmm(m2)
 
+# get Molecule objects
 r1 = m1.residues[0]
 r2 = m2.residues[0]
 
-if moltype not in ['dna', 'rna']:
+# if protein, use mol2 atomtypes
+if moltype == 'protein':
     r1.get_mol2_types()
     r2.get_mol2_types()
+# assign real_resname attribute
 r1.get_real_resname()
 r2.get_real_resname()
 
 if align is True:
-    align_sidechains(r1, r2)
+    _align_sidechains(r1, r2)
 
+# set residue names with this format: "Ala" "Arg" etc
 r1.resnA = r1.resname[0] + r1.resname[1:].lower()
 r1.resnB = r2.resname[0] + r2.resname[1:].lower()
 
+# read rtp file
 rtp = RTPParser(rtpfile)
-bond_neigh = assign_rtp_entries(r1, rtp)
-assign_rtp_entries(r2, rtp)
-assign_mass_atp(r1, r2, os.path.join(ffpath, 'atomtypes.atp'))
+bond_neigh = _assign_rtp_entries(r1, rtp)
+_assign_rtp_entries(r2, rtp)  # FIXME/QUESTION is this line doing anything?
+_assign_mass_atp(r1=r1, r2=r2,
+                 ffatomtypes=os.path.join(ffpath, 'atomtypes.atp'))
 
 
 # ------------------------------
 # figure out degenerate resnames
 # ------------------------------
-
-# TODO: these apply only to proteins, no need to go through this for DNA/RNA
 resn1_dih = m1.residues[0].resname
-if (resn1_dih == 'HIS' or resn1_dih == 'HID' or resn1_dih == 'HIE' or
-   resn1_dih == 'HIP' or resn1_dih == 'HISE' or resn1_dih == 'HISD' or
-   resn1_dih == 'HISH' or resn1_dih == 'HIS1' or resn1_dih == 'HSD' or
-   resn1_dih == 'HSE' or resn1_dih == 'HSP'):
-    resn1_dih = 'HIS'
-elif resn1_dih == 'LYN' or resn1_dih == 'LYSH' or resn1_dih == 'LSN':
-    resn1_dih = 'LYS'
-elif resn1_dih == 'ASH' or resn1_dih == 'ASPH' or resn1_dih == 'ASPP':
-    resn1_dih = 'ASP'
-elif resn1_dih == 'GLH' or resn1_dih == 'GLUH' or resn1_dih == 'GLUP':
-    resn1_dih = 'GLU'
-elif resn1_dih == 'CYSH':
-    resn1_dih = 'CYS'
+
+if moltype == 'protein':
+    if (resn1_dih == 'HIS' or resn1_dih == 'HID' or resn1_dih == 'HIE' or
+       resn1_dih == 'HIP' or resn1_dih == 'HISE' or resn1_dih == 'HISD' or
+       resn1_dih == 'HISH' or resn1_dih == 'HIS1' or resn1_dih == 'HSD' or
+       resn1_dih == 'HSE' or resn1_dih == 'HSP'):
+        resn1_dih = 'HIS'
+    elif resn1_dih == 'LYN' or resn1_dih == 'LYSH' or resn1_dih == 'LSN':
+        resn1_dih = 'LYS'
+    elif resn1_dih == 'ASH' or resn1_dih == 'ASPH' or resn1_dih == 'ASPP':
+        resn1_dih = 'ASP'
+    elif resn1_dih == 'GLH' or resn1_dih == 'GLUH' or resn1_dih == 'GLUP':
+        resn1_dih = 'GLU'
+    elif resn1_dih == 'CYSH':
+        resn1_dih = 'CYS'
 
 resn2_dih = m2.residues[0].resname
-if (resn2_dih == 'HIS' or resn2_dih == 'HID' or resn2_dih == 'HIE' or
-   resn2_dih == 'HIP' or resn2_dih == 'HISE' or resn2_dih == 'HISD' or
-   resn2_dih == 'HISH' or resn2_dih == 'HIS1' or resn2_dih == 'HSD' or
-   resn2_dih == 'HSE' or resn2_dih == 'HSP'):
-    resn2_dih = 'HIS'
-elif resn2_dih == 'LYN' or resn2_dih == 'LYSH' or resn2_dih == 'LSN':
-    resn2_dih = 'LYS'
-elif resn2_dih == 'ASH' or resn2_dih == 'ASPH' or resn2_dih == 'ASPP':
-    resn2_dih = 'ASP'
-elif resn2_dih == 'GLH' or resn2_dih == 'GLUH' or resn2_dih == 'GLUP':
-    resn2_dih = 'GLU'
-elif resn2_dih == 'CYSH':
-    resn2_dih = 'CYS'
-#######################
 
+if moltype == 'protein':
+    if (resn2_dih == 'HIS' or resn2_dih == 'HID' or resn2_dih == 'HIE' or
+       resn2_dih == 'HIP' or resn2_dih == 'HISE' or resn2_dih == 'HISD' or
+       resn2_dih == 'HISH' or resn2_dih == 'HIS1' or resn2_dih == 'HSD' or
+       resn2_dih == 'HSE' or resn2_dih == 'HSP'):
+        resn2_dih = 'HIS'
+    elif resn2_dih == 'LYN' or resn2_dih == 'LYSH' or resn2_dih == 'LSN':
+        resn2_dih = 'LYS'
+    elif resn2_dih == 'ASH' or resn2_dih == 'ASPH' or resn2_dih == 'ASPP':
+        resn2_dih = 'ASP'
+    elif resn2_dih == 'GLH' or resn2_dih == 'GLUH' or resn2_dih == 'GLUP':
+        resn2_dih = 'GLU'
+    elif resn2_dih == 'CYSH':
+        resn2_dih = 'CYS'
+
+# ---------------------------
+# Align sidechains if protein
+# ---------------------------
 hash1 = {}
 hash2 = {}
-if align is True and moltype not in ['dna', 'rna']:
+if align is True and moltype == 'protein':
     dihed1 = get_dihedrals(resn1_dih)
     dihed2 = get_dihedrals(resn2_dih)
     max_rot = max_rotation(dihed2)
@@ -1710,11 +1727,13 @@ if align is True and moltype not in ['dna', 'rna']:
     rename_back(m1, hash1)
     rename_back(m2, hash2)
 
+# write output pdb files
 r1.write(args.opdb1)
 r2.write(args.opdb2)
 
-assign_branch(r1)
-assign_branch(r2)
+# ???
+_assign_branch(r1)
+_assign_branch(r2)
 
 
 # ==============================================================================
@@ -1752,7 +1771,8 @@ if moltype == 'dna':
             atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_dna_3term_pair_list)
     else:
         print "PURINE <-> PURINE	PYRIMIDINE <-> PYRIMIDINE"
-        atom_pairs, dummies = make_pairs(r1, r2, bCharmm, bH2heavy, bDNA=True)
+        atom_pairs, dummies = _make_pairs(mol1=r1, mol2=r2,
+                                          bCharmm=bCharmm, bH2heavy=bH2heavy)
 
 elif moltype == 'rna':
     if ((('5' in r1.resname) and ('5' not in r2.resname)) or
@@ -1772,11 +1792,12 @@ elif moltype == 'rna':
         atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_rna_3term_pair_list)
     else:
         print "PURINE <-> PURINE	PYRIMIDINE <-> PYRIMIDINE"
-        atom_pairs, dummies = make_pairs(r1, r2, bCharmm, bH2heavy, bDNA=False, bRNA=True)
+        atom_pairs, dummies = _make_pairs(mol1=r1, mol2=r2,
+                                          bCharmm=bCharmm, bH2heavy=bH2heavy)
 
-# -------------
-# nucleic acids
-# -------------
+# ----------------
+# protein residues
+# ----------------
 
 # ring-res 2 ring-res
 elif r1.resname in use_standard_pair_list and r2.resname in use_standard_pair_list[r1.resname]:
@@ -1855,7 +1876,8 @@ else:
             else:
                 atom_pairs, dummies = make_predefined_pairs(r1, r2, standard_pair_listC)
     else:
-        atom_pairs, dummies = make_pairs(r1, r2, bCharmm, bH2heavy)
+        atom_pairs, dummies = _make_pairs(mol1=r1, mol2=r2,
+                                          bCharmm=bCharmm, bH2heavy=bH2heavy)
 # ==============================================================================
 
 
