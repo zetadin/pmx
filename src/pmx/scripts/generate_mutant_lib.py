@@ -598,30 +598,11 @@ def _get_atoms_by_order_and_branch(mol, order, branch, merged_atoms):
     return res
 
 
-def last_atom_is_morphed(atom, merged_list):
+def _last_atom_is_morphed(atom, merged_list):
     for at in atom.bonds:
         if at.order < atom.order and at in merged_list:
             return True
     return False
-
-
-def cmp_mol2_types(type1, type2):
-    if type1 == type2:
-        return True
-    if type1 == 'H' or type2 == 'H':
-        return True
-    tp1_ext = type1.split('.')[1]
-    tp2_ext = type2.split('.')[1]
-    if tp1_ext in ['2', '3'] and tp2_ext in ['2', '3']:
-        return False
-    elif tp1_ext in ['am', 'co2'] and tp2_ext in ['am', 'co2']:
-        return True
-    elif type1 in ['O.2', 'O.co2'] and type2 in ['O.2', 'O.co2']:
-        return True
-    elif (type1[0] == 'S' and type2[0] != 'S') or (type1[0] != 'S' and type2[0] == 'S'):
-        return False
-    else:
-        return False
 
 
 def find_closest_atom(atom1, atom_list, merged_atoms, bH2heavy=True):
@@ -764,11 +745,10 @@ def _make_pairs(mol1, mol2, bCharmm=False, bH2heavy=True):
                 atoms1 = _get_atoms_by_order_and_branch(mol1, i, k, merged_atoms1)
                 atoms2 = _get_atoms_by_order_and_branch(mol2, i, k, merged_atoms2)
                 for at1 in atoms1:
-                    if last_atom_is_morphed(at1, merged_atoms1):
+                    if _last_atom_is_morphed(at1, merged_atoms1):
                         print '-- Checking atom...', at1.name
                         candidates = []
                         for at2 in atoms2:
-                            # if cmp_mol2_types( at1.atype, at2.atype):
                             candidates.append(at2)
                         aa, d = find_closest_atom(at1, candidates, merged_atoms2, bH2heavy)
                         if aa:
