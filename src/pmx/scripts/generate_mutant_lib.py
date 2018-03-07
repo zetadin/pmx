@@ -10,6 +10,7 @@ from pmx.atom import Atom
 from pmx.geometry import Rotation
 from pmx.ffparser import RTPParser, NBParser
 from pmx.parser import kickOutComments, readSection, parseList
+from pmx.utils import list2file
 
 
 # ==============================================================================
@@ -1101,51 +1102,61 @@ def _generate_improp_entries(im1, im2, r):
     return new_ii
 
 
-def _write_rtp(fname, r, ii_list, dihi_list, neigh_bonds, cmap):
-    # open file
-    fp = open(fname, 'w')
-    print >>fp, '\n[ %s ] ; %s -> %s\n' % (r.resname, r.resnA, r.resnB)
-    print >>fp, ' [ atoms ]'
+def _make_rtp(r, ii_list, dihi_list, neigh_bonds, cmap):
+    rtp = []
+    rtp.append('\n[ %s ] ; %s -> %s\n\n' % (r.resname, r.resnA, r.resnB))
+    rtp.append(' [ atoms ]\n')
     cgnr = 1
     for atom in r.atoms:
-        print >>fp, "%6s   %-15s  %8.5f  %d" % (atom.name, atom.atomtype, atom.q, cgnr)
+        rtp.append("%6s   %-15s  %8.5f  %d\n"
+                   % (atom.name, atom.atomtype, atom.q, cgnr))
         cgnr += 1
-    print >>fp, '\n [ bonds ]'
+    rtp.append('\n [ bonds ]\n')
     for atom in r.atoms:
         for at in atom.bonds:
             if atom.id < at.id:
-                print >>fp, "%6s  %6s ; (%6s  %6s)" % (atom.name, at.name, atom.nameB, at.nameB)
+                rtp.append("%6s  %6s ; (%6s  %6s)\n"
+                           % (atom.name, at.name, atom.nameB, at.nameB))
     # here there will have to be a check for FF, since for charmm we need to add C N
     # save those bonds with previous and next residue as a seperate entry
     for i in neigh_bonds:
-        print >>fp, "%6s  %6s  " % (i[0], i[1])
+        rtp.append("%6s  %6s  \n" % (i[0], i[1]))
 
-    print >>fp, '\n [ impropers ]'
+    rtp.append('\n [ impropers ]\n')
     for ii in ii_list:
         if not ii[4].startswith('default'):
-            print >>fp, "%6s  %6s  %6s  %6s  %-25s" % (ii[0].name, ii[1].name, ii[2].name, ii[3].name, ii[4])
+            rtp.append("%6s  %6s  %6s  %6s  %-25s\n" % (ii[0].name, ii[1].name,
+                                                        ii[2].name, ii[3].name,
+                                                        ii[4]))
         else:
-            print >>fp, "%6s  %6s  %6s  %6s " % (ii[0].name, ii[1].name, ii[2].name, ii[3].name)
+            rtp.append("%6s  %6s  %6s  %6s\n" % (ii[0].name, ii[1].name,
+                                                 ii[2].name, ii[3].name))
 
-    print >>fp, '\n [ dihedrals ]'
+    rtp.append('\n [ dihedrals ]\n')
     for ii in dihi_list:
         if not ii[4].startswith('default'):
-            print >>fp, "%6s  %6s  %6s  %6s  %-25s" % (ii[0].name, ii[1].name, ii[2].name, ii[3].name, ii[4])
+            rtp.append("%6s  %6s  %6s  %6s  %-25s\n" % (ii[0].name, ii[1].name,
+                                                        ii[2].name, ii[3].name,
+                                                        ii[4]))
         else:
-            print >>fp, "%6s  %6s  %6s  %6s " % (ii[0].name, ii[1].name, ii[2].name, ii[3].name)
+            rtp.append("%6s  %6s  %6s  %6s\n" % (ii[0].name, ii[1].name,
+                                                 ii[2].name, ii[3].name))
     if cmap:
-        print >>fp, '\n [ cmap ]'
+        rtp.append('\n [ cmap ]\n')
     for i in cmap:
-        print >>fp, "%s  " % (i)
+        rtp.append("%s  \n" % (i))
+
+    return rtp
 
 
-def _write_mtp(fname, r, ii_list, rotations, dihi_list):
-    fp = open(fname, 'w')
-    print >>fp, '\n[ %s ] ; %s -> %s\n' % (r.resname, r.resnA, r.resnB)
-    print >>fp, '\n [ morphes ]'
+def _make_mtp(r, ii_list, rotations, dihi_list):
+    mtp = []
+    mtp.append('\n[ %s ] ; %s -> %s\n\n' % (r.resname, r.resnA, r.resnB))
+    mtp.append('\n [ morphes ]\n')
     for atom in r.atoms:
-        print >>fp, "%6s %10s -> %6s %10s" % (atom.name, atom.atomtype, atom.nameB, atom.atomtypeB)
-    print >>fp, '\n [ atoms ]'
+        mtp.append("%6s %10s -> %6s %10s\n" % (atom.name, atom.atomtype,
+                                               atom.nameB, atom.atomtypeB))
+    mtp.append('\n [ atoms ]\n')
     cgnr = 1
     for atom in r.atoms:
         ext = ' ; '
@@ -1158,33 +1169,43 @@ def _write_mtp(fname, r, ii_list, rotations, dihi_list):
         else:
             ext += '| charge == '
 
-        print >>fp, "%8s %10s %10.6f %6d %10.6f %10s %10.6f %10.6f  %-10s" % \
-              (atom.name, atom.atomtype, atom.q, cgnr, atom.m,
-               atom.atomtypeB, atom.qB, atom.mB, ext)
-    print >>fp, '\n [ coords ]'
+        mtp.append("%8s %10s %10.6f %6d %10.6f %10s %10.6f %10.6f  %-10s\n"
+                   % (atom.name, atom.atomtype, atom.q, cgnr, atom.m,
+                      atom.atomtypeB, atom.qB, atom.mB, ext))
+    mtp.append('\n [ coords ]\n')
     for atom in r.atoms:
-        print >>fp, "%8.3f %8.3f %8.3f" % (atom.x[0], atom.x[1], atom.x[2])
+        mtp.append("%8.3f %8.3f %8.3f\n" % (atom.x[0], atom.x[1], atom.x[2]))
 
-    print >>fp, '\n [ impropers ]'
+    mtp.append('\n [ impropers ]\n')
     for ii in ii_list:
-        print >>fp, " %6s %6s %6s %6s     %-25s %-25s  " % \
-              (ii[0].name, ii[1].name, ii[2].name, ii[3].name, ii[4], ii[5])
-    print
+        mtp.append(" %6s %6s %6s %6s     %-25s %-25s\n" % (ii[0].name,
+                                                           ii[1].name,
+                                                           ii[2].name,
+                                                           ii[3].name,
+                                                           ii[4],
+                                                           ii[5]))
+    mtp.append('')
 
-    print >>fp, '\n [ dihedrals ]'
+    mtp.append('\n [ dihedrals ]\n')
     for ii in dihi_list:
-        print >>fp, " %6s %6s %6s %6s     %-25s %-25s  " % \
-              (ii[0].name, ii[1].name, ii[2].name, ii[3].name, ii[4], ii[5])
-    print
+        mtp.append(" %6s %6s %6s %6s     %-25s %-25s\n" % (ii[0].name,
+                                                           ii[1].name,
+                                                           ii[2].name,
+                                                           ii[3].name,
+                                                           ii[4],
+                                                           ii[5]))
+    mtp.append('')
 
     if rotations:
-        print >>fp, '\n [ rotations ]'
+        mtp.append('\n [ rotations ]\n')
         for rot in rotations:
-            print >>fp, '  %s-%s %s' % (rot[0].name, rot[1].name, ' '.join(map(lambda a: a.name, rot[2:])))
-        print >>fp
+            mtp.append('  %s-%s %s\n' % (rot[0].name, rot[1].name, ' '.join(map(lambda a: a.name, rot[2:]))))
+        mtp.append('\n')
+
+    return mtp
 
 
-def primitive_check(atom, rot_atom):
+def _primitive_check(atom, rot_atom):
     if atom in rot_atom.bonds:
         return True
     else:
@@ -1202,7 +1223,7 @@ def _find_higher_atoms(rot_atom, r, order, branch):
             print "2level: %s %s %s" % (atom.name, atom.order, atom.branch)
             if atom.order == rot_atom.order+1:
                 print "3level: %s %s %s" % (atom.name, atom.order, atom.branch)
-                if primitive_check(atom, rot_atom):
+                if _primitive_check(atom, rot_atom):
                     print "4level: %s %s %s" % (atom.name, atom.order, atom.branch)
                     res.append(atom)
             else:
@@ -1479,6 +1500,9 @@ def create_hybrid_lib(m1, m2,
 
     Returns
     -------
+    rr_name : str
+    rtp : list of str
+    mdp : list of str
     """
 
     # check m1 and m2 are of the same moltype
@@ -1630,7 +1654,7 @@ def create_hybrid_lib(m1, m2,
         _rename_back(m1, hash1)
         _rename_back(m2, hash2)
 
-    # write output pdb files if names provided
+    # write output (possibly aligned) pdb files if names provided
     if opdb1 is not None:
         r1.write(opdb1)
     if opdb2 is not None:
@@ -1836,19 +1860,19 @@ def create_hybrid_lib(m1, m2,
     # write res1-2-res2 pdb file
     r1.write(rr_name + '.pdb')
 
-    # write rtp file
-    rtp_out = rr_name + '.rtp'
-    _write_rtp(fname=rtp_out, r=r1, ii_list=ii_list, dihi_list=dihi_list,
-               neigh_bonds=bond_neigh, cmap=cmap)
+    # make rtp file
+    rtp = _make_rtp(r=r1, ii_list=ii_list, dihi_list=dihi_list,
+                    neigh_bonds=bond_neigh, cmap=cmap)
 
-    # write mtp file
-    mtp_out = rr_name + '.mtp'
+    # make mtp file
     if moltype in ['dna', 'rna']:
-        _write_mtp(fname=mtp_out, r=r1, ii_list=ii_list, rotations=False,
-                   dihi_list=dihi_list)
+        mtp = _make_mtp(r=r1, ii_list=ii_list, rotations=False,
+                        dihi_list=dihi_list)
     elif moltype == 'protein':
-        _write_mtp(fname=mtp_out, r=r1, ii_list=ii_list, rotations=rot,
-                   dihi_list=dihi_list)
+        mtp = _make_mtp(r=r1, ii_list=ii_list, rotations=rot,
+                        dihi_list=dihi_list)
+
+    return rr_name, rtp, mtp
 
 
 # ==============================================================================
@@ -1946,12 +1970,20 @@ def main(args):
     m1 = Model(args.pdb1)
     m2 = Model(args.pdb2)
 
-    create_hybrid_lib(m1=m1, m2=m2,
-                      opdb1=args.opdb1, opdb2=args.opdb2,
+    resname, rtp, mtp = create_hybrid_lib(m1=m1, m2=m2,
+                      opdb1=None, opdb2=None,
                       ffpath=ffpath,
                       fatp=args.fatp, fnb=args.fnb,
                       align=align, cbeta=cbeta,
                       bH2heavy=h2heavy)
+
+    # save rtp file
+    rtp_out = resname + '.rtp'
+    list2file(rtp, rtp_out)
+
+    # save mtp file
+    mtp_out = resname + '.mtp'
+    list2file(mtp, mtp_out)
 
 
 def entry_point():
