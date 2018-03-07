@@ -10,7 +10,6 @@ from pmx.atom import Atom
 from pmx.geometry import Rotation
 from pmx.ffparser import RTPParser, NBParser
 from pmx.parser import kickOutComments, readSection, parseList
-from pmx.library import _ext_one_letter
 
 
 # ==============================================================================
@@ -842,7 +841,7 @@ def _make_transition_dics(atom_pairs, r1):
 
 
 def _find_atom_by_nameB(r, name):
-    for atom in r1.atoms:
+    for atom in r.atoms:
         if atom.nameB == name:
             return atom
     return None
@@ -1292,7 +1291,7 @@ def _assign_mass_atp(r1, r2, ffatomtypes):
 
 
 def _rename_to_gmx(r):
-    for atom in r1.atoms:
+    for atom in r.atoms:
         if atom.name[0].isdigit():
             atom.name = atom.name[1:]+atom.name[0]
         if atom.nameB[0].isdigit():
@@ -1540,379 +1539,419 @@ Also, atomtype and non-bonded parameter files for the introduced dummies are gen
     return args
 
 
-#
-# MAIN
-#
+# ==============================================================================
+# Main Function (create_hybrid_lib)
+# ==============================================================================
 # TODO list:
 # 1) try simplify functions args
 # 2) make main a func
 # 3) automate generation of whole library
 #
+def create_hybrid_lib(m1, m2,
+                      opdb1=None, opdb2=None,
+                      ffpath='.',
+                      fatp='atomtypes.atp', fnb='ffnonbonded.itp',
+                      align=True, cbeta=False,
+                      bH2heavy=True):
+    """Creates hybrid structure and topology database entries (mtp and rtp) for
+    a residue pair.
 
-args = parse_options()
+    Parameters
+    ----------
+    m1 : Model
+        first input model
+    m2 : Model
+        second input model
 
-align = args.align
-cbeta = args.cbeta
-bH2heavy = args.h2heavy
-moltype = args.moltype
-ffpath = args.ff  # relative path of force field folder
-# infer name of ff from the folder name
-ffname = os.path.abspath(args.ff).split('/')[-1].split('.')[0]
+    Returns
+    -------
+    """
 
-if "charmm" in ffname:
-    bCharmm = True
-else:
-    bCharmm = False
+    # check m1 and m2 are of the same moltype
+    assert m1.moltype == m2.moltype
+    moltype = m1.moltype
 
-# select rtp file depending on library type
-if moltype == 'dna':
-    rtpfile = os.path.join(ffpath, 'dna.rtp')
-elif moltype == 'rna':
-    rtpfile = os.path.join(ffpath, 'rna.rtp')
-elif moltype == 'protein':
-    rtpfile = os.path.join(ffpath, 'aminoacids.rtp')
+    # check models contain 1 residue only
+    assert len(m1.residues) == 1
+    assert len(m2.residues) == 1
 
-# Create Models
-m1 = Model(args.pdb1)
-m2 = Model(args.pdb2)
-# check models
-assert len(m1.residues) == 1
-assert len(m2.residues) == 1
-# Get 3-letter resname from models
-nm1 = m1.residues[0].resname
-nm2 = m2.residues[0].resname
-# Convert 3-letter names to 1-letter ones
-aa1 = _ext_one_letter[nm1]
-aa2 = _ext_one_letter[nm2]
+    # select rtp file depending on library type
+    if moltype == 'dna':
+        rtpfile = os.path.join(ffpath, 'dna.rtp')
+    elif moltype == 'rna':
+        rtpfile = os.path.join(ffpath, 'rna.rtp')
+    elif moltype == 'protein':
+        rtpfile = os.path.join(ffpath, 'aminoacids.rtp')
 
+    # infer name of ff from the folder name
+    ffname = os.path.abspath(ffpath).split('/')[-1].split('.')[0]
 
-if moltype == 'protein':
-    rr_name = aa1 + '2' + aa2
-elif moltype == 'dna':
-    rr_name = _dna_mutation_naming(aa1, aa2)
-elif moltype == 'rna':
-    rr_name = _rna_mutation_naming(aa1, aa2)
-
-# Get element of all atoms in models
-m1.get_symbol()
-m2.get_symbol()
-
-# get order (number of bonds away from mainchain) if protein library
-if moltype == 'protein':
-    m1.get_order()
-    m2.get_order()
-
-# rename atoms
-if moltype == 'protein':
-    m1.rename_atoms()
-    m2.rename_atoms()
-elif moltype in ['dna', 'rna']:
-    _rename_atoms_nucleic_acids(m1)
-    _rename_atoms_nucleic_acids(m2)
-
-# If it is a Charmm ff, then rename atoms and residues
-if bCharmm is True:
-    _rename_model_charmm(m1)
-    _rename_model_charmm(m2)
-
-# get Molecule objects
-r1 = m1.residues[0]
-r2 = m2.residues[0]
-
-# if protein, use mol2 atomtypes
-if moltype == 'protein':
-    r1.get_mol2_types()
-    r2.get_mol2_types()
-# assign real_resname attribute
-r1.get_real_resname()
-r2.get_real_resname()
-
-if align is True:
-    _align_sidechains(r1, r2)
-
-# set residue names with this format: "Ala" "Arg" etc
-r1.resnA = r1.resname[0] + r1.resname[1:].lower()
-r1.resnB = r2.resname[0] + r2.resname[1:].lower()
-
-# read rtp file
-rtp = RTPParser(rtpfile)
-bond_neigh = _assign_rtp_entries(r1, rtp)
-_assign_rtp_entries(r2, rtp)  # FIXME/QUESTION is this line doing anything?
-_assign_mass_atp(r1=r1, r2=r2,
-                 ffatomtypes=os.path.join(ffpath, 'atomtypes.atp'))
-
-
-# ------------------------------
-# figure out degenerate resnames
-# ------------------------------
-resn1_dih = m1.residues[0].resname
-
-if moltype == 'protein':
-    if (resn1_dih == 'HIS' or resn1_dih == 'HID' or resn1_dih == 'HIE' or
-       resn1_dih == 'HIP' or resn1_dih == 'HISE' or resn1_dih == 'HISD' or
-       resn1_dih == 'HISH' or resn1_dih == 'HIS1' or resn1_dih == 'HSD' or
-       resn1_dih == 'HSE' or resn1_dih == 'HSP'):
-        resn1_dih = 'HIS'
-    elif resn1_dih == 'LYN' or resn1_dih == 'LYSH' or resn1_dih == 'LSN':
-        resn1_dih = 'LYS'
-    elif resn1_dih == 'ASH' or resn1_dih == 'ASPH' or resn1_dih == 'ASPP':
-        resn1_dih = 'ASP'
-    elif resn1_dih == 'GLH' or resn1_dih == 'GLUH' or resn1_dih == 'GLUP':
-        resn1_dih = 'GLU'
-    elif resn1_dih == 'CYSH':
-        resn1_dih = 'CYS'
-
-resn2_dih = m2.residues[0].resname
-
-if moltype == 'protein':
-    if (resn2_dih == 'HIS' or resn2_dih == 'HID' or resn2_dih == 'HIE' or
-       resn2_dih == 'HIP' or resn2_dih == 'HISE' or resn2_dih == 'HISD' or
-       resn2_dih == 'HISH' or resn2_dih == 'HIS1' or resn2_dih == 'HSD' or
-       resn2_dih == 'HSE' or resn2_dih == 'HSP'):
-        resn2_dih = 'HIS'
-    elif resn2_dih == 'LYN' or resn2_dih == 'LYSH' or resn2_dih == 'LSN':
-        resn2_dih = 'LYS'
-    elif resn2_dih == 'ASH' or resn2_dih == 'ASPH' or resn2_dih == 'ASPP':
-        resn2_dih = 'ASP'
-    elif resn2_dih == 'GLH' or resn2_dih == 'GLUH' or resn2_dih == 'GLUP':
-        resn2_dih = 'GLU'
-    elif resn2_dih == 'CYSH':
-        resn2_dih = 'CYS'
-
-# ---------------------------
-# Align sidechains if protein
-# ---------------------------
-hash1 = {}
-hash2 = {}
-if align is True and moltype == 'protein':
-    dihed1 = _get_dihedrals(resn1_dih)
-    dihed2 = _get_dihedrals(resn2_dih)
-    max_rot = _max_rotation(dihed2)
-    max_rot1 = _max_rotation(dihed1)
-
-    for atom in m2.atoms:
-        atom.max_rot = max_rot
-    for atom in m1.atoms:
-        atom.max_rot = max_rot1
-    hash1 = _rename_to_match_library(m1, bCharmm)
-    hash2 = _rename_to_match_library(m2, bCharmm)
-    _do_fit(m1.residues[0], dihed1, m2.residues[0], dihed2)
-    _rename_back(m1, hash1)
-    _rename_back(m2, hash2)
-
-# write output pdb files
-r1.write(args.opdb1)
-r2.write(args.opdb2)
-
-# ???
-_assign_branch(r1)
-_assign_branch(r2)
-
-
-# ==============================================================================
-#                            selecting pair lists
-# ==============================================================================
-
-# ------------------------------------------------------------------------------
-#                                     DNA
-# ------------------------------------------------------------------------------
-if moltype == 'dna':
-    if ((('5' in r1.resname) and ('5' not in r2.resname)) or
-       (('3' in r1.resname) and ('3' not in r2.resname)) or
-       (('5' in r2.resname) and ('5' not in r1.resname)) or
-       (('3' in r2.resname) and ('3' not in r1.resname))):
-        print("Cannot mutate terminal nucleic acid to non-terminal or a "
-              "terminal of the other end (e.g. 5' to 3')")
-        sys.exit(0)
-    if r1.resname in use_standard_dna_pair_list and r2.resname in use_standard_dna_pair_list[r1.resname]:
-        print "PURINE <-> PYRIMIDINE"
-        if bCharmm:
-            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_pair_list_charmm)
-        else:
-            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_pair_list)
-    elif r1.resname in use_standard_dna_5term_pair_list and r2.resname in use_standard_dna_5term_pair_list[r1.resname]:
-        print "PURINE <-> PYRIMIDINE: 5term"
-        if bCharmm:
-            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_5term_pair_list_charmm)
-        else:
-            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_5term_pair_list)
-    elif r1.resname in use_standard_dna_3term_pair_list and r2.resname in use_standard_dna_3term_pair_list[r1.resname]:
-        print "PURINE <-> PYRIMIDINE: 3term"
-        if bCharmm:
-            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_3term_pair_list_charmm)
-        else:
-            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_3term_pair_list)
+    # check if is one of the charmm ff
+    # also check ff name contains either amber, charmm, opls
+    if "charmm" in ffname:
+        bCharmm = True
+    elif 'amber' in ffname or 'opls' in ffname:
+        bCharmm = False
     else:
-        print "PURINE <-> PURINE	PYRIMIDINE <-> PYRIMIDINE"
-        atom_pairs, dummies = _make_pairs(mol1=r1, mol2=r2,
-                                          bCharmm=bCharmm, bH2heavy=bH2heavy)
+        raise ValueError('cannot determine force field type from the path/'
+                         'directory name')
 
-# ------------------------------------------------------------------------------
-#                                     RNA
-# ------------------------------------------------------------------------------
-elif moltype == 'rna':
-    if ((('5' in r1.resname) and ('5' not in r2.resname)) or
-       (('3' in r1.resname) and ('3' not in r2.resname)) or
-       (('5' in r2.resname) and ('5' not in r1.resname)) or
-       (('3' in r2.resname) and ('3' not in r1.resname))):
-        print "Cannot mutate terminal nucleic acid to non-terminal or a terminal of the other end (e.g. 5' to 3')"
-        sys.exit(0)
-    if r1.resname in use_standard_rna_pair_list and r2.resname in use_standard_rna_pair_list[r1.resname]:
-        print "PURINE <-> PYRIMIDINE"
-        atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_rna_pair_list)
-    elif r1.resname in use_standard_rna_5term_pair_list and r2.resname in use_standard_rna_5term_pair_list[r1.resname]:
-        print "PURINE <-> PYRIMIDINE: 5term"
-        atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_rna_5term_pair_list)
-    elif r1.resname in use_standard_rna_3term_pair_list and r2.resname in use_standard_rna_3term_pair_list[r1.resname]:
-        print "PURINE <-> PYRIMIDINE: 3term"
-        atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_rna_3term_pair_list)
-    else:
-        print "PURINE <-> PURINE	PYRIMIDINE <-> PYRIMIDINE"
-        atom_pairs, dummies = _make_pairs(mol1=r1, mol2=r2,
-                                          bCharmm=bCharmm, bH2heavy=bH2heavy)
+    # Get 3-letter resname from models
+    nm1 = m1.residues[0].resname
+    nm2 = m2.residues[0].resname
+    # Convert 3-letter names to 1-letter ones
+    aa1 = library._ext_one_letter[nm1]
+    aa2 = library._ext_one_letter[nm2]
 
-# ------------------------------------------------------------------------------
-#                                     Proteins
-# ------------------------------------------------------------------------------
-elif moltype == 'protein':
-    # ring-res 2 ring-res
-    if r1.resname in use_standard_pair_list and r2.resname in use_standard_pair_list[r1.resname]:
-        print "ENTERED STANDARD"
-        if bCharmm:
-            if cbeta:
-                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
-            else:
-                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmm)
-        else:
-            if cbeta:
-                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
-            else:
-                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list)
+    # determine hybrid residue name (rr_name)
+    if moltype == 'protein':
+        rr_name = aa1 + '2' + aa2
+    elif moltype == 'dna':
+        rr_name = _dna_mutation_naming(aa1, aa2)
+    elif moltype == 'rna':
+        rr_name = _rna_mutation_naming(aa1, aa2)
 
-    # ring-res 2 non-ring-res: T,A,V,I
-    elif (r1.resname in res_with_rings and r2.resname in res_diff_Cb) or \
-         (r2.resname in res_with_rings and r1.resname in res_diff_Cb):
-        print "ENTERED T,A,V,I"
-        if bCharmm:
-            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
-        else:
-            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
+    # Get element of all atoms in models
+    m1.get_symbol()
+    m2.get_symbol()
 
-    # proline
-    elif (r1.resname in res_pro) or (r2.resname in res_pro):
-        print "ENTERED P"
-        if (r1.resname in res_gly) or (r2.resname in res_gly):
-            print "subENTERED G"
-            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listGlyPro)
-        else:
-            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listPro)
+    # get order (number of bonds away from mainchain) if protein library
+    if moltype == 'protein':
+        m1.get_order()
+        m2.get_order()
 
-    # glycine
-    elif r1.resname in res_gly or r2.resname in res_gly:
-        print "ENTERED G"
-        if bCharmm:
-            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmD)
-        else:
-            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listD)
+    # rename atoms
+    if moltype == 'protein':
+        m1.rename_atoms()
+        m2.rename_atoms()
+    elif moltype in ['dna', 'rna']:
+        _rename_atoms_nucleic_acids(m1)
+        _rename_atoms_nucleic_acids(m2)
 
-    # ringed residues by atom names
-    elif r1.resname in merge_by_name_list and r2.resname in merge_by_name_list[r1.resname]:
-        if cbeta:
+    # If it is a Charmm ff, then rename atoms and residues
+    if bCharmm is True:
+        _rename_model_charmm(m1)
+        _rename_model_charmm(m2)
+
+    # get Molecule/Residue objects from Model
+    r1 = m1.residues[0]
+    r2 = m2.residues[0]
+
+    # if protein, use mol2 atomtypes
+    if moltype == 'protein':
+        r1.get_mol2_types()
+        r2.get_mol2_types()
+    # assign real_resname attribute
+    r1.get_real_resname()
+    r2.get_real_resname()
+
+    if align is True:
+        _align_sidechains(r1, r2)
+
+    # set residue names with this format: "Ala" "Arg" etc
+    r1.resnA = r1.resname[0] + r1.resname[1:].lower()
+    r1.resnB = r2.resname[0] + r2.resname[1:].lower()
+
+    # read rtp file
+    rtp = RTPParser(rtpfile)
+    bond_neigh = _assign_rtp_entries(r1, rtp)
+    _assign_rtp_entries(r2, rtp)  # FIXME/QUESTION is this line doing anything?
+    _assign_mass_atp(r1=r1, r2=r2,
+                     ffatomtypes=os.path.join(ffpath, 'atomtypes.atp'))
+
+    # ------------------------------
+    # figure out degenerate resnames
+    # ------------------------------
+    resn1_dih = m1.residues[0].resname
+
+    if moltype == 'protein':
+        if (resn1_dih == 'HIS' or resn1_dih == 'HID' or resn1_dih == 'HIE' or
+           resn1_dih == 'HIP' or resn1_dih == 'HISE' or resn1_dih == 'HISD' or
+           resn1_dih == 'HISH' or resn1_dih == 'HIS1' or resn1_dih == 'HSD' or
+           resn1_dih == 'HSE' or resn1_dih == 'HSP'):
+            resn1_dih = 'HIS'
+        elif resn1_dih == 'LYN' or resn1_dih == 'LYSH' or resn1_dih == 'LSN':
+            resn1_dih = 'LYS'
+        elif resn1_dih == 'ASH' or resn1_dih == 'ASPH' or resn1_dih == 'ASPP':
+            resn1_dih = 'ASP'
+        elif resn1_dih == 'GLH' or resn1_dih == 'GLUH' or resn1_dih == 'GLUP':
+            resn1_dih = 'GLU'
+        elif resn1_dih == 'CYSH':
+            resn1_dih = 'CYS'
+
+    resn2_dih = m2.residues[0].resname
+    if moltype == 'protein':
+        if (resn2_dih == 'HIS' or resn2_dih == 'HID' or resn2_dih == 'HIE' or
+           resn2_dih == 'HIP' or resn2_dih == 'HISE' or resn2_dih == 'HISD' or
+           resn2_dih == 'HISH' or resn2_dih == 'HIS1' or resn2_dih == 'HSD' or
+           resn2_dih == 'HSE' or resn2_dih == 'HSP'):
+            resn2_dih = 'HIS'
+        elif resn2_dih == 'LYN' or resn2_dih == 'LYSH' or resn2_dih == 'LSN':
+            resn2_dih = 'LYS'
+        elif resn2_dih == 'ASH' or resn2_dih == 'ASPH' or resn2_dih == 'ASPP':
+            resn2_dih = 'ASP'
+        elif resn2_dih == 'GLH' or resn2_dih == 'GLUH' or resn2_dih == 'GLUP':
+            resn2_dih = 'GLU'
+        elif resn2_dih == 'CYSH':
+            resn2_dih = 'CYS'
+
+    # ---------------------------
+    # Align sidechains if protein
+    # ---------------------------
+    hash1 = {}
+    hash2 = {}
+    if align is True and moltype == 'protein':
+        dihed1 = _get_dihedrals(resn1_dih)
+        dihed2 = _get_dihedrals(resn2_dih)
+        max_rot = _max_rotation(dihed2)
+        max_rot1 = _max_rotation(dihed1)
+
+        for atom in m2.atoms:
+            atom.max_rot = max_rot
+        for atom in m1.atoms:
+            atom.max_rot = max_rot1
+        hash1 = _rename_to_match_library(m1, bCharmm)
+        hash2 = _rename_to_match_library(m2, bCharmm)
+        _do_fit(m1.residues[0], dihed1, m2.residues[0], dihed2)
+        _rename_back(m1, hash1)
+        _rename_back(m2, hash2)
+
+    # write output pdb files if names provided
+    if opdb1 is not None:
+        r1.write(opdb1)
+    if opdb2 is not None:
+        r2.write(opdb2)
+
+    # ???
+    _assign_branch(r1)
+    _assign_branch(r2)
+
+    # ==========================================================================
+    #                            selecting pair lists
+    # ==========================================================================
+
+    # --------------------------------------------------------------------------
+    #                                     DNA
+    # --------------------------------------------------------------------------
+    if moltype == 'dna':
+        if ((('5' in r1.resname) and ('5' not in r2.resname)) or
+           (('3' in r1.resname) and ('3' not in r2.resname)) or
+           (('5' in r2.resname) and ('5' not in r1.resname)) or
+           (('3' in r2.resname) and ('3' not in r1.resname))):
+            print("Cannot mutate terminal nucleic acid to non-terminal or a "
+                  "terminal of the other end (e.g. 5' to 3')")
+            sys.exit(0)
+        if r1.resname in use_standard_dna_pair_list and r2.resname in use_standard_dna_pair_list[r1.resname]:
+            print "PURINE <-> PYRIMIDINE"
             if bCharmm:
-                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_pair_list_charmm)
             else:
-                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_pair_list)
+        elif r1.resname in use_standard_dna_5term_pair_list and r2.resname in use_standard_dna_5term_pair_list[r1.resname]:
+            print "PURINE <-> PYRIMIDINE: 5term"
+            if bCharmm:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_5term_pair_list_charmm)
+            else:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_5term_pair_list)
+        elif r1.resname in use_standard_dna_3term_pair_list and r2.resname in use_standard_dna_3term_pair_list[r1.resname]:
+            print "PURINE <-> PYRIMIDINE: 3term"
+            if bCharmm:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_3term_pair_list_charmm)
+            else:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_3term_pair_list)
         else:
-            print "ENTERED MERGE BY NAMES"
-            atom_pairs, dummies = _merge_by_names(r1, r2)
-
-    # ring-res 2 non-ring-res
-    elif r1.resname in res_with_rings or r2.resname in res_with_rings:
-        print "ENTERED RINGS"
-        if bCharmm:
-            if cbeta:
-                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
-            else:
-                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmB)
-        else:
-            if cbeta:
-                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
-            else:
-                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listB)
-
-    # all others
-    else:
-        print "ENTERED SIMPLE"
-        if cbeta:
-            if r1.resname == 'GLY' or r2.resname == 'GLY':
-                if bCharmm:
-                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmD)
-                else:
-                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listD)
-            else:
-                if bCharmm:
-                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
-                else:
-                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
-        else:
+            print "PURINE <-> PURINE	PYRIMIDINE <-> PYRIMIDINE"
             atom_pairs, dummies = _make_pairs(mol1=r1, mol2=r2,
                                               bCharmm=bCharmm,
                                               bH2heavy=bH2heavy)
 
-# add dummy atoms
-_merge_molecules(r1, dummies)
-_make_bstate_dummies(r1)
+    # ------------------------------------------------------------------------------
+    #                                     RNA
+    # ------------------------------------------------------------------------------
+    elif moltype == 'rna':
+        if ((('5' in r1.resname) and ('5' not in r2.resname)) or
+           (('3' in r1.resname) and ('3' not in r2.resname)) or
+           (('5' in r2.resname) and ('5' not in r1.resname)) or
+           (('3' in r2.resname) and ('3' not in r1.resname))):
+            print "Cannot mutate terminal nucleic acid to non-terminal or a terminal of the other end (e.g. 5' to 3')"
+            sys.exit(0)
+        if r1.resname in use_standard_rna_pair_list and r2.resname in use_standard_rna_pair_list[r1.resname]:
+            print "PURINE <-> PYRIMIDINE"
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_rna_pair_list)
+        elif r1.resname in use_standard_rna_5term_pair_list and r2.resname in use_standard_rna_5term_pair_list[r1.resname]:
+            print "PURINE <-> PYRIMIDINE: 5term"
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_rna_5term_pair_list)
+        elif r1.resname in use_standard_rna_3term_pair_list and r2.resname in use_standard_rna_3term_pair_list[r1.resname]:
+            print "PURINE <-> PYRIMIDINE: 3term"
+            atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_rna_3term_pair_list)
+        else:
+            print "PURINE <-> PURINE	PYRIMIDINE <-> PYRIMIDINE"
+            atom_pairs, dummies = _make_pairs(mol1=r1, mol2=r2,
+                                              bCharmm=bCharmm,
+                                              bH2heavy=bH2heavy)
 
-_write_atp_fnb(fn_atp=args.fatp, fn_nb=args.fnb, r=r1,
-               ffname=ffname, ffpath=ffpath)
-abdic, badic = _make_transition_dics(atom_pairs, r1)
-_update_bond_lists(r1, badic)
+    # --------------------------------------------------------------------------
+    #                                     Proteins
+    # --------------------------------------------------------------------------
+    elif moltype == 'protein':
+        # ring-res 2 ring-res
+        if r1.resname in use_standard_pair_list and r2.resname in use_standard_pair_list[r1.resname]:
+            print "ENTERED STANDARD"
+            if bCharmm:
+                if cbeta:
+                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
+                else:
+                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmm)
+            else:
+                if cbeta:
+                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
+                else:
+                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list)
 
-# CMAP for charmm
-# dihedrals are necessary for ILDN
-dih_1 = rtp[r1.resname]['diheds']
-dih_2 = rtp[r2.resname]['diheds']
+        # ring-res 2 non-ring-res: T,A,V,I
+        elif (r1.resname in res_with_rings and r2.resname in res_diff_Cb) or \
+             (r2.resname in res_with_rings and r1.resname in res_diff_Cb):
+            print "ENTERED T,A,V,I"
+            if bCharmm:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
+            else:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
 
-dih1 = _improps_as_atoms(dih_1, r1)  # it's alright, can use improper function
-dih2 = _improps_as_atoms(dih_2, r1, use_b=True)
+        # proline
+        elif (r1.resname in res_pro) or (r2.resname in res_pro):
+            print "ENTERED P"
+            if (r1.resname in res_gly) or (r2.resname in res_gly):
+                print "subENTERED G"
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listGlyPro)
+            else:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listPro)
 
-# here go impropers
-im_1 = rtp[r1.resname]['improps']
-im_2 = rtp[r2.resname]['improps']
+        # glycine
+        elif r1.resname in res_gly or r2.resname in res_gly:
+            print "ENTERED G"
+            if bCharmm:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmD)
+            else:
+                atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listD)
 
-im1 = _improps_as_atoms(im_1, r1)
-im2 = _improps_as_atoms(im_2, r1, use_b=True)
+        # ringed residues by atom names
+        elif r1.resname in merge_by_name_list and r2.resname in merge_by_name_list[r1.resname]:
+            if cbeta:
+                if bCharmm:
+                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
+                else:
+                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
+            else:
+                print "ENTERED MERGE BY NAMES"
+                atom_pairs, dummies = _merge_by_names(r1, r2)
 
-# cmap
-cmap = []
-if bCharmm is True:
-    cmap = rtp[r1.resname]['cmap']
+        # ring-res 2 non-ring-res
+        elif r1.resname in res_with_rings or r2.resname in res_with_rings:
+            print "ENTERED RINGS"
+            if bCharmm:
+                if cbeta:
+                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
+                else:
+                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmB)
+            else:
+                if cbeta:
+                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
+                else:
+                    atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listB)
 
-# dihedrals
-dihi_list = _generate_dihedral_entries(dih1, dih2, r1, atom_pairs)
+        # all others
+        else:
+            print "ENTERED SIMPLE"
+            if cbeta:
+                if r1.resname == 'GLY' or r2.resname == 'GLY':
+                    if bCharmm:
+                        atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmD)
+                    else:
+                        atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listD)
+                else:
+                    if bCharmm:
+                        atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
+                    else:
+                        atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
+            else:
+                atom_pairs, dummies = _make_pairs(mol1=r1, mol2=r2,
+                                                  bCharmm=bCharmm,
+                                                  bH2heavy=bH2heavy)
 
-# impropers
-ii_list = _generate_improp_entries(im1, im2, r1)
+    # add dummy atoms
+    _merge_molecules(r1, dummies)
+    _make_bstate_dummies(r1)
 
-if moltype == 'protein':
-    rot = _make_rotations(r1, resn1_dih, resn2_dih)
+    _write_atp_fnb(fn_atp=fatp, fn_nb=fnb, r=r1,
+                   ffname=ffname, ffpath=ffpath)
+    abdic, badic = _make_transition_dics(atom_pairs, r1)
+    _update_bond_lists(r1, badic)
 
-r1.set_resname(rr_name)
-_rename_to_gmx(r1)
+    # CMAP for charmm
+    # dihedrals are necessary for ILDN
+    dih_1 = rtp[r1.resname]['diheds']
+    dih_2 = rtp[r2.resname]['diheds']
 
-# write res1-2-res2 pdb file
-r1.write(rr_name + '.pdb')
+    dih1 = _improps_as_atoms(dih_1, r1)  # it's alright, can use improper function
+    dih2 = _improps_as_atoms(dih_2, r1, use_b=True)
 
-# write rtp file
-rtp_out = rr_name + '.rtp'
-_write_rtp(fname=rtp_out, r=r1, ii_list=ii_list, dihi_list=dihi_list,
-           neigh_bonds=bond_neigh, cmap=cmap)
+    # here go impropers
+    im_1 = rtp[r1.resname]['improps']
+    im_2 = rtp[r2.resname]['improps']
 
-# write mtp file
-mtp_out = rr_name + '.mtp'
-if moltype in ['dna', 'rna']:
-    _write_mtp(fname=mtp_out, r=r1, ii_list=ii_list, rotations=False,
-               dihi_list=dihi_list)
-elif moltype == 'protein':
-    _write_mtp(fname=mtp_out, r=r1, ii_list=ii_list, rotations=rot,
-               dihi_list=dihi_list)
+    im1 = _improps_as_atoms(im_1, r1)
+    im2 = _improps_as_atoms(im_2, r1, use_b=True)
+
+    # cmap
+    cmap = []
+    if bCharmm is True:
+        cmap = rtp[r1.resname]['cmap']
+
+    # dihedrals
+    dihi_list = _generate_dihedral_entries(dih1, dih2, r1, atom_pairs)
+
+    # impropers
+    ii_list = _generate_improp_entries(im1, im2, r1)
+
+    if moltype == 'protein':
+        rot = _make_rotations(r1, resn1_dih, resn2_dih)
+
+    r1.set_resname(rr_name)
+    _rename_to_gmx(r1)
+
+    # write res1-2-res2 pdb file
+    r1.write(rr_name + '.pdb')
+
+    # write rtp file
+    rtp_out = rr_name + '.rtp'
+    _write_rtp(fname=rtp_out, r=r1, ii_list=ii_list, dihi_list=dihi_list,
+               neigh_bonds=bond_neigh, cmap=cmap)
+
+    # write mtp file
+    mtp_out = rr_name + '.mtp'
+    if moltype in ['dna', 'rna']:
+        _write_mtp(fname=mtp_out, r=r1, ii_list=ii_list, rotations=False,
+                   dihi_list=dihi_list)
+    elif moltype == 'protein':
+        _write_mtp(fname=mtp_out, r=r1, ii_list=ii_list, rotations=rot,
+                   dihi_list=dihi_list)
+
+
+# main
+args = parse_options()
+align = args.align
+cbeta = args.cbeta
+h2heavy = args.h2heavy
+moltype = args.moltype
+ffpath = args.ff  # relative path of force field folder
+
+# Create Models
+m1 = Model(args.pdb1)
+m2 = Model(args.pdb2)
+
+create_hybrid_lib(m1=m1, m2=m2,
+                      opdb1=args.opdb1, opdb2=args.opdb2,
+                      ffpath=args.ff,
+                      fatp=args.fatp, fnb=args.fnb,
+                      align=align, cbeta=cbeta,
+                      bH2heavy=h2heavy)
