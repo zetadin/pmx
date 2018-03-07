@@ -145,6 +145,21 @@ def get_ff_path(ff, verbose=False):
     return ff_path
 
 
+def get_pmxdata(fname):
+    """Returns the absolute path for the file with 'fname' inside the pmx
+    data folder.
+    """
+    pmxhome = os.path.dirname(os.path.realpath(__file__))
+    pmxdata = os.path.join(pmxhome, 'data')
+    filepath = '%s/%s' % (pmxdata, fname)
+    if os.path.exists(filepath):
+        return filepath
+    else:
+        raise IOError('File %s cannot be found in the following path:\n'
+                      '%s' % (fname, pmxdata))
+
+
+
 def get_mtp_file(residue, ff):
     """Returns the correct mutres mtp file depending on the nature of the
     residue.
