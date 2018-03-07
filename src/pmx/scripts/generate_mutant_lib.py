@@ -478,7 +478,7 @@ def _align_sidechains(r1, r2):
         r2.set_chi(i+1, phi)
 
 
-def max_rotation(dihedrals):
+def _max_rotation(dihedrals):
     m = 0
     for d in dihedrals:
         if d[-2] == 1 and d[-1] > 0:
@@ -488,11 +488,11 @@ def max_rotation(dihedrals):
     return m+1
 
 
-def get_dihedrals(resname):
+def _get_dihedrals(resname):
     return library._aa_dihedrals[resname]
 
 
-def set_dihedral(atoms, mol, phi):
+def _set_dihedral(atoms, mol, phi):
     print atoms[0].name, atoms[1].name, atoms[2].name
     a1 = atoms[0]
     a2 = atoms[1]
@@ -513,13 +513,6 @@ def set_dihedral(atoms, mol, phi):
                    or atom.long_name[3] == ' ':
                     # print 'rotating', atom.name
                     atom.x = r.apply(atom.x, -rot)
-
-def is_number(s):
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
 
 
 def do_fit(m1, dihed1, m2, dihed2):
@@ -544,7 +537,7 @@ def do_fit(m1, dihed1, m2, dihed2):
             phi = a1.dihedral(a2, a3, a4)
             # print phi
             # print 'rot1', a1.name,a2.name,a3.name,a4.name
-            set_dihedral(atoms2, m2, phi)
+            _set_dihedral(atoms2, m2, phi)
 
     op = open('check.pdb', 'w')
     for atom in m2.atoms:
@@ -1243,8 +1236,8 @@ def find_higher_atoms(rot_atom, r, order, branch):
 
 
 def _make_rotations(r, resn1_dih, resn2_dih):
-    dihed1 = get_dihedrals(resn1_dih)
-    dihed2 = get_dihedrals(resn2_dih)  # FIXME: unused variable?
+    dihed1 = _get_dihedrals(resn1_dih)
+    dihed2 = _get_dihedrals(resn2_dih)  # FIXME: unused variable?
     rots = []
     done = []
     for d in dihed1:
@@ -1715,10 +1708,10 @@ if moltype == 'protein':
 hash1 = {}
 hash2 = {}
 if align is True and moltype == 'protein':
-    dihed1 = get_dihedrals(resn1_dih)
-    dihed2 = get_dihedrals(resn2_dih)
-    max_rot = max_rotation(dihed2)
-    max_rot1 = max_rotation(dihed1)
+    dihed1 = _get_dihedrals(resn1_dih)
+    dihed2 = _get_dihedrals(resn2_dih)
+    max_rot = _max_rotation(dihed2)
+    max_rot1 = _max_rotation(dihed1)
 
     for atom in m2.atoms:
         atom.max_rot = max_rot
