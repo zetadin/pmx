@@ -1459,94 +1459,8 @@ def _rename_model_charmm(m):
 
 
 # ==============================================================================
-# Input Options
+# Primary Function (create_hybrid_lib)
 # ==============================================================================
-def parse_options():
-    parser = argparse.ArgumentParser(description='''
-The script creates hybrid structure and topology database entries (mtp and rtp).
-Input: two pdb files aligned on the backbone and path to the force field files.
-Output: hybrid structure, hybrid topology entries as .rtp and .mtp files.
-Also, atomtype and non-bonded parameter files for the introduced dummies are generated
-''')
-
-    parser.add_argument('-pdb1',
-                        metavar='pdb1',
-                        dest='pdb1',
-                        type=str,
-                        help='',
-                        default='a1.pdb')
-    parser.add_argument('-pdb2',
-                        metavar='pdb2',
-                        dest='pdb2',
-                        type=str,
-                        help='',
-                        default='a2.pdb')
-    parser.add_argument('-opdb1',
-                        metavar='opdb1',
-                        dest='opdb1',
-                        type=str,
-                        help='',
-                        default='r1.pdb')
-    parser.add_argument('-opdb2',
-                        metavar='opdb2',
-                        dest='opdb2',
-                        type=str,
-                        help='',
-                        default='r2.pdb')
-    parser.add_argument('-ff',
-                        metavar='ff',
-                        dest='ff',
-                        type=str,
-                        help='path to mutation forcefield',
-                        default='')
-    parser.add_argument('-fatp',
-                        metavar='fatp',
-                        dest='fatp',
-                        type=str,
-                        help='',
-                        default='types.atp')
-    parser.add_argument('-fnb',
-                        metavar='fnb',
-                        dest='fnb',
-                        type=str,
-                        help='',
-                        default='fnb.itp')
-    # Options
-    parser.add_argument('--moltype',
-                        metavar='moltype',
-                        dest='moltype',
-                        type=str.lower,
-                        help='protein, dna, rna',
-                        choices=['protein', 'dna', 'rna'],
-                        default='protein')
-    parser.add_argument('--noalign',
-                        dest='align',
-                        help='',
-                        default=True,
-                        action='store_false')
-    parser.add_argument('--cbeta',
-                        dest='cbeta',
-                        help='',
-                        default=False,
-                        action='store_true')
-    parser.add_argument('--noH2H',
-                        dest='h2heavy',
-                        help='',
-                        default=True,
-                        action='store_false')
-
-    args, unknown = parser.parse_known_args()
-    return args
-
-
-# ==============================================================================
-# Main Function (create_hybrid_lib)
-# ==============================================================================
-# TODO list:
-# 1) try simplify functions args
-# 2) make main a func
-# 3) automate generation of whole library
-#
 def create_hybrid_lib(m1, m2,
                       opdb1=None, opdb2=None,
                       ffpath='.',
@@ -1937,21 +1851,113 @@ def create_hybrid_lib(m1, m2,
                    dihi_list=dihi_list)
 
 
-# main
-args = parse_options()
-align = args.align
-cbeta = args.cbeta
-h2heavy = args.h2heavy
-moltype = args.moltype
-ffpath = args.ff  # relative path of force field folder
+# ==============================================================================
+# Input Options
+# ==============================================================================
+def parse_options():
+    parser = argparse.ArgumentParser(description='''
+The script creates hybrid structure and topology database entries (mtp and rtp).
+Input: two pdb files aligned on the backbone and path to the force field files.
+Output: hybrid structure, hybrid topology entries as .rtp and .mtp files.
+Also, atomtype and non-bonded parameter files for the introduced dummies are generated
+''')
 
-# Create Models
-m1 = Model(args.pdb1)
-m2 = Model(args.pdb2)
+    parser.add_argument('-pdb1',
+                        metavar='pdb1',
+                        dest='pdb1',
+                        type=str,
+                        help='',
+                        default='a1.pdb')
+    parser.add_argument('-pdb2',
+                        metavar='pdb2',
+                        dest='pdb2',
+                        type=str,
+                        help='',
+                        default='a2.pdb')
+    parser.add_argument('-opdb1',
+                        metavar='opdb1',
+                        dest='opdb1',
+                        type=str,
+                        help='',
+                        default='r1.pdb')
+    parser.add_argument('-opdb2',
+                        metavar='opdb2',
+                        dest='opdb2',
+                        type=str,
+                        help='',
+                        default='r2.pdb')
+    parser.add_argument('-ff',
+                        metavar='ff',
+                        dest='ff',
+                        type=str,
+                        help='path to mutation forcefield',
+                        default='')
+    parser.add_argument('-fatp',
+                        metavar='fatp',
+                        dest='fatp',
+                        type=str,
+                        help='',
+                        default='types.atp')
+    parser.add_argument('-fnb',
+                        metavar='fnb',
+                        dest='fnb',
+                        type=str,
+                        help='',
+                        default='fnb.itp')
+    # Options
+    parser.add_argument('--moltype',
+                        metavar='moltype',
+                        dest='moltype',
+                        type=str.lower,
+                        help='protein, dna, rna',
+                        choices=['protein', 'dna', 'rna'],
+                        default='protein')
+    parser.add_argument('--noalign',
+                        dest='align',
+                        help='',
+                        default=True,
+                        action='store_false')
+    parser.add_argument('--cbeta',
+                        dest='cbeta',
+                        help='',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--noH2H',
+                        dest='h2heavy',
+                        help='',
+                        default=True,
+                        action='store_false')
 
-create_hybrid_lib(m1=m1, m2=m2,
+    args, unknown = parser.parse_known_args()
+    return args
+
+
+# ==============================================================================
+# Main
+# ==============================================================================
+def main(args):
+    align = args.align
+    cbeta = args.cbeta
+    h2heavy = args.h2heavy
+    moltype = args.moltype
+    ffpath = args.ff  # relative path of force field folder
+
+    # Create Models
+    m1 = Model(args.pdb1)
+    m2 = Model(args.pdb2)
+
+    create_hybrid_lib(m1=m1, m2=m2,
                       opdb1=args.opdb1, opdb2=args.opdb2,
-                      ffpath=args.ff,
+                      ffpath=ffpath,
                       fatp=args.fatp, fnb=args.fnb,
                       align=align, cbeta=cbeta,
                       bH2heavy=h2heavy)
+
+
+def entry_point():
+    args = parse_options()
+    main(args)
+
+
+if __name__ == '__main__':
+    entry_point()
