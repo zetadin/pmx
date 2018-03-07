@@ -826,7 +826,7 @@ def check_double_atom_names(r):
     return True
 
 
-def merge_molecules(r1, dummies):
+def _merge_molecules(r1, dummies):
 
     for atom in dummies:
         new_atom = atom.copy()
@@ -850,7 +850,7 @@ def merge_molecules(r1, dummies):
         r1.append(new_atom)
 
 
-def make_bstate_dummies(r1):
+def _make_bstate_dummies(r1):
     for atom in r1.atoms:
         if not hasattr(atom, "nameB"):
             atom.nameB = atom.name+'.gone'
@@ -859,7 +859,7 @@ def make_bstate_dummies(r1):
             atom.mB = atom.m
 
 
-def make_transition_dics(atom_pairs, r1):
+def _make_transition_dics(atom_pairs, r1):
     abdic = {}
     badic = {}
     for a1, a2 in atom_pairs:
@@ -879,7 +879,7 @@ def find_atom_by_nameB(r, name):
     return None
 
 
-def update_bond_lists(r1, badic):
+def _update_bond_lists(r1, badic):
 
     print 'Updating bond lists...........'
     for atom in r1.atoms:
@@ -1133,7 +1133,9 @@ def generate_improp_entries(im1, im2, r):
     return new_ii
 
 
-def write_rtp(fp, r, ii_list, dihi_list, neigh_bonds, cmap):
+def _write_rtp(fname, r, ii_list, dihi_list, neigh_bonds, cmap):
+    # open file
+    fp = open(fname, 'w')
     print >>fp, '\n[ %s ] ; %s -> %s\n' % (r.resname, r.resnA, r.resnB)
     print >>fp, ' [ atoms ]'
     cgnr = 1
@@ -1169,7 +1171,8 @@ def write_rtp(fp, r, ii_list, dihi_list, neigh_bonds, cmap):
         print >>fp, "%s  " % (i)
 
 
-def write_mtp(fp, r, ii_list, rotations, dihi_list):
+def _write_mtp(fname, r, ii_list, rotations, dihi_list):
+    fp = open(fname, 'w')
     print >>fp, '\n[ %s ] ; %s -> %s\n' % (r.resname, r.resnA, r.resnB)
     print >>fp, '\n [ morphes ]'
     for atom in r.atoms:
@@ -1239,7 +1242,7 @@ def find_higher_atoms(rot_atom, r, order, branch):
     return res
 
 
-def make_rotations(r, resn1_dih, resn2_dih):
+def _make_rotations(r, resn1_dih, resn2_dih):
     dihed1 = get_dihedrals(resn1_dih)
     dihed2 = get_dihedrals(resn2_dih)  # FIXME: unused variable?
     rots = []
@@ -1318,7 +1321,7 @@ def _assign_mass_atp(r1, r2, ffatomtypes):
         atom.m = mass[atom.atomtype]
 
 
-def rename_to_gmx(r):
+def _rename_to_gmx(r):
     for atom in r1.atoms:
         if atom.name[0].isdigit():
             atom.name = atom.name[1:]+atom.name[0]
@@ -1360,7 +1363,7 @@ def reformat_atom_name(name):
     return name
 
 
-def improps_as_atoms(im, r, use_b=False):
+def _improps_as_atoms(im, r, use_b=False):
     im_new = []
     for ii in im:
         atom_names = ii[:4]
@@ -1394,7 +1397,7 @@ def read_nbitp(fn):
     return dic
 
 
-def write_atp_fnb(fn_atp, fn_nb, r, ff, ffpath):
+def _write_atp_fnb(fn_atp, fn_nb, r, ffname, ffpath):
     types = []
     if os.path.isfile(fn_atp):
         ifile = open(fn_atp, 'r')
@@ -1436,7 +1439,7 @@ def write_atp_fnb(fn_atp, fn_nb, r, ff, ffpath):
     print types
 
     # for opls need to extract the atom name
-    ffnamelower = ff.lower()
+    ffnamelower = ffname.lower()
     if 'opls' in ffnamelower:
         dum_real_name = read_nbitp(os.path.join(ffpath, 'ffnonbonded.itp'))
 
@@ -1886,33 +1889,33 @@ elif moltype == 'protein':
                                               bCharmm=bCharmm,
                                               bH2heavy=bH2heavy)
 
+# add dummy atoms
+_merge_molecules(r1, dummies)
+_make_bstate_dummies(r1)
 
-merge_molecules(r1, dummies)
-make_bstate_dummies(r1)
-
-write_atp_fnb(args.fatp, args.fnb, r1, ffname, ffpath)
-abdic, badic = make_transition_dics(atom_pairs, r1)
-
-update_bond_lists(r1, badic)
+_write_atp_fnb(fn_atp=args.fatp, fn_nb=args.fnb, r=r1,
+               ffname=ffname, ffpath=ffpath)
+abdic, badic = _make_transition_dics(atom_pairs, r1)
+_update_bond_lists(r1, badic)
 
 # CMAP for charmm
 # dihedrals are necessary for ILDN
 dih_1 = rtp[r1.resname]['diheds']
 dih_2 = rtp[r2.resname]['diheds']
 
-dih1 = improps_as_atoms(dih_1, r1)  # it's alright, can use improper function
-dih2 = improps_as_atoms(dih_2, r1, use_b=True)
+dih1 = _improps_as_atoms(dih_1, r1)  # it's alright, can use improper function
+dih2 = _improps_as_atoms(dih_2, r1, use_b=True)
 
 # here go impropers
 im_1 = rtp[r1.resname]['improps']
 im_2 = rtp[r2.resname]['improps']
 
-im1 = improps_as_atoms(im_1, r1)
-im2 = improps_as_atoms(im_2, r1, use_b=True)
+im1 = _improps_as_atoms(im_1, r1)
+im2 = _improps_as_atoms(im_2, r1, use_b=True)
 
 # cmap
 cmap = []
-if bCharmm:
+if bCharmm is True:
     cmap = rtp[r1.resname]['cmap']
 
 # dihedrals
@@ -1921,18 +1924,25 @@ dihi_list = generate_dihedral_entries(dih1, dih2, r1, atom_pairs)
 # impropers
 ii_list = generate_improp_entries(im1, im2, r1)
 
-if moltype not in ['dna', 'rna']:
-    rot = make_rotations(r1, resn1_dih, resn2_dih)
+if moltype == 'protein':
+    rot = _make_rotations(r1, resn1_dih, resn2_dih)
 
 r1.set_resname(rr_name)
-rename_to_gmx(r1)
+_rename_to_gmx(r1)
 
-rtp_out = open(rr_name+'.rtp', 'w')
-write_rtp(rtp_out, r1, ii_list, dihi_list, bond_neigh, cmap)
+# write res1-2-res2 pdb file
 r1.write(rr_name + '.pdb')
-mtp_out = open(rr_name+'.mtp', 'w')
 
+# write rtp file
+rtp_out = rr_name + '.rtp'
+_write_rtp(fname=rtp_out, r=r1, ii_list=ii_list, dihi_list=dihi_list,
+           neigh_bonds=bond_neigh, cmap=cmap)
+
+# write mtp file
+mtp_out = rr_name + '.mtp'
 if moltype in ['dna', 'rna']:
-    write_mtp(mtp_out, r1, ii_list, False, dihi_list)
-else:
-    write_mtp(mtp_out, r1, ii_list, rot, dihi_list)
+    _write_mtp(fname=mtp_out, r=r1, ii_list=ii_list, rotations=False,
+               dihi_list=dihi_list)
+elif moltype == 'protein':
+    _write_mtp(fname=mtp_out, r=r1, ii_list=ii_list, rotations=rot,
+               dihi_list=dihi_list)
