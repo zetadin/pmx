@@ -11,7 +11,7 @@ from pmx.atom import Atom
 from pmx.geometry import Rotation
 from pmx.ffparser import RTPParser, NBParser
 from pmx.parser import kickOutComments, readSection, parseList
-from pmx.utils import list2file, get_pmxdata
+from pmx.utils import list2file, get_pmxdata, natural_sort
 
 
 # ==============================================================================
@@ -443,6 +443,20 @@ dna_names = {
     'DG3_DT3':'D3Y',
     'DG3_DC3':'D3Z',
     }
+
+_rtp_template = ['''[ bondedtypes ]
+; Col 1: Type of bond
+; Col 2: Type of angles
+; Col 3: Type of proper dihedrals
+; Col 4: Type of improper dihedrals
+; Col 5: Generate all dihedrals if 1, only heavy atoms of 0.
+; Col 6: Number of excluded neighbors for nonbonded interactions
+; Col 7: Generate 1,4 interactions between pairs of hydrogens if 1
+; Col 8: Remove impropers over the same bond as a proper if it is 1
+; bonds  angles  dihedrals  impropers all_dihedrals nrexcl HH14 RemoveDih
+     1       1          9          4        1         3      1     0
+''']
+
 
 # ==============================================================================
 # Helper Functions
@@ -1990,9 +2004,9 @@ def main(args):
             pmxdata = get_pmxdata(fname='aminoacids.pkl')
             aminoacids = pickle.load(open(pmxdata, "rb"))
             # aminoacids is a dict with resname: model
-            keys = aminoacids.keys()
+            keys = natural_sort(aminoacids.keys())
             # prepare rtp/rtp lists
-            rtp_all = []
+            rtp_all = _rtp_template
             mtp_all = []
             # run through all combinations of amino acids
             for a1 in keys:
