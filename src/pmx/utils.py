@@ -384,6 +384,14 @@ def multiple_replace(text, word_dic, isfile=False):
             out.write(newf)
 
 
+def list2file(lst, fname):
+    """Writes a list of strings to a file.
+    """
+    with open(fname, 'w') as f:
+        for line in lst:
+            f.write(line)
+
+
 # ========================
 # Custom Exception Classes
 # ========================
