@@ -515,7 +515,7 @@ def _set_dihedral(atoms, mol, phi):
                     atom.x = r.apply(atom.x, -rot)
 
 
-def do_fit(m1, dihed1, m2, dihed2):
+def _do_fit(m1, dihed1, m2, dihed2):
     bonds = []
     diheds = []
     # if not diheds: we take the chi's
@@ -544,7 +544,7 @@ def do_fit(m1, dihed1, m2, dihed2):
         print >>op, atom
 
 
-def tag(atom):
+def _tag(atom):
     s = '%s|%s|%s|%s' % (atom.resname, atom.name, atom.atomtype, atom.atype)
     return '%-20s' % s
 
@@ -589,15 +589,7 @@ def _assign_branch(mol):
             atom.branch = 2
 
 
-def get_atoms_by_order(mol, order):
-    res = []
-    for atom in mol.atoms:
-        if atom.order == order:
-            res.append(atom)
-    return res
-
-
-def get_atoms_by_order_and_branch(mol, order, branch, merged_atoms):
+def _get_atoms_by_order_and_branch(mol, order, branch, merged_atoms):
     res = []
     for atom in mol.atoms:
         if atom.order == order and atom not in merged_atoms:
@@ -769,8 +761,8 @@ def _make_pairs(mol1, mol2, bCharmm=False, bH2heavy=True):
                     break
                 print '-- Searching order', i
 
-                atoms1 = get_atoms_by_order_and_branch(mol1, i, k, merged_atoms1)
-                atoms2 = get_atoms_by_order_and_branch(mol2, i, k, merged_atoms2)
+                atoms1 = _get_atoms_by_order_and_branch(mol1, i, k, merged_atoms1)
+                atoms2 = _get_atoms_by_order_and_branch(mol2, i, k, merged_atoms2)
                 for at1 in atoms1:
                     if last_atom_is_morphed(at1, merged_atoms1):
                         print '-- Checking atom...', at1.name
@@ -783,7 +775,7 @@ def _make_pairs(mol1, mol2, bCharmm=False, bH2heavy=True):
                             merged_atoms2.append(aa)
                             merged_atoms1.append(at1)
                             atom_pairs.append([at1, aa])
-                            print '--> Define atom pair: ', tag(at1), '- >', tag(aa),  '(d = %4.2f A)' % d
+                            print '--> Define atom pair: ', _tag(at1), '- >', _tag(aa),  '(d = %4.2f A)' % d
                         else:
                             print 'No partner found for atom ', at1.name
 
@@ -1719,7 +1711,7 @@ if align is True and moltype == 'protein':
         atom.max_rot = max_rot1
     hash1 = rename_to_match_library(m1, bCharmm)
     hash2 = rename_to_match_library(m2, bCharmm)
-    do_fit(m1.residues[0], dihed1, m2.residues[0], dihed2)
+    _do_fit(m1.residues[0], dihed1, m2.residues[0], dihed2)
     rename_back(m1, hash1)
     rename_back(m2, hash2)
 
