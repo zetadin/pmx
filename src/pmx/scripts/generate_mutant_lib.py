@@ -1505,7 +1505,8 @@ def create_hybrid_lib(m1, m2,
                       ffpath='.',
                       fatp='atomtypes.atp', fnb='ffnonbonded.itp',
                       align=True, cbeta=False,
-                      bH2heavy=True):
+                      bH2heavy=True,
+                      pdbout=False):
     """Creates hybrid structure and topology database entries (mtp and rtp) for
     a residue pair.
 
@@ -1879,7 +1880,8 @@ def create_hybrid_lib(m1, m2,
     _rename_to_gmx(r1)
 
     # write res1-2-res2 pdb file
-    r1.write(rr_name + '.pdb')
+    if pdbout is True:
+        r1.write(rr_name + '.pdb')
 
     # make rtp file
     rtp = _make_rtp(r=r1, ii_list=ii_list, dihi_list=dihi_list,
@@ -2022,7 +2024,8 @@ def main(args):
                                                               fnb=args.fnb,
                                                               align=align,
                                                               cbeta=cbeta,
-                                                              bH2heavy=h2heavy)
+                                                              bH2heavy=h2heavy,
+                                                              pdbout=False)
                         rtp_all.extend(rtp)
                         mtp_all.extend(mtp)
 
@@ -2043,7 +2046,8 @@ def main(args):
                                               ffpath=ffpath,
                                               fatp=args.fatp, fnb=args.fnb,
                                               align=align, cbeta=cbeta,
-                                              bH2heavy=h2heavy)
+                                              bH2heavy=h2heavy,
+                                              pdbout=True)
 
         # save rtp file
         rtp_out = resname + '.rtp'
