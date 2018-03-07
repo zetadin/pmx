@@ -12,6 +12,10 @@ from pmx.ffparser import RTPParser, NBParser
 from pmx.parser import kickOutComments, readSection, parseList
 from pmx.library import _ext_one_letter
 
+
+# ==============================================================================
+# Dictionaries and Lists
+# ==============================================================================
 standard_pair_list = [
     ('N','N'),
     ('H','H'),
@@ -440,7 +444,7 @@ dna_names = {
     }
 
 # ==============================================================================
-# Functions
+# Helper Functions
 # ==============================================================================
 def _dna_mutation_naming(aa1, aa2):
     rr_name = 'D'+aa1[-1]+aa2[-1]
@@ -605,7 +609,7 @@ def _last_atom_is_morphed(atom, merged_list):
     return False
 
 
-def find_closest_atom(atom1, atom_list, merged_atoms, bH2heavy=True):
+def _find_closest_atom(atom1, atom_list, merged_atoms, bH2heavy=True):
     min_d = 0.55
     idx = 99
     for i, atom in enumerate(atom_list):
@@ -628,7 +632,7 @@ def find_closest_atom(atom1, atom_list, merged_atoms, bH2heavy=True):
         return None, None
 
 
-def merge_by_names(mol1, mol2):
+def _merge_by_names(mol1, mol2):
     print 'Making atom pairs.........MERGE BY NAMES......'
     atom_pairs = []
     merged_atoms1 = []
@@ -659,14 +663,14 @@ def _make_predefined_pairs(mol1, mol2, pair_list):
         try:
             at1 = mol1.fetch(name1)[0]
         except IndexError:
-            at1 = mol1.fetch(reformat_atom_name(name1))[0]
+            at1 = mol1.fetch(_reformat_atom_name(name1))[0]
         try:
             at2 = mol2.fetch(name2)[0]
         except IndexError:
-            at2 = mol2.fetch(reformat_atom_name(name2))[0]
+            at2 = mol2.fetch(_reformat_atom_name(name2))[0]
 
-        at1.name = reformat_atom_name(name1)
-        at2.name = reformat_atom_name(name2)
+        at1.name = _reformat_atom_name(name1)
+        at2.name = _reformat_atom_name(name2)
         at1.atomtypeB = at2.atomtype
         at1.qB = at2.q
         at1.mB = at2.m
@@ -727,7 +731,7 @@ def _make_pairs(mol1, mol2, bCharmm=False, bH2heavy=True):
         atoms2 = mol2.atoms
         for at1 in atoms1:
             print '-- Checking atom...', at1.name
-            aa, d = find_closest_atom(at1, atoms2, merged_atoms2, bH2heavy)
+            aa, d = _find_closest_atom(at1, atoms2, merged_atoms2, bH2heavy)
             if aa:
                 merged_atoms2.append(aa)
                 merged_atoms1.append(at1)
@@ -750,7 +754,7 @@ def _make_pairs(mol1, mol2, bCharmm=False, bH2heavy=True):
                         candidates = []
                         for at2 in atoms2:
                             candidates.append(at2)
-                        aa, d = find_closest_atom(at1, candidates, merged_atoms2, bH2heavy)
+                        aa, d = _find_closest_atom(at1, candidates, merged_atoms2, bH2heavy)
                         if aa:
                             merged_atoms2.append(aa)
                             merged_atoms1.append(at1)
@@ -774,7 +778,7 @@ def _make_pairs(mol1, mol2, bCharmm=False, bH2heavy=True):
     return atom_pairs, dummies
 
 
-def check_double_atom_names(r):
+def _check_double_atom_names(r):
     for atom in r.atoms:
         alist = r.fetch_atoms(atom.name)
         if len(alist) != 1:
@@ -837,7 +841,7 @@ def _make_transition_dics(atom_pairs, r1):
     return abdic, badic
 
 
-def find_atom_by_nameB(r, name):
+def _find_atom_by_nameB(r, name):
     for atom in r1.atoms:
         if atom.nameB == name:
             return atom
@@ -859,7 +863,7 @@ def _update_bond_lists(r1, badic):
                     aa = r1.fetch(badic[at.name])[0]
                     new_list.append(aa)
                 else:
-                    aa = find_atom_by_nameB(r1, at.name)
+                    aa = _find_atom_by_nameB(r1, at.name)
                     if aa is not None:
                         new_list.append(aa)
                     else:
@@ -873,7 +877,7 @@ def _update_bond_lists(r1, badic):
             print
 
 
-def improp_entries_match(lst1, lst2):
+def _improp_entries_match(lst1, lst2):
     res = True
     for a1, a2 in zip(lst1, lst2):
         if a1.name != a2.name:
@@ -887,7 +891,7 @@ def improp_entries_match(lst1, lst2):
     return res
 
 
-def generate_dihedral_entries(im1, im2, r, pairs):
+def _generate_dihedral_entries(im1, im2, r, pairs):
     print 'Updating dihedrals...........'
     new_ii = []
     done_i1 = []
@@ -895,7 +899,7 @@ def generate_dihedral_entries(im1, im2, r, pairs):
     # ILDN dihedrals
     for i1 in im1:
         for i2 in im2:
-            if improp_entries_match(i1[:4], i2[:4]) and (i2 not in done_i2):
+            if _improp_entries_match(i1[:4], i2[:4]) and (i2 not in done_i2):
                 im_new = i1[:4]
                 if i1[4] == '':
                     im_new.append('default-A')
@@ -974,7 +978,7 @@ def generate_dihedral_entries(im1, im2, r, pairs):
     return new_ii
 
 
-def generate_improp_entries(im1, im2, r):
+def _generate_improp_entries(im1, im2, r):
     print 'Updating impropers...........'
 
     new_ii = []
@@ -984,7 +988,7 @@ def generate_improp_entries(im1, im2, r):
     for i1 in im1:
         print("improper: ", i1[0].name, i1[1].name, i1[2].name, i1[3].name)
         for i2 in im2:
-            if improp_entries_match(i1[:4], i2[:4]):
+            if _improp_entries_match(i1[:4], i2[:4]):
                 print('matched impropers: ', i1[0].name, i1[1].name,
                       i1[2].name, i1[3].name)
                 im_new = i1[:4]
@@ -1188,7 +1192,7 @@ def primitive_check(atom, rot_atom):
         return False
 
 
-def find_higher_atoms(rot_atom, r, order, branch):
+def _find_higher_atoms(rot_atom, r, order, branch):
     res = []
     for atom in r.atoms:
         print "1level: %s %s %s" % (atom.name, atom.order, atom.branch)
@@ -1236,14 +1240,14 @@ def _make_rotations(r, resn1_dih, resn2_dih):
         bb = atom2.branch
         print "AAAAAAAAA %s %s %s" % (atom2, oo+1, bb)
         atoms_to_rotate = []
-        atoms_to_rotate = find_higher_atoms(atom2,  r, oo+1, bb)
+        atoms_to_rotate = _find_higher_atoms(atom2,  r, oo+1, bb)
         for atom in atoms_to_rotate:
             rot_list.append(atom)
         rotations.append(rot_list)
     return rotations
 
 
-def parse_ffnonbonded_charmm(ffnonbonded, f):
+def _parse_ffnonbonded_charmm(ffnonbonded, f):
     ifile = open(ffnonbonded, 'r')
     lines = ifile.readlines()
     # now clean the heavy atom entries from file and write it to temp file
@@ -1259,11 +1263,12 @@ def parse_ffnonbonded_charmm(ffnonbonded, f):
             bAdd = True
 
 
-def assign_mass(r1, r2, ffnonbonded, bCharmm, ff):
+# FIXME: seems this func is not used?
+def _assign_mass(r1, r2, ffnonbonded, bCharmm, ff):
     # open ffnonbonded, remove HEAVY_H, pass it to NBParser
     if bCharmm:
         f = tempfile.NamedTemporaryFile(delete=False)
-        parse_ffnonbonded_charmm(ffnonbonded, f)
+        _parse_ffnonbonded_charmm(ffnonbonded, f)
         print f.name
         NBParams = NBParser(f.name, 'new', ff)
         f.close()
@@ -1298,10 +1303,10 @@ def _rename_to_gmx(r):
             atom.nameB = atom.nameB[0]+atom.nameB[2:]+atom.nameB[1]
     res = False
     while not res:
-        res = check_double_atom_names(r)
+        res = _check_double_atom_names(r)
 
 
-def rename_to_match_library(m, bCharmm=False):
+def _rename_to_match_library(m, bCharmm=False):
     name_hash = {}
     for atom in m.atoms:
         foo = atom.name
@@ -1317,12 +1322,12 @@ def rename_to_match_library(m, bCharmm=False):
     return name_hash
 
 
-def rename_back(m, name_hash):
+def _rename_back(m, name_hash):
     for atom in m.atoms:
         atom.name = name_hash[atom.name]
 
 
-def reformat_atom_name(name):
+def _reformat_atom_name(name):
     if name[0].isdigit():
         name = name[1:]+name[0]
     return name
@@ -1350,7 +1355,7 @@ def _improps_as_atoms(im, r, use_b=False):
     return im_new
 
 
-def read_nbitp(fn):
+def _read_nbitp(fn):
     lines = open(fn, 'r').readlines()
     lines = kickOutComments(lines, ';')
     lines = kickOutComments(lines, '#')
@@ -1406,7 +1411,7 @@ def _write_atp_fnb(fn_atp, fn_nb, r, ffname, ffpath):
     # for opls need to extract the atom name
     ffnamelower = ffname.lower()
     if 'opls' in ffnamelower:
-        dum_real_name = read_nbitp(os.path.join(ffpath, 'ffnonbonded.itp'))
+        dum_real_name = _read_nbitp(os.path.join(ffpath, 'ffnonbonded.itp'))
 
     for atom in r.atoms:
         if atom.atomtype[0:3] == 'DUM':
@@ -1454,9 +1459,9 @@ def _rename_model_charmm(m):
             atom.name = '1HG'
 
 
-# =============
+# ==============================================================================
 # Input Options
-# =============
+# ==============================================================================
 def parse_options():
     parser = argparse.ArgumentParser(description='''
 The script creates hybrid structure and topology database entries (mtp and rtp).
@@ -1689,11 +1694,11 @@ if align is True and moltype == 'protein':
         atom.max_rot = max_rot
     for atom in m1.atoms:
         atom.max_rot = max_rot1
-    hash1 = rename_to_match_library(m1, bCharmm)
-    hash2 = rename_to_match_library(m2, bCharmm)
+    hash1 = _rename_to_match_library(m1, bCharmm)
+    hash2 = _rename_to_match_library(m2, bCharmm)
     _do_fit(m1.residues[0], dihed1, m2.residues[0], dihed2)
-    rename_back(m1, hash1)
-    rename_back(m2, hash2)
+    _rename_back(m1, hash1)
+    _rename_back(m2, hash2)
 
 # write output pdb files
 r1.write(args.opdb1)
@@ -1819,7 +1824,7 @@ elif moltype == 'protein':
                 atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
         else:
             print "ENTERED MERGE BY NAMES"
-            atom_pairs, dummies = merge_by_names(r1, r2)
+            atom_pairs, dummies = _merge_by_names(r1, r2)
 
     # ring-res 2 non-ring-res
     elif r1.resname in res_with_rings or r2.resname in res_with_rings:
@@ -1884,10 +1889,10 @@ if bCharmm is True:
     cmap = rtp[r1.resname]['cmap']
 
 # dihedrals
-dihi_list = generate_dihedral_entries(dih1, dih2, r1, atom_pairs)
+dihi_list = _generate_dihedral_entries(dih1, dih2, r1, atom_pairs)
 
 # impropers
-ii_list = generate_improp_entries(im1, im2, r1)
+ii_list = _generate_improp_entries(im1, im2, r1)
 
 if moltype == 'protein':
     rot = _make_rotations(r1, resn1_dih, resn2_dih)
