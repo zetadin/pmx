@@ -3,6 +3,7 @@ import sys
 import os
 import argparse
 import tempfile
+import pickle
 from copy import deepcopy
 from pmx import library
 from pmx.model import Model
@@ -10,7 +11,7 @@ from pmx.atom import Atom
 from pmx.geometry import Rotation
 from pmx.ffparser import RTPParser, NBParser
 from pmx.parser import kickOutComments, readSection, parseList
-from pmx.utils import list2file
+from pmx.utils import list2file, get_pmxdata
 
 
 # ==============================================================================
@@ -1388,6 +1389,9 @@ def _read_nbitp(fn):
 
 
 def _write_atp_fnb(fn_atp, fn_nb, r, ffname, ffpath):
+    """writes the ff atom and nonbonded types. If the atp and/or nb files
+    exists, the func just appends the new atom/nonbonded types to them.
+    """
     types = []
     if os.path.isfile(fn_atp):
         ifile = open(fn_atp, 'r')
@@ -1504,6 +1508,9 @@ def create_hybrid_lib(m1, m2,
     rtp : list of str
     mdp : list of str
     """
+
+    m1 = deepcopy(m1)
+    m2 = deepcopy(m2)
 
     # check m1 and m2 are of the same moltype
     assert m1.moltype == m2.moltype
@@ -1878,57 +1885,68 @@ def create_hybrid_lib(m1, m2,
 # ==============================================================================
 # Input Options
 # ==============================================================================
+# TODO: verbose option - now too much output
 def parse_options():
     parser = argparse.ArgumentParser(description='''
 The script creates hybrid structure and topology database entries (mtp and rtp).
-Input: two pdb files aligned on the backbone and path to the force field files.
-Output: hybrid structure, hybrid topology entries as .rtp and .mtp files.
-Also, atomtype and non-bonded parameter files for the introduced dummies are generated
+The easiest way to generate the library is to call this script from within
+the folder for the force field you are interetsed in.
+
+If two pdb files (aligned on the backbone) are provided, the hybrid pdb, mtp,
+and rtp files are written to file. If no pdb input file is provided,
+the script uses pregenerated residues in order to build hybrid pdb, mtp, and
+rtp files for all possible residue pairs, thus preparing the whole pmx ff
+library.
+
+In additoin, atomtype (-fatp) and non-bonded parameter (-fnm) files for the
+introduced dummy atoms are generated. By default, these point towards the
+files already present in the forcefield. In this way, the additional parameters
+for the dummies are appended to the existing ff file, rather than being
+written to new files.
 ''')
 
-    parser.add_argument('-pdb1',
-                        metavar='pdb1',
-                        dest='pdb1',
+    parser.add_argument('-f1',
+                        metavar='ipdb1',
+                        dest='ipdb1',
                         type=str,
                         help='',
-                        default='a1.pdb')
-    parser.add_argument('-pdb2',
-                        metavar='pdb2',
-                        dest='pdb2',
+                        default=None)
+    parser.add_argument('-f2',
+                        metavar='ipdb2',
+                        dest='ipdb2',
                         type=str,
                         help='',
-                        default='a2.pdb')
-    parser.add_argument('-opdb1',
+                        default=None)
+    parser.add_argument('-o1',
                         metavar='opdb1',
                         dest='opdb1',
                         type=str,
                         help='',
-                        default='r1.pdb')
-    parser.add_argument('-opdb2',
+                        default=None)
+    parser.add_argument('-o2',
                         metavar='opdb2',
                         dest='opdb2',
                         type=str,
                         help='',
-                        default='r2.pdb')
-    parser.add_argument('-ff',
-                        metavar='ff',
-                        dest='ff',
+                        default=None)
+    parser.add_argument('--ffpath',
+                        metavar='ffpath',
+                        dest='ffpath',
                         type=str,
                         help='path to mutation forcefield',
                         default='')
-    parser.add_argument('-fatp',
+    parser.add_argument('--fatp',
                         metavar='fatp',
                         dest='fatp',
                         type=str,
                         help='',
-                        default='types.atp')
-    parser.add_argument('-fnb',
+                        default='atomtypes.atp')
+    parser.add_argument('--fnb',
                         metavar='fnb',
                         dest='fnb',
                         type=str,
                         help='',
-                        default='fnb.itp')
-    # Options
+                        default='ffnonbonded.itp')
     parser.add_argument('--moltype',
                         metavar='moltype',
                         dest='moltype',
@@ -1964,26 +1982,65 @@ def main(args):
     cbeta = args.cbeta
     h2heavy = args.h2heavy
     moltype = args.moltype
-    ffpath = args.ff  # relative path of force field folder
+    ffpath = args.ffpath  # relative path of force field folder
 
-    # Create Models
-    m1 = Model(args.pdb1)
-    m2 = Model(args.pdb2)
+    if args.ipdb1 is None and args.ipdb2 is None:
+        if moltype == 'protein':
+            # import data
+            pmxdata = get_pmxdata(fname='aminoacids.pkl')
+            aminoacids = pickle.load(open(pmxdata, "rb"))
+            # aminoacids is a dict with resname: model
+            keys = aminoacids.keys()
+            # prepare rtp/rtp lists
+            rtp_all = []
+            mtp_all = []
+            # run through all combinations of amino acids
+            for a1 in keys:
+                for a2 in keys:
+                    if a1 != a2:
+                        # Create Models
+                        m1 = aminoacids[a1]
+                        m2 = aminoacids[a2]
+                        # do the magic
+                        resname, rtp, mtp = create_hybrid_lib(m1=m1, m2=m2,
+                                                              ffpath=ffpath,
+                                                              fatp=args.fatp,
+                                                              fnb=args.fnb,
+                                                              align=align,
+                                                              cbeta=cbeta,
+                                                              bH2heavy=h2heavy)
+                        rtp_all.extend(rtp)
+                        mtp_all.extend(mtp)
 
-    resname, rtp, mtp = create_hybrid_lib(m1=m1, m2=m2,
-                      opdb1=None, opdb2=None,
-                      ffpath=ffpath,
-                      fatp=args.fatp, fnb=args.fnb,
-                      align=align, cbeta=cbeta,
-                      bH2heavy=h2heavy)
+            # write out mutres.rtp and mutres.rtp
+            list2file(rtp_all, 'mutres.rtp')
+            list2file(mtp_all, 'mutres.mtp')
+        else:
+            exit('WE STILL NEED TO IMPLEMENT THIS OPTION FOR DNA/RNA')
 
-    # save rtp file
-    rtp_out = resname + '.rtp'
-    list2file(rtp, rtp_out)
+    elif args.ipdb1 is not None and args.ipdb2 is not None:
+        # Create Models
+        m1 = Model(args.ipdb1)
+        m2 = Model(args.ipdb2)
 
-    # save mtp file
-    mtp_out = resname + '.mtp'
-    list2file(mtp, mtp_out)
+        resname, rtp, mtp = create_hybrid_lib(m1=m1, m2=m2,
+                                              opdb1=args.opdb1,
+                                              opdb2=args.opdb2,
+                                              ffpath=ffpath,
+                                              fatp=args.fatp, fnb=args.fnb,
+                                              align=align, cbeta=cbeta,
+                                              bH2heavy=h2heavy)
+
+        # save rtp file
+        rtp_out = resname + '.rtp'
+        list2file(rtp, rtp_out)
+
+        # save mtp file
+        mtp_out = resname + '.mtp'
+        list2file(mtp, mtp_out)
+    else:
+        sys.exit('\nError: either both or none of the two input pdb files '
+                 'have to be provided\n')
 
 
 def entry_point():
