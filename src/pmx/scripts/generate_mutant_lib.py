@@ -1926,10 +1926,10 @@ def create_hybrid_lib(m1, m2,
 def parse_options():
     parser = argparse.ArgumentParser(description='''
 The script creates hybrid structure and topology database entries (mtp and rtp)
-in order to generate a pmx alchemical forfec field library.
+in order to generate a pmx alchemical force field library.
 
 The easiest way to generate the library is to call this script from within
-the folder of the force field you are interetsed in.
+the folder of the force field you are interested in.
 
 If two pdb files (aligned on the backbone) are provided, the hybrid pdb, mtp,
 and rtp files are written to file. If no pdb input file is provided,
@@ -1937,7 +1937,7 @@ the script uses pregenerated residues in order to build hybrid pdb, mtp, and
 rtp files for all possible residue pairs, thus preparing the whole pmx ff
 library.
 
-In additoin, atomtype (-fatp) and non-bonded parameter (-fnm) files for the
+In addition, atomtype (-fatp) and non-bonded parameter (-fnm) files for the
 introduced dummy atoms are generated. By default, these point towards the
 files already present in the forcefield. In this way, the additional parameters
 for the dummies are appended to the existing ff file, rather than being

@@ -34,6 +34,7 @@ A description of these scripts can be found here:
    mutate
    filltop
    analysis
+   genlib
 
 In the :ref:`examples` you can find instead how the same tasks can be carried out
 using the API.
