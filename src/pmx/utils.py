@@ -40,6 +40,7 @@ from glob import glob
 import types
 import numpy as np
 import re
+import logging
 
 
 # =============
@@ -405,6 +406,24 @@ def list2file(lst, fname):
     with open(fname, 'w') as f:
         for line in lst:
             f.write(line)
+
+
+def initialise_logger(logname, logfile, level='INFO'):
+    if os.path.isfile(logfile):
+        os.remove(logfile)
+    logger = logging.getLogger(logname)
+    if level.upper() == 'INFO':
+        logger.setLevel(logging.INFO)
+    elif level.upper() == 'DEBUG':
+        logger.setLevel(logging.DEBUG)
+    else:
+        raise ValueError('level can only be INFO or DEBUG')
+    hdlr = logging.FileHandler(logfile)
+    formatter = logging.Formatter('%(asctime)s [ %(name)s ] '
+                                  '[ %(levelname)s ] %(message)s')
+    hdlr.setFormatter(formatter)
+    logger.addHandler(hdlr)
+    return logger
 
 
 # ========================

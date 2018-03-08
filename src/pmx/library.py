@@ -32,7 +32,7 @@
 
 """Library for useful and less useful things needed by the pmx packages.
 """
-
+from __future__ import print_function, division, absolute_import
 import sys
 import os
 import cPickle
@@ -47,16 +47,16 @@ _anti_beta = (-119., 113., 180.)
 PMX_DATA = os.path.join(os.path.dirname(__file__), 'data')
 
 
-def pmx_data_file(filename):
+def pmx_data_file(filename, verbose=False):
     if os.path.isfile(filename):
         data_file = filename
     else:
         pth = PMX_DATA
         data_file = os.path.join(pth, filename)
     if not os.path.isfile(data_file):
-        print >>sys.stderr, "pmx_ERROR> data file \"%s\" not found " % data_file
-        sys.exit(1)
-    print >>sys.stderr, "pmx__> Loading data file \"%s\"" % data_file
+        raise IOError("data file \"%s\" not found ".format(data_file), file=sys.stderr)
+    if verbose:
+        print("pmx__> Loading data file \"%s\"" % data_file, file=sys.stderr)
     if data_file.split('.')[-1] == 'pkl':
         return cPickle.load(open(data_file))
     else:
