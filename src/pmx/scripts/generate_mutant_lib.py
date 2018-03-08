@@ -1902,11 +1902,14 @@ def create_hybrid_lib(m1, m2,
 # Input Options
 # ==============================================================================
 # TODO: verbose option - now too much output
+# TODO: docs
 def parse_options():
     parser = argparse.ArgumentParser(description='''
-The script creates hybrid structure and topology database entries (mtp and rtp).
+The script creates hybrid structure and topology database entries (mtp and rtp)
+in order to generate a pmx alchemical forfec field library.
+
 The easiest way to generate the library is to call this script from within
-the folder for the force field you are interetsed in.
+the folder of the force field you are interetsed in.
 
 If two pdb files (aligned on the backbone) are provided, the hybrid pdb, mtp,
 and rtp files are written to file. If no pdb input file is provided,
@@ -1919,70 +1922,87 @@ introduced dummy atoms are generated. By default, these point towards the
 files already present in the forcefield. In this way, the additional parameters
 for the dummies are appended to the existing ff file, rather than being
 written to new files.
-''')
+''', formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('-f1',
                         metavar='ipdb1',
                         dest='ipdb1',
                         type=str,
-                        help='',
+                        help='First input PDB file. Default is none provided.',
                         default=None)
     parser.add_argument('-f2',
                         metavar='ipdb2',
                         dest='ipdb2',
                         type=str,
-                        help='',
+                        help='Second input PDB file. Default is none provided.',
                         default=None)
     parser.add_argument('-o1',
                         metavar='opdb1',
                         dest='opdb1',
                         type=str,
-                        help='',
+                        help='First output PDB file. Default is none provided.',
                         default=None)
     parser.add_argument('-o2',
                         metavar='opdb2',
                         dest='opdb2',
                         type=str,
-                        help='',
+                        help='Second output PDB file. Default is none provided.',
                         default=None)
     parser.add_argument('--ffpath',
                         metavar='ffpath',
                         dest='ffpath',
                         type=str,
-                        help='path to mutation forcefield',
+                        help='Path to mutation forcefield. Default is current '
+                        'folder.',
                         default='')
     parser.add_argument('--fatp',
                         metavar='fatp',
                         dest='fatp',
                         type=str,
-                        help='',
+                        help='Atom types (atp) file. If the file is \n'
+                        'present, data is appended to it, otherwise a new \n'
+                        'file is created. Default is "atomtypes.atp".',
                         default='atomtypes.atp')
     parser.add_argument('--fnb',
                         metavar='fnb',
                         dest='fnb',
                         type=str,
-                        help='',
+                        help='Non-bonded (nb) types file. If the file is \n'
+                        'present, data is appended to it, otherwise a new \n'
+                        'file is created. Default is "ffnonbonded.itp".',
                         default='ffnonbonded.itp')
     parser.add_argument('--moltype',
                         metavar='moltype',
                         dest='moltype',
                         type=str.lower,
-                        help='protein, dna, rna',
+                        help='The type of molecule for which the library is \n'
+                        'being built. Available options are "protein", "dna", \n'
+                        'or "rna". Default is "protein".',
                         choices=['protein', 'dna', 'rna'],
                         default='protein')
     parser.add_argument('--noalign',
                         dest='align',
-                        help='',
+                        help='Whether to align the sidechains of the two \n'
+                        'input PDB files provided. Default it True; this flag \n'
+                        'sets it to False.',
                         default=True,
                         action='store_false')
     parser.add_argument('--cbeta',
                         dest='cbeta',
-                        help='',
+                        help='Whether to morph sidechain between the two \n'
+                        'residues or to use dummy atoms to (de)couple the \n'
+                        'whole sidechain. By default, sidechain atoms are \n'
+                        'morphed so to minimise the size of the perturbation. \n'
+                        'With this flag set, whole sidechains are (de)coupled \n'
+                        'instead; i.e. all atoms after C-beta are not mapped \n'
+                        'between the two residues.',
                         default=False,
                         action='store_true')
     parser.add_argument('--noH2H',
                         dest='h2heavy',
-                        help='',
+                        help='Whether to allow hydrogen to/from heavy atoms \n'
+                        'morphing. Default is True, this flag sets it to '
+                        'False.',
                         default=True,
                         action='store_false')
 
