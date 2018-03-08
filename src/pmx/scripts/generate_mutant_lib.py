@@ -1507,8 +1507,11 @@ def create_hybrid_lib(m1, m2,
                       align=True, cbeta=False,
                       bH2heavy=True,
                       pdbout=False):
-    """Creates hybrid structure and topology database entries (mtp and rtp) for
-    a residue pair.
+    """Returns hybrid structure and topology database entries (mtp and rtp) for
+    a residue pair. In addition, the necessary dummy atom and non-bonded types
+    are written to the fatp and fnb files. If these files exists (i.e.
+    they point towards the ones already present in the force field), then the
+    dummy types are just appended to these files.
 
     Parameters
     ----------
@@ -1516,12 +1519,34 @@ def create_hybrid_lib(m1, m2,
         first input model
     m2 : Model
         second input model
+    opdb1 : str, optional
+        name of output PDB file for m1. If not provided, the PDB is not written.
+    opdb2 : str, optional
+        name of output PDB file for m2. If not provided, the PDB is not written.
+    ffpath : str, optional
+        path to the force field folder. Default is current folder.
+    fatp : str, optional
+        path to atomtypes file. Default is 'atomtypes.atp'.
+    fnb : str, optional
+        path to non-bonded types file. Default is 'ffnonbonded.itp'.
+    align : bool, optional
+        whether to align the sidechains of m1 and m2. Default is True.
+    cbeta : bool, optional
+        whether to morph atoms only up to the C-beta (i.e. no sidechain
+        morphing). Default is False.
+    bH2heavy : bool, optional
+        whether to allow hydrogen to/from heavy atoms morphing. Default is True.
+    pdbout : bool, optional
+        whether to write the PDB file for the hybrid residue.
 
     Returns
     -------
     rr_name : str
+        name of the hybrid residue. E.g. 'A2R' for Ala --> Arg mutation.
     rtp : list of str
+        list of strings containing the rtp entry of the hybrid residue.
     mdp : list of str
+        list of strings containing the mtp entry of the hybrid residue.
     """
 
     m1 = deepcopy(m1)
@@ -1902,7 +1927,6 @@ def create_hybrid_lib(m1, m2,
 # Input Options
 # ==============================================================================
 # TODO: verbose option - now too much output
-# TODO: docs
 def parse_options():
     parser = argparse.ArgumentParser(description='''
 The script creates hybrid structure and topology database entries (mtp and rtp)

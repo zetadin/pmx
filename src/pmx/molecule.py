@@ -185,6 +185,10 @@ class Molecule(Atomselection):
         return self
 
     def get_real_resname(self):
+        """Sets instance attribute 'real_resname'. The residue names used
+        are those independent of the protonation state. E.g. for residue 'HSE',
+        'HIS' is set as the 'real_resname'.
+        """
         dic = {'LYP': 'LYS', 'LYSH': 'LYS', 'LYN': 'LYS', 'LSN': 'LYS',
                'CYM': 'CYS', 'CYS2': 'CYS', 'CYN': 'CYS', 'CYSH': 'CYS',
                'HIE': 'HIS', 'HIP': 'HIS', 'HID': 'HIS', 'HISA': 'HIS',

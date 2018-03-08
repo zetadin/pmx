@@ -23,7 +23,7 @@ __all__ = ['mutate', 'fill_bstate', 'write_split_top']
 # ==============
 def mutate(m, mut_resid, mut_resname, ff, refB=None, inplace=False,
            verbose=False):
-    """Creates an hybrid structure file. Model is modified in place.
+    """Creates an hybrid structure file.
 
     Parameters
     ----------

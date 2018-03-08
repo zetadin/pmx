@@ -247,7 +247,7 @@ class Atomselection:
     def search_neighbors(self, cutoff=8., build_bonds=True):
         changed = False
         if self.unity == 'nm':
-            changed = True
+            changed = True  # FIXME: variable unused? 
             self.nm2a()
         _pmx.search_neighbors(self.atoms, cutoff, build_bonds)
 
