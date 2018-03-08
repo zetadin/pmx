@@ -559,10 +559,6 @@ def _do_fit(m1, dihed1, m2, dihed2):
             # print 'rot1', a1.name,a2.name,a3.name,a4.name
             _set_dihedral(atoms2, m2, phi)
 
-    op = open('check.pdb', 'w')
-    for atom in m2.atoms:
-        print(atom, file=op)
-
 
 def _tag(atom):
     s = '%s|%s|%s|%s' % (atom.resname, atom.name, atom.atomtype, atom.atype)
