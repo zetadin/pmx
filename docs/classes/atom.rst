@@ -12,7 +12,6 @@ API Reference
 .. currentmodule:: pmx.atom
 
 .. autoclass:: Atom
-   :noindex:
 
    .. rubric:: Methods
 

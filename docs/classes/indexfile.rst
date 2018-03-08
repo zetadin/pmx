@@ -9,4 +9,3 @@ API Reference
 
 .. autoclass:: pmx.ndx.IndexFile
    :members:
-   :noindex:

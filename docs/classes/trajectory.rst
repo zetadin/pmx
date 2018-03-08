@@ -8,4 +8,3 @@ API Reference
 
 .. autoclass:: pmx.xtc.Trajectory
    :members:
-   :noindex:

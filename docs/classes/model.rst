@@ -8,4 +8,3 @@ API Reference
 
 .. autoclass:: pmx.model.Model
    :members:
-   :noindex:

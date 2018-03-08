@@ -11,4 +11,3 @@ API Reference
 
 .. autoclass:: pmx.molecule.Molecule
    :members:
-   :noindex:
