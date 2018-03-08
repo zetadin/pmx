@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function, division, absolute_import
 import sys
 import os
 import argparse
@@ -512,7 +513,7 @@ def _get_dihedrals(resname):
 
 
 def _set_dihedral(atoms, mol, phi):
-    print atoms[0].name, atoms[1].name, atoms[2].name
+    print(atoms[0].name, atoms[1].name, atoms[2].name)
     a1 = atoms[0]
     a2 = atoms[1]
     a3 = atoms[2]
@@ -547,10 +548,10 @@ def _do_fit(m1, dihed1, m2, dihed2):
                     diheds.append((dih, dih2))
     for dih1, dih2 in diheds:
         atoms1 = m1.fetchm(dih1)
-        print "fetching"
+        print("fetching")
         atoms2 = m2.fetchm(dih2)
-        print dih2
-        print atoms2
+        print(dih2)
+        print(atoms2)
         a1, a2, a3, a4 = atoms1
         if (a2.name, a3.name) not in bonds:
             phi = a1.dihedral(a2, a3, a4)
@@ -560,7 +561,7 @@ def _do_fit(m1, dihed1, m2, dihed2):
 
     op = open('check.pdb', 'w')
     for atom in m2.atoms:
-        print >>op, atom
+        print(atom, file=op)
 
 
 def _tag(atom):
@@ -637,7 +638,7 @@ def _find_closest_atom(atom1, atom_list, merged_atoms, bH2heavy=True):
                     continue
 
             d = atom1 - atom
-            print "%s %s %f" % (atom1.name, atom.name, d)
+            print("%s %s %f" % (atom1.name, atom.name, d))
             if d < min_d:
                 min_d = d
                 idx = i
@@ -648,7 +649,7 @@ def _find_closest_atom(atom1, atom_list, merged_atoms, bH2heavy=True):
 
 
 def _merge_by_names(mol1, mol2):
-    print 'Making atom pairs.........MERGE BY NAMES......'
+    print('Making atom pairs.........MERGE BY NAMES......')
     atom_pairs = []
     merged_atoms1 = []
     merged_atoms2 = []
@@ -670,7 +671,7 @@ def _merge_by_names(mol1, mol2):
 
 def _make_predefined_pairs(mol1, mol2, pair_list):
     # make main chain + cb pairs
-    print 'Making atom pairs.........'
+    print('Making atom pairs.........')
     atom_pairs = []
     merged_atoms1 = []
     merged_atoms2 = []
@@ -704,7 +705,7 @@ def _make_pairs(mol1, mol2, bCharmm=False, bH2heavy=True):
     # determine the molecule type we are dealing with
     moltype = mol1.moltype
     # make main chain + cb pairs
-    print 'Making atom pairs.........'
+    print('Making atom pairs.........')
     mol1.batoms = []
     merged_atoms1 = []
     merged_atoms2 = []
@@ -745,27 +746,27 @@ def _make_pairs(mol1, mol2, bCharmm=False, bH2heavy=True):
         atoms1 = mol1.atoms
         atoms2 = mol2.atoms
         for at1 in atoms1:
-            print '-- Checking atom...', at1.name
+            print('-- Checking atom... %s' % at1.name)
             aa, d = _find_closest_atom(at1, atoms2, merged_atoms2, bH2heavy)
             if aa:
                 merged_atoms2.append(aa)
                 merged_atoms1.append(at1)
                 atom_pairs.append([at1, aa])
-                print "here ", at1.name, aa.name
+                print("here {0} {1}".format(at1.name, aa.name))
     elif moltype == 'protein':
         for k in [1, 2]:
-            print '-- Searching branch', k
+            print('-- Searching branch {0}'.format(k))
             done_branch = False
             for i in range(2, 8):
                 if done_branch:
                     break
-                print '-- Searching order', i
+                print('-- Searching order {0}'.format(i))
 
                 atoms1 = _get_atoms_by_order_and_branch(mol1, i, k, merged_atoms1)
                 atoms2 = _get_atoms_by_order_and_branch(mol2, i, k, merged_atoms2)
                 for at1 in atoms1:
                     if _last_atom_is_morphed(at1, merged_atoms1):
-                        print '-- Checking atom...', at1.name
+                        print('-- Checking atom... {0}'.format(at1.name))
                         candidates = []
                         for at2 in atoms2:
                             candidates.append(at2)
@@ -774,12 +775,15 @@ def _make_pairs(mol1, mol2, bCharmm=False, bH2heavy=True):
                             merged_atoms2.append(aa)
                             merged_atoms1.append(at1)
                             atom_pairs.append([at1, aa])
-                            print '--> Define atom pair: ', _tag(at1), '- >', _tag(aa),  '(d = %4.2f A)' % d
+                            print('--> Define atom pair: {0} - > {1} '
+                                  '(d = {2:4.2f} A)'.format(_tag(at1),
+                                                            _tag(aa),
+                                                            d))
                         else:
-                            print 'No partner found for atom ', at1.name
+                            print('No partner found for atom {0}'.format(at1.name))
 
     for at1, at2 in atom_pairs:
-        print at1, at2
+        print(at1, at2)
         at1.atomtypeB = at2.atomtype
         at1.qB = at2.q
         at1.mB = at2.m
@@ -801,7 +805,7 @@ def _check_double_atom_names(r):
                 alist = r.fetch_atoms(atom.name)
             else:
                 alist = r.fetch_atoms(atom.name[:-1], wildcard=True)
-            print 'Renaming atoms (%s)' % alist[0].name[:-1]
+            print('Renaming atoms (%s)' % alist[0].name[:-1])
             start = 1
             for atom in alist:
                 atom.name = atom.name[:3]+str(start)
@@ -865,15 +869,15 @@ def _find_atom_by_nameB(r, name):
 
 def _update_bond_lists(r1, badic):
 
-    print 'Updating bond lists...........'
+    print('Updating bond lists...........')
     for atom in r1.atoms:
         if (atom.name[0] == 'D') or atom.name.startswith('HV'):
-            print 'atom', atom.name
-            print '  |  '
+            print('atom', atom.name)
+            print('  |  ')
             new_list = []
             while atom.bonds:
                 at = atom.bonds.pop(0)
-                print atom.name, '->', at.name
+                print(atom.name, '->', at.name)
                 if at.name in badic:
                     aa = r1.fetch(badic[at.name])[0]
                     new_list.append(aa)
@@ -882,7 +886,7 @@ def _update_bond_lists(r1, badic):
                     if aa is not None:
                         new_list.append(aa)
                     else:
-                        print 'Atom not found', at.name, at.nameB
+                        print('Atom not found', at.name, at.nameB)
                         sys.exit(1)
             atom.bonds = new_list
             for at in atom.bonds:
@@ -907,7 +911,7 @@ def _improp_entries_match(lst1, lst2):
 
 
 def _generate_dihedral_entries(im1, im2, r, pairs):
-    print 'Updating dihedrals...........'
+    print('Updating dihedrals...........')
     new_ii = []
     done_i1 = []
     done_i2 = []
@@ -994,7 +998,7 @@ def _generate_dihedral_entries(im1, im2, r, pairs):
 
 
 def _generate_improp_entries(im1, im2, r):
-    print 'Updating impropers...........'
+    print('Updating impropers...........')
 
     new_ii = []
     done_i1 = []
@@ -1054,11 +1058,11 @@ def _generate_improp_entries(im1, im2, r):
                         bFound = True
                 if bFound is False:
                     im_new.append('un')
-                    print 'undefined'
+                    print('undefined')
             elif i1[4] == '105.4':  # star
                 im_new.append('default-star')
                 im_new.append('un')
-                print 'undefined'
+                print('undefined')
             else:
                 im_new.append(i1[4])
                 bFound = False
@@ -1080,7 +1084,7 @@ def _generate_improp_entries(im1, im2, r):
                         bFound = True
                 if bFound is False:
                     im_new.append('un')
-                    print 'undefined'
+                    print('undefined')
             new_ii.append(im_new)
 
     for i2 in im2:
@@ -1096,12 +1100,12 @@ def _generate_improp_entries(im1, im2, r):
                     im_new.append('default-B')
                 else:
                     im_new.append('un')
-                    print 'undefined'
+                    print('undefined')
                 im_new.append('default-B')
             elif i2[4] == '105.4':  # star
                 im_new.append('un')
                 im_new.append('default-star')
-                print 'undefined'
+                print('undefined')
             else:
                 if ((i2[0].name.startswith('D')) or (i2[1].name.startswith('D')) or
                    (i2[2].name.startswith('D')) or (i2[3].name.startswith('D')) or
@@ -1110,7 +1114,7 @@ def _generate_improp_entries(im1, im2, r):
                     im_new.append(i2[4])
                 else:
                     im_new.append('un')
-                    print 'undefined'
+                    print('undefined')
                 im_new.append(i2[4])
             new_ii.append(im_new)
 
@@ -1230,16 +1234,16 @@ def _primitive_check(atom, rot_atom):
 def _find_higher_atoms(rot_atom, r, order, branch):
     res = []
     for atom in r.atoms:
-        print "1level: %s %s %s" % (atom.name, atom.order, atom.branch)
+        print("1level: %s %s %s" % (atom.name, atom.order, atom.branch))
         if (('gone' in rot_atom.nameB) and (atom.name.startswith('D') or
            atom.name.startswith('HV'))):
             continue
         if atom.order >= order:
-            print "2level: %s %s %s" % (atom.name, atom.order, atom.branch)
+            print("2level: %s %s %s" % (atom.name, atom.order, atom.branch))
             if atom.order == rot_atom.order+1:
-                print "3level: %s %s %s" % (atom.name, atom.order, atom.branch)
+                print("3level: %s %s %s" % (atom.name, atom.order, atom.branch))
                 if _primitive_check(atom, rot_atom):
-                    print "4level: %s %s %s" % (atom.name, atom.order, atom.branch)
+                    print("4level: %s %s %s" % (atom.name, atom.order, atom.branch))
                     res.append(atom)
             else:
                 res.append(atom)
@@ -1273,7 +1277,7 @@ def _make_rotations(r, resn1_dih, resn2_dih):
         rot_list.append(atom2)
         oo = atom2.order
         bb = atom2.branch
-        print "AAAAAAAAA %s %s %s" % (atom2, oo+1, bb)
+        print("AAAAAAAAA %s %s %s" % (atom2, oo+1, bb))
         atoms_to_rotate = []
         atoms_to_rotate = _find_higher_atoms(atom2,  r, oo+1, bb)
         for atom in atoms_to_rotate:
@@ -1304,7 +1308,7 @@ def _assign_mass(r1, r2, ffnonbonded, bCharmm, ff):
     if bCharmm:
         f = tempfile.NamedTemporaryFile(delete=False)
         _parse_ffnonbonded_charmm(ffnonbonded, f)
-        print f.name
+        print(f.name)
         NBParams = NBParser(f.name, 'new', ff)
         f.close()
     else:
@@ -1348,7 +1352,7 @@ def _rename_to_match_library(m, bCharmm=False):
         if atom.name[0].isdigit():
             atom.name = atom.name[1:]+atom.name[0]
         if bCharmm:
-            print atom.name
+            print(atom.name)
             if atom.resname == 'CYS' and atom.name == 'HG1':
                 atom.name = 'HG'
             if atom.resname == 'SER' and atom.name == 'HG1':
@@ -1382,7 +1386,7 @@ def _improps_as_atoms(im, r, use_b=False):
                         if atom.nameB == name:
                             a = atom
                 else:
-                    print name
+                    print(name)
                     a = r.fetch(name)[0]
             new_ii.append(a)
         new_ii.extend(ii[4:])
@@ -1444,7 +1448,7 @@ def _write_atp_fnb(fn_atp, fn_nb, r, ffname, ffpath):
         ofile = open(fn_nb, 'a')
     else:
         ofile = open(fn_nb, 'w')
-    print types
+    print(types)
 
     # for opls need to extract the atom name
     ffnamelower = ffname.lower()
@@ -1727,25 +1731,25 @@ def create_hybrid_lib(m1, m2,
                   "terminal of the other end (e.g. 5' to 3')")
             sys.exit(0)
         if r1.resname in use_standard_dna_pair_list and r2.resname in use_standard_dna_pair_list[r1.resname]:
-            print "PURINE <-> PYRIMIDINE"
+            print("PURINE <-> PYRIMIDINE")
             if bCharmm:
                 atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_pair_list_charmm)
             else:
                 atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_pair_list)
         elif r1.resname in use_standard_dna_5term_pair_list and r2.resname in use_standard_dna_5term_pair_list[r1.resname]:
-            print "PURINE <-> PYRIMIDINE: 5term"
+            print("PURINE <-> PYRIMIDINE: 5term")
             if bCharmm:
                 atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_5term_pair_list_charmm)
             else:
                 atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_5term_pair_list)
         elif r1.resname in use_standard_dna_3term_pair_list and r2.resname in use_standard_dna_3term_pair_list[r1.resname]:
-            print "PURINE <-> PYRIMIDINE: 3term"
+            print("PURINE <-> PYRIMIDINE: 3term")
             if bCharmm:
                 atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_3term_pair_list_charmm)
             else:
                 atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_dna_3term_pair_list)
         else:
-            print "PURINE <-> PURINE	PYRIMIDINE <-> PYRIMIDINE"
+            print("PURINE <-> PURINE	PYRIMIDINE <-> PYRIMIDINE")
             atom_pairs, dummies = _make_pairs(mol1=r1, mol2=r2,
                                               bCharmm=bCharmm,
                                               bH2heavy=bH2heavy)
@@ -1758,19 +1762,19 @@ def create_hybrid_lib(m1, m2,
            (('3' in r1.resname) and ('3' not in r2.resname)) or
            (('5' in r2.resname) and ('5' not in r1.resname)) or
            (('3' in r2.resname) and ('3' not in r1.resname))):
-            print "Cannot mutate terminal nucleic acid to non-terminal or a terminal of the other end (e.g. 5' to 3')"
+            print("Cannot mutate terminal nucleic acid to non-terminal or a terminal of the other end (e.g. 5' to 3')")
             sys.exit(0)
         if r1.resname in use_standard_rna_pair_list and r2.resname in use_standard_rna_pair_list[r1.resname]:
-            print "PURINE <-> PYRIMIDINE"
+            print("PURINE <-> PYRIMIDINE")
             atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_rna_pair_list)
         elif r1.resname in use_standard_rna_5term_pair_list and r2.resname in use_standard_rna_5term_pair_list[r1.resname]:
-            print "PURINE <-> PYRIMIDINE: 5term"
+            print("PURINE <-> PYRIMIDINE: 5term")
             atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_rna_5term_pair_list)
         elif r1.resname in use_standard_rna_3term_pair_list and r2.resname in use_standard_rna_3term_pair_list[r1.resname]:
-            print "PURINE <-> PYRIMIDINE: 3term"
+            print("PURINE <-> PYRIMIDINE: 3term")
             atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_rna_3term_pair_list)
         else:
-            print "PURINE <-> PURINE	PYRIMIDINE <-> PYRIMIDINE"
+            print("PURINE <-> PURINE	PYRIMIDINE <-> PYRIMIDINE")
             atom_pairs, dummies = _make_pairs(mol1=r1, mol2=r2,
                                               bCharmm=bCharmm,
                                               bH2heavy=bH2heavy)
@@ -1781,7 +1785,7 @@ def create_hybrid_lib(m1, m2,
     elif moltype == 'protein':
         # ring-res 2 ring-res
         if r1.resname in use_standard_pair_list and r2.resname in use_standard_pair_list[r1.resname]:
-            print "ENTERED STANDARD"
+            print("ENTERED STANDARD")
             if bCharmm:
                 if cbeta:
                     atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
@@ -1796,7 +1800,7 @@ def create_hybrid_lib(m1, m2,
         # ring-res 2 non-ring-res: T,A,V,I
         elif (r1.resname in res_with_rings and r2.resname in res_diff_Cb) or \
              (r2.resname in res_with_rings and r1.resname in res_diff_Cb):
-            print "ENTERED T,A,V,I"
+            print("ENTERED T,A,V,I")
             if bCharmm:
                 atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
             else:
@@ -1804,16 +1808,16 @@ def create_hybrid_lib(m1, m2,
 
         # proline
         elif (r1.resname in res_pro) or (r2.resname in res_pro):
-            print "ENTERED P"
+            print("ENTERED P")
             if (r1.resname in res_gly) or (r2.resname in res_gly):
-                print "subENTERED G"
+                print("subENTERED G")
                 atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listGlyPro)
             else:
                 atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listPro)
 
         # glycine
         elif r1.resname in res_gly or r2.resname in res_gly:
-            print "ENTERED G"
+            print("ENTERED G")
             if bCharmm:
                 atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmD)
             else:
@@ -1827,12 +1831,12 @@ def create_hybrid_lib(m1, m2,
                 else:
                     atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_listC)
             else:
-                print "ENTERED MERGE BY NAMES"
+                print("ENTERED MERGE BY NAMES")
                 atom_pairs, dummies = _merge_by_names(r1, r2)
 
         # ring-res 2 non-ring-res
         elif r1.resname in res_with_rings or r2.resname in res_with_rings:
-            print "ENTERED RINGS"
+            print("ENTERED RINGS")
             if bCharmm:
                 if cbeta:
                     atom_pairs, dummies = _make_predefined_pairs(r1, r2, standard_pair_list_charmmC)
@@ -1846,7 +1850,7 @@ def create_hybrid_lib(m1, m2,
 
         # all others
         else:
-            print "ENTERED SIMPLE"
+            print("ENTERED SIMPLE")
             if cbeta:
                 if r1.resname == 'GLY' or r2.resname == 'GLY':
                     if bCharmm:
