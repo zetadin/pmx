@@ -2061,6 +2061,10 @@ def main(args):
                         # Create Models
                         m1 = aminoacids[a1]
                         m2 = aminoacids[a2]
+                        # print some info
+                        print('  Building library files for {0} --> {1} '
+                              'mutant...'.format(m1.residues[0].resname,
+                                                 m2.residues[0].resname))
                         # do the magic
                         resname, rtp, mtp = create_hybrid_lib(m1=m1, m2=m2,
                                                               ffpath=ffpath,
@@ -2076,6 +2080,8 @@ def main(args):
             # write out mutres.rtp and mutres.rtp
             list2file(rtp_all, 'mutres.rtp')
             list2file(mtp_all, 'mutres.mtp')
+            # end
+            print('  All done.')
         else:
             exit('WE STILL NEED TO IMPLEMENT THIS OPTION FOR DNA/RNA')
 
@@ -2083,6 +2089,8 @@ def main(args):
         # Create Models
         m1 = Model(args.ipdb1)
         m2 = Model(args.ipdb2)
+        print('  Building library files for {0} --> {1} mutant...'.format(m1.residues[0].resname,
+                                                                          m2.residues[0].resname))
 
         resname, rtp, mtp = create_hybrid_lib(m1=m1, m2=m2,
                                               opdb1=args.opdb1,
@@ -2100,6 +2108,8 @@ def main(args):
         # save mtp file
         mtp_out = resname + '.mtp'
         list2file(mtp, mtp_out)
+
+        print('  All done.')
     else:
         sys.exit('\nError: either both or none of the two input pdb files '
                  'have to be provided\n')
