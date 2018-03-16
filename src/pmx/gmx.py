@@ -137,8 +137,47 @@ def grompp(f, c, p, o='grompp.tpr', maxwarn=0, other_flags=''):
          shell=True)
 
 
-def genion():
-    pass
+def genion(s, p, o='genion.gro', np=0, nn=0, conc=0.15, neutral=True,
+           other_flags=''):
+
+    """Simple ``gmx genion`` wrapper.
+
+    Parameters
+    ----------
+    s : str
+        input tpr file
+    p : str
+        input topology file.
+    o : str, optional
+        name of output structure file. Default is "genion.gro"
+    np : int, optional
+        number of positive ions. Default is 0.
+    nn : int, optional.
+        number of negative ions. Default is 0.
+    conc : float, optional
+        specify salt concentration (mol/liter). Default is 0.15 M.
+    neutral : bool
+        whether to add enough ions to neutralise the system. These
+        ions are added on top of those specified with -np/-nn or -conc.
+        Default is True.
+    other_flags : str, optional
+        additional flags to pass as you would type them in the shell
+
+    Returns
+    -------
+    None
+
+    """
+
+    gmx = get_gmx()
+    if neutral is True:
+        call('echo "SOL" | {gmx} genion -s {s} -p {p} -o {o} -np {np} -nn {nn} -conc {conc} -neutral '
+             '{other_flags}'.format(gmx=gmx, s=s, p=p, o=o, np=np, nn=nn, conc=conc, other_flags=other_flags),
+             shell=True)
+    elif neutral is False:
+        call('echo "SOL" | {gmx} genion -s {s} -p {p} -o {o} -np {np} -nn {nn} -conc {conc} '
+             '{other_flags}'.format(gmx=gmx, s=s, p=p, o=o, np=np, nn=nn, conc=conc, other_flags=other_flags),
+             shell=True)
 
 
 def trjconv():
