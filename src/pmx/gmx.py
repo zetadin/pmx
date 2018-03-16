@@ -4,6 +4,7 @@
 tools.
 """
 
+from __future__ import absolute_import, division, print_function
 from .utils import which
 from subprocess import call
 
@@ -16,6 +17,34 @@ def get_gmx():
         return gmx
     else:
         raise EnvironmentError('gmx executable not found')
+
+
+def editconf(f, o='editconf.gro', bt='cubic', d=1.2, other_flags=''):
+    """Simple ``gmx editconf`` wrapper.
+
+    Parameters
+    ----------
+    f : str
+        input structure file
+    o : str, optional
+        name of output structure file. Default is "solvate.gro"
+    bt : str
+        box type:triclinic, cubic, dodecahedron, or octahedron
+    d : float
+        distance between the solute and the box (nm)
+    other_flags : str, optional
+        additional flags to pass as you would type them in the shell
+
+    Returns
+    -------
+    None
+
+    """
+
+    gmx = get_gmx()
+    call('{gmx} editconf -f {f} -o {o} -bt {bt} -d {d} '
+         '{other_flags}'.format(gmx=gmx, f=f, o=o, bt=bt, d=d, other_flags=other_flags),
+         shell=True)
 
 
 def pdb2gmx(f, o='pdb2gmx.gro', p='topol.top', ff='amber99sb-star-ildn-mut',
