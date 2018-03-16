@@ -45,6 +45,5 @@ from .atom import *
 from .molecule import *
 from .chain import *
 from .model import *
-from .options import *
 from .estimators import *
 from .analysis import *
