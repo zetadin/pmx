@@ -140,7 +140,8 @@ def grompp(f, c, p, o='grompp.tpr', maxwarn=0, other_flags=''):
 def genion(s, p, o='genion.gro', np=0, nn=0, conc=0.15, neutral=True,
            other_flags=''):
 
-    """Simple ``gmx genion`` wrapper.
+    """Simple ``gmx genion`` wrapper. By default, group SOL will be replaced
+    by ions.
 
     Parameters
     ----------
@@ -171,14 +172,62 @@ def genion(s, p, o='genion.gro', np=0, nn=0, conc=0.15, neutral=True,
 
     gmx = get_gmx()
     if neutral is True:
-        call('echo "SOL" | {gmx} genion -s {s} -p {p} -o {o} -np {np} -nn {nn} -conc {conc} -neutral '
-             '{other_flags}'.format(gmx=gmx, s=s, p=p, o=o, np=np, nn=nn, conc=conc, other_flags=other_flags),
-             shell=True)
-    elif neutral is False:
-        call('echo "SOL" | {gmx} genion -s {s} -p {p} -o {o} -np {np} -nn {nn} -conc {conc} '
-             '{other_flags}'.format(gmx=gmx, s=s, p=p, o=o, np=np, nn=nn, conc=conc, other_flags=other_flags),
-             shell=True)
+        other_flags += ' -neutral'
+
+    call('echo "SOL" | {gmx} genion -s {s} -p {p} -o {o} -np {np} -nn {nn} -conc {conc} '
+         '{other_flags}'.format(gmx=gmx, s=s, p=p, o=o, np=np, nn=nn, conc=conc, other_flags=other_flags),
+         shell=True)
 
 
-def trjconv():
-    pass
+def trjconv(f, s, o='trjconv.xtc', ur='rect', pbc='none', fit='none',
+            out_grp='System', fit_grp='C-alpha', sep=False, other_flags=''):
+    """Simple ``gmx trjconv`` wrapper.
+
+    Parameters
+    ----------
+    f : str
+        input structure of trajectory file
+    s : str
+        input tpr file
+    o : str, optional
+        output trajectory/structure file. Default is "trjconv.xtc"
+    ur : str, optional
+        unit-cell representation: rect, tric, compact. Default is 'rect'.
+    pbc : str, optional
+        PBC treatment: none, mol, res, atom, nojump, cluster, whole.
+        Default is 'none'.
+    fit : str, optional
+        fit molecule to ref structure in the structure file: none, rot+trans,
+        rotxy+transxy, translation, transxy, progressive.
+        Default is 'none'.
+    out_grp : str, optional
+        output group. Defauls is 'System'.
+    fit_grp : str, optional
+        group to use for the fitting if 'fit' is not none.
+        Default is 'C-alpha'.
+    sep : bool, optional
+        write each frame to a separate .gro, .g96 or .pdb file.
+        Default is False.
+    other_flags : str, optional
+        additional flags to pass as you would type them in the shell
+
+    Returns
+    -------
+    None
+
+    """
+
+    gmx = get_gmx()
+
+    if sep is True:
+        other_flags += ' -sep'
+
+    if fit == 'none':
+        call('echo "{out_grp}" | {gmx} trjconv -f {f} -s {s} -o {o} -ur {ur} -pdb {pbc}'
+             '{other_flags}'.format(gmx=gmx, f=f, s=s, o=o, ur=ur, pbc=pbc, out_grp=out_grp, other_flags=other_flags),
+             shell=True)
+    else:
+        call('echo "{fit_grp}" "{out_grp}" | {gmx} trjconv -f {f} -s {s} -o {o} -ur {ur} -pdb {pbc} -fit {fit}'
+             '{other_flags}'.format(gmx=gmx, f=f, s=s, o=o, ur=ur, pbc=pbc, fit=fit,
+                                    out_grp=out_grp, fit_grp=fit_grp, other_flags=other_flags),
+             shell=True)
