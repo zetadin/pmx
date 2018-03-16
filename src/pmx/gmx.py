@@ -107,11 +107,37 @@ def solvate(cp, cs='spc216.gro', p='topol.top', o='solvate.gro',
          shell=True)
 
 
+def grompp(f, c, p, o='grompp.tpr', maxwarn=0, other_flags=''):
+    """Simple ``gmx grompp`` wrapper.
+
+    Parameters
+    ----------
+    f : str
+        input mdp file
+    c : str
+        input structure file
+    p : str
+        input topology file. Default is "topol.top"
+    o : str, optional
+        output tpr file. Default is "grompp.tpr"
+    maxwarn : int, optional
+        number of allowed warnings. Default is 0.
+    other_flags : str, optional
+        additional flags to pass as you would type them in the shell
+
+    Returns
+    -------
+    None
+
+    """
+
+    gmx = get_gmx()
+    call('{gmx} grompp -f {f} -c {c} -p {p} -o {o} -maxwarn {maxwarn}'
+         '{other_flags}'.format(gmx=gmx, f=f, c=c, p=p, o=o, maxwarn=maxwarn, other_flags=other_flags),
+         shell=True)
+
+
 def genion():
-    pass
-
-
-def grompp():
     pass
 
 
