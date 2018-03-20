@@ -5,16 +5,16 @@ structures and topologies needed for alchemical free energy calculations.
 """
 
 from __future__ import absolute_import, print_function, division
+import os
+import sys
+from copy import deepcopy
+from . import library
 from .model import Model
 from .utils import RangeCheckError, mtpError, UnknownResidueError, MissingTopolParamError
 from .geometry import Rotation, nuc_super, bb_super
 from .mutdb import read_mtp_entry
 from .forcefield import Topology, _check_case, _atoms_morphe
 from .utils import get_mtp_file
-from .copy import deepcopy
-from . import library
-import os
-import sys
 
 __all__ = ['mutate', 'fill_bstate', 'write_split_top']
 
