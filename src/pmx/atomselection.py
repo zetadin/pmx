@@ -35,13 +35,14 @@ that are inherited to the Molecule, Chain and Model classes.
 Take a look there for details...
 """
 
+from __future__ import absolute_import, print_function, division
 import sys
 import random
-from atom import Atom
-from geometry import Rotation
-import library
 import copy as cp
-import _pmx
+from . import library
+from . import _pmx
+from .atom import Atom
+from .geometry import Rotation
 
 
 class Atomselection:
@@ -247,7 +248,7 @@ class Atomselection:
     def search_neighbors(self, cutoff=8., build_bonds=True):
         changed = False
         if self.unity == 'nm':
-            changed = True  # FIXME: variable unused? 
+            changed = True  # FIXME: variable unused?
             self.nm2a()
         _pmx.search_neighbors(self.atoms, cutoff, build_bonds)
 
@@ -345,7 +346,7 @@ class Atomselection:
                     newl.append((at1, at2, tp))
                     check = True
             if not check:
-                print 'bondtype %s-%s defaults to 1' % (at1.atype, at2.atype)
+                print('bondtype %s-%s defaults to 1' % (at1.atype, at2.atype))
                 newl.append((at1, at2, '1'))
         self.bondlist = newl
 
