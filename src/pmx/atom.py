@@ -57,6 +57,8 @@ import library
 import sys
 from library import pdb_format, pdb_format2
 
+__all__ = ['Atom']
+
 
 class Atom:
     """ class for storage of atom properties and methods

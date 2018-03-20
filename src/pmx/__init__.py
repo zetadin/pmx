@@ -47,3 +47,4 @@ from .chain import *
 from .model import *
 from .estimators import *
 from .analysis import *
+from .alchemy import *

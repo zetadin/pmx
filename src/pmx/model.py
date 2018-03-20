@@ -84,6 +84,8 @@ from molecule import Molecule
 from atom import Atom
 import _pmx as _p
 
+__all__ = ['Model']
+
 
 class Model(Atomselection):
     """Model Class.

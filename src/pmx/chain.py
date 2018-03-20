@@ -63,6 +63,8 @@ from numpy import array, linalg, pi, dot, arccos, cross
 from .geometry import Rotation
 import sys
 
+__all__ = ['Chain']
+
 
 class Chain(Atomselection):
 

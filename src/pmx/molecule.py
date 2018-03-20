@@ -69,6 +69,8 @@ from rotamer import _aa_chi
 from geometry import Rotation
 from parser import readSection, parseList
 
+__all__ = ['Molecule']
+
 
 class Molecule(Atomselection):
     """ Storage class for a Molecule/residue"""
