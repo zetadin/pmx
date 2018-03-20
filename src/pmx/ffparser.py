@@ -33,9 +33,10 @@
 """docs to be added
 """
 
+from __future__ import absolute_import, print_function, division
 import sys
-from library import _aliases, pmx_data_file
-from parser import parseList, kickOutComments, readSection
+from .library import _aliases, pmx_data_file
+from .parser import parseList, kickOutComments, readSection
 
 
 class RTPParser:
@@ -122,31 +123,31 @@ class RTPParser:
             fp = out_file
         for key in self.keys:
             entr = self.entries[key]
-            print >>fp, '[ %s ]' % key
-            print >>fp, ' [ atoms ]'
+            print('[ %s ]' % key, file=fp)
+            print(' [ atoms ]', file=fp)
             for atom in entr['atoms']:
-                print >>fp, "%6s   %-15s  %8.5f  %d" % (atom[0], atom[1], atom[2], atom[3])
+                print("%6s   %-15s  %8.5f  %d" % (atom[0], atom[1], atom[2], atom[3]), file=fp)
             if entr['bonds']:
-                print >>fp, ' [ bonds ]'
+                print(' [ bonds ]', file=fp)
                 for bond in entr['bonds']:
-                    print >>fp, "%6s  %6s" % (bond[0], bond[1])
+                    print("%6s  %6s" % (bond[0], bond[1]), file=fp)
             if entr['diheds']:
-                print >>fp, ' [ dihedrals ]'
+                print(' [ dihedrals ]', file=fp)
                 for dih in entr['diheds']:
-                    print >>fp, "%6s  %6s  %6s  %6s  %-25s" % (dih[0], dih[1], dih[2], dih[3], dih[4])
+                    print("%6s  %6s  %6s  %6s  %-25s" % (dih[0], dih[1], dih[2], dih[3], dih[4]), file=fp)
             if entr['improps']:
-                print >>fp, ' [ impropers ]'
+                print(' [ impropers ]', file=fp)
                 for dih in entr['improps']:
                     try:
-                        print >>fp, "%6s  %6s  %6s  %6s  %-25s" % (dih[0], dih[1], dih[2], dih[3], dih[4])
+                        print("%6s  %6s  %6s  %6s  %-25s" % (dih[0], dih[1], dih[2], dih[3], dih[4]), file=fp)
                     except:
-                        print >>fp, "%6s  %6s  %6s  %6s " % (dih[0], dih[1], dih[2], dih[3])
-            print >>fp
+                        print("%6s  %6s  %6s  %6s " % (dih[0], dih[1], dih[2], dih[3]), file=fp)
+            print('', file=fp)
 
     def __check_residue_tree(self, model):
         for c in model.chains:
             if not c.residue_tree_ok:
-                print >>sys.stderr, 'pmx_Error_> Broken residue tree in chain ', c.id
+                print('pmx_Error_> Broken residue tree in chain ', c.id, file=sys.stderr)
                 sys.exit(1)
 
     def assign_params(self, model):
@@ -186,8 +187,7 @@ class RTPParser:
                 if d[4] in directives:
                     dih = dih[:5]+directives[d[4]]
                 else:
-                    print 'No directive found'
-                    sys.exit(1)
+                    raise ValueError('No directive found')
 
     def __assign_atom_params(self, model):
         for residue in model.residues:
@@ -237,7 +237,7 @@ class RTPParser:
                         sg2 = r['SG']
                         d = sg1 - sg2
                         if d < 2.5:
-                            print >> sys.stderr, 'pmx__> Disulfid bond between residue', sg1.resnr, 'and', sg2.resnr
+                            print('pmx__> Disulfid bond between residue', sg1.resnr, 'and', sg2.resnr, file=sys.stderr)
                             sg1.bonds.append(sg2)
                             sg2.bonds.append(sg1)
                             model.bond_list.append([sg1, sg2])
@@ -635,8 +635,7 @@ class BondedParser:
                 try:
                     lst = parseList('sssiffff', lst)
                 except:
-                    print "Unkown Angle type"
-                    exit()
+                    raise ValueError("Unkown Angle type")
             res.extend(lst)
         self.angletypes = res
 
