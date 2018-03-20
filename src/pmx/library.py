@@ -37,6 +37,8 @@ import sys
 import os
 import cPickle
 
+__all__ = ['pdb_format', 'pdb_format2', 'pmx_data_file', 'PMX_DATA']
+
 pdb_format = "%6s%5d %-4s%1s%4s%1s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f"
 pdb_format2 = "%6s%5d %-4s%1s%4s%1s%4s    %8.3f%8.3f%8.3f%6.2f%6.2f"
 
