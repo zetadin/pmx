@@ -46,14 +46,15 @@ Usage:
     build chain with defined dihedral angles
 """
 
-from geometry import Rotation
-from chain import Chain
-from atom import Atom
-from model import Model
-from molecule import Molecule
+from __future__ import absolute_import, print_function, division
 import sys
-import library
 from numpy import array, pi, linalg, cross
+from . import library
+from .geometry import Rotation
+from .chain import Chain
+from .atom import Atom
+from .model import Model
+from .molecule import Molecule
 
 
 def add_bp(m, strand=None, bRNA=False):
@@ -178,7 +179,7 @@ def build_rna_strand(seq):
 def get_fragments():
     dic = library.pmx_data_file('fragments.pkl')
     n = len(dic.keys())
-    print >>sys.stderr, "pmx__> # Fragments loaded: %d" % n
+    print("pmx__> # Fragments loaded: %d" % n, file=sys.stderr)
     return dic
 
 
@@ -205,14 +206,14 @@ def write_pdb_with_connect(mol, f, n=1):
         fp = open(f, "w")
     else:
         fp = f
-    print >>fp, "MODEL%5d" % n
+    print("MODEL%5d" % n, file=fp)
     for atom in mol.atoms:
-        print >>fp, atom
+        print('{}'.format(atom), file=fp)
     for atom in mol.atoms:
         s = "CONECT%5d" % atom.id
         for a in atom.bonds:
             s += '%5d' % a.id
-        print >>fp, s
+        print('{}'.format(s), file=fp)
 
 
 def attach_group(atom, mol):
