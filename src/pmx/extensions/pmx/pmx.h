@@ -47,10 +47,12 @@ typedef int             imatrix[DIM][DIM];
 typedef int             bool;
 
 
-// to support python 3 where all ints are long
+// to support python 3
  #if PY_MAJOR_VERSION >= 3
     #define PyInt_FromLong PyLong_FromLong
     #define PyInt_AsLong PyLong_AsLong
+    #define PyString_FromString PyUnicode_FromString
+    #define PyString_AsString PyUnicode_AsString
  #endif
 
 
