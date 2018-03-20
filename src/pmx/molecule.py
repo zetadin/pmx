@@ -59,15 +59,16 @@ Examples
 
 """
 
+from __future__ import absolute_import, print_function, division
 import sys
-import library
 import copy
+from . import library
 from numpy import pi
-from atomselection import Atomselection
-from atom import Atom
-from rotamer import _aa_chi
-from geometry import Rotation
-from parser import readSection, parseList
+from .atomselection import Atomselection
+from .atom import Atom
+from .rotamer import _aa_chi
+from .geometry import Rotation
+from .parser import readSection, parseList
 
 __all__ = ['Molecule']
 
@@ -413,12 +414,11 @@ class Molecule(Atomselection):
         self.chain_id = chain_id
         for atom in self.atoms:
             atom.chain_id = chain_id
-#        self.chain.id = chain_id
 
     def insert_atom(self, pos, atom, id=True):
         """ insert atom at a certain position"""
         if pos not in range(len(self.atoms)+1):
-            print 'Molecule has only %d atoms' % len(self.atoms)
+            print('Molecule has only %d atoms' % len(self.atoms))
             return
         else:
             if id:
@@ -533,7 +533,7 @@ class Molecule(Atomselection):
 
     def get_mol2_types(self, nterminus=False):
         if self.resname not in library._mol2_types:
-            print 'No mol2 lib entry for residue %s' % self.resname
+            print('No mol2 lib entry for residue %s' % self.resname)
             sys.exit(1)
         dic = library._mol2_types[self.resname]
         for atom in self.atoms:
