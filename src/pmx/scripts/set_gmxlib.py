@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from pmx import model
+from __future__ import absolute_import, print_function, division
 import os
+from pmx import model
 from subprocess import call
+from builtins import input
 
 
 def main():
@@ -20,11 +21,11 @@ def main():
     print('  $ export GMXLIB=%s\n' % gmxlib)
     print('  Or you can add this directly in your bashrc file.\n')
 
-    set_gmxlib = raw_input('  Do you wish pmx to set the GMXLIB variable in '
-                           'your ~/.bashrc? [yes|no]\n  >>> ')
+    set_gmxlib = input('  Do you wish pmx to set the GMXLIB variable in '
+                       'your ~/.bashrc? [yes|no]\n  >>> ')
 
     while set_gmxlib not in ['yes', 'no']:
-        set_gmxlib = raw_input('  Please enter only either "yes" or "no"\n  >>> ')
+        set_gmxlib = input('  Please enter only either "yes" or "no"\n  >>> ')
 
     if set_gmxlib == 'yes':
         call('echo "# GMXLIB for using pmx forcefields" >> ~/.bashrc', shell=True)
