@@ -1,11 +1,11 @@
-from __future__ import print_function, division
+from __future__ import absolute_import, print_function, division
 import sys
 import numpy as np
 from scipy.integrate import simps
 from matplotlib import pyplot as plt
 from copy import deepcopy
 from scipy.special import erf
-from utils import data2gauss, gauss_func
+from .utils import data2gauss, gauss_func
 
 __all__ = ['read_dgdl_files', 'integrate_dgdl',
            'ks_norm_test', 'plot_work_dist']
