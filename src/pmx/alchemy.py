@@ -4,14 +4,15 @@
 structures and topologies needed for alchemical free energy calculations.
 """
 
-from model import Model
-from utils import RangeCheckError, mtpError, UnknownResidueError, MissingTopolParamError
-from geometry import Rotation, nuc_super, bb_super
-from mutdb import read_mtp_entry
-from forcefield import Topology, _check_case, _atoms_morphe
-from utils import get_mtp_file
-from copy import deepcopy
-import library
+from __future__ import absolute_import, print_function, division
+from .model import Model
+from .utils import RangeCheckError, mtpError, UnknownResidueError, MissingTopolParamError
+from .geometry import Rotation, nuc_super, bb_super
+from .mutdb import read_mtp_entry
+from .forcefield import Topology, _check_case, _atoms_morphe
+from .utils import get_mtp_file
+from .copy import deepcopy
+from . import library
 import os
 import sys
 
@@ -134,9 +135,9 @@ def apply_nuc_mutation(m, residue, new_nuc_name, mtp_file, verbose=False):
 
     hybrid_residue_name, resname1, resname2 = get_nuc_hybrid_resname(residue, new_nuc_name)
     if verbose is True:
-        print 'log_> Residue to mutate: %d | %s | %s ' % (residue.id, residue.resname, residue.chain_id)
-        print 'log_> Mutation to apply: %s->%s' % (residue.resname[1], new_nuc_name)
-        print 'log_> Hybrid residue name: %s' % hybrid_residue_name
+        print('log_> Residue to mutate: %d | %s | %s ' % (residue.id, residue.resname, residue.chain_id))
+        print('log_> Mutation to apply: %s->%s' % (residue.resname[1], new_nuc_name))
+        print('log_> Hybrid residue name: %s' % hybrid_residue_name)
     hybrid_res, bonds, imps, diheds, rotdic = _get_hybrid_residue(residue_name=hybrid_residue_name,
                                                                   mtp_file=mtp_file,
                                                                   version='new',
@@ -318,38 +319,38 @@ def write_split_top(pmxtop, outfile='pmxtop.top', scale_mass=False,
     qB = pmxtop.get_hybrid_qB()
 
     if verbose is True:
-        print '------------------------------------------------------'
-        print 'log_> Creating splitted topologies............'
+        print('------------------------------------------------------')
+        print('log_> Creating splitted topologies............')
 
-        print 'log_> Making "qoff" topology : "%s"' % out_file_qoff
+        print('log_> Making "qoff" topology : "%s"' % out_file_qoff)
     contQ = deepcopy(qA)
     # BUG: program crashes here - also in the proline branch
     pmxtop.write(out_file_qoff, stateQ='AB', stateTypes='AA', dummy_qB='off',
                  scale_mass=scale_mass, target_qB=qA, stateBonded='AA',
                  full_morphe=False)
     if verbose is True:
-        print 'log_> Charge of state A: %g' % pmxtop.qA
-        print 'log_> Charge of state B: %g' % pmxtop.qB
+        print('log_> Charge of state A: %g' % pmxtop.qA)
+        print('log_> Charge of state B: %g' % pmxtop.qB)
     if verbose is True:
-        print '------------------------------------------------------'
-        print 'log_> Making "vdw" topology : "%s"' % out_file_vdw
+        print('------------------------------------------------------')
+        print('log_> Making "vdw" topology : "%s"' % out_file_vdw)
     contQ = deepcopy(qA)
     pmxtop.write(out_file_vdw, stateQ='BB', stateTypes='AB', dummy_qA='off',
                  dummy_qB='off', scale_mass=scale_mass,
                  target_qB=contQ, stateBonded='AB', full_morphe=False)
     if verbose is True:
-        print 'log_> Charge of state A: %g' % pmxtop.qA
-        print 'log_> Charge of state B: %g' % pmxtop.qB
-        print '------------------------------------------------------'
+        print('log_> Charge of state A: %g' % pmxtop.qA)
+        print('log_> Charge of state B: %g' % pmxtop.qB)
+        print('------------------------------------------------------')
 
-        print 'log_> Making "qon" topology : "%s"' % out_file_qon
+        print('log_> Making "qon" topology : "%s"' % out_file_qon)
     pmxtop.write(out_file_qon, stateQ='BB', stateTypes='BB', dummy_qA='off',
                  dummy_qB='on', scale_mass=scale_mass, target_qB=qB,
                  stateBonded='BB', full_morphe=False)
     if verbose is True:
-        print 'log_> Charge of state A: %g' % pmxtop.qA
-        print 'log_> Charge of state B: %g' % pmxtop.qB
-        print '------------------------------------------------------'
+        print('log_> Charge of state A: %g' % pmxtop.qA)
+        print('log_> Charge of state B: %g' % pmxtop.qB)
+        print('------------------------------------------------------')
 
 
 # ===============
@@ -683,7 +684,7 @@ def _find_bonded_entries(topol, verbose=False):
                       '%s-%s (%s-%s -> %s-%s)' % (a1.name, a2.name,
                                                   a1.atomtype, a2.atomtype,
                                                   a1.type, a2.type))
-                print 'Resi = %s' % a1.resname
+                print('Resi = %s' % a1.resname)
                 error_occured = True
 
             if bstate is None:
@@ -952,26 +953,26 @@ def _find_dihedral_entries(topol, rlist, rdic, dih_predef_default,
 
 
                     if astate is None:
-                        print 'Error: No dihedral angle found (state A: predefined state B) for:'
-                        print a1.resname, a2.resname, a3.resname, a4.resname
-                        print a1.name, a2.name, a3.name, a4.name, func
-                        print a1.atomtype, a2.atomtype, a3.atomtype, a4.atomtype
-                        print a1.type, a2.type, a3.type, a4.type
-                        print a1.atomtypeB, a2.atomtypeB, a3.atomtypeB, a4.atomtypeB
-                        print a1.typeB, a2.typeB, a3.typeB, a4.typeB
-                        print astate
-                        print d
+                        print('Error: No dihedral angle found (state A: predefined state B) for:')
+                        print('{0} {1} {2} {3}'.format(a1.resname, a2.resname, a3.resname, a4.resname))
+                        print('{0} {1} {2} {3}'.format(a1.name, a2.name, a3.name, a4.name, func))
+                        print('{0} {1} {2} {3}'.format(a1.atomtype, a2.atomtype, a3.atomtype, a4.atomtype))
+                        print('{0} {1} {2} {3}'.format(a1.type, a2.type, a3.type, a4.type))
+                        print('{0} {1} {2} {3}'.format(a1.atomtypeB, a2.atomtypeB, a3.atomtypeB, a4.atomtypeB))
+                        print('{0} {1} {2} {3}'.format(a1.typeB, a2.typeB, a3.typeB, a4.typeB))
+                        print('{0}'.format(astate))
+                        print('{0}'.format(d))
                         sys.exit(1)
 
                     if bstate is None:
-                        print 'Error: No dihedral angle found (state B: predefined state A) for:'
-                        print a1.resname, a2.resname, a3.resname, a4.resname
-                        print a1.name, a2.name, a3.name, a4.name, func
-                        print a1.atomtype, a2.atomtype, a3.atomtype, a4.atomtype
-                        print a1.type, a2.type, a3.type, a4.type
-                        print a1.atomtypeB, a2.atomtypeB, a3.atomtypeB, a4.atomtypeB
-                        print a1.typeB, a2.typeB, a3.typeB, a4.typeB
-                        print d
+                        print('Error: No dihedral angle found (state B: predefined state A) for:')
+                        print('{0} {1} {2} {3}'.format(a1.resname, a2.resname, a3.resname, a4.resname))
+                        print('{0} {1} {2} {3}'.format(a1.name, a2.name, a3.name, a4.name, func))
+                        print('{0} {1} {2} {3}'.format(a1.atomtype, a2.atomtype, a3.atomtype, a4.atomtype))
+                        print('{0} {1} {2} {3}'.format(a1.type, a2.type, a3.type, a4.type))
+                        print('{0} {1} {2} {3}'.format(a1.atomtypeB, a2.atomtypeB, a3.atomtypeB, a4.atomtypeB))
+                        print('{0} {1} {2} {3}'.format(a1.typeB, a2.typeB, a3.typeB, a4.typeB))
+                        print('{0}'.format(d))
                         sys.exit(1)
 
                     # the previous two if sentences will kill the execution
