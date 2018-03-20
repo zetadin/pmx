@@ -50,12 +50,12 @@ Geometric measurements:
 
 """
 
-import _pmx as _p
-from numpy import pi
+from __future__ import absolute_import, print_function, division
 import copy
-import library
-import sys
-from library import pdb_format, pdb_format2
+from numpy import pi
+from . import library
+from . import _pmx as _p
+from .library import pdb_format, pdb_format2
 
 __all__ = ['Atom']
 
@@ -363,7 +363,7 @@ class Atom:
         if self.symbol == '':
             self.get_symbol()
         if self.resname not in library._protein_residues:
-            print 'Sorry, implemented for proteins only'
+            print('Sorry, implemented for proteins only')
             return
 
         el = self.symbol
@@ -432,7 +432,6 @@ class Atom:
             self.unity = 'A'
             self.symbol = self.atype.split('.')[0]
         else:
-            print 'Error: Cannot convert line to atom'
-            print line
-            sys.exit(1)
+            print(line)
+            raise ValueError('Error: Cannot convert line to atom')
         return self
