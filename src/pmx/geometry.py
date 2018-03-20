@@ -44,58 +44,9 @@ Examples
 
 """
 
-from numpy import array, linalg, arccos, inner, sin, matrix, dot, cos
-import _pmx as _p
-
-
-# TODO: deprecate either Rotation or Rotation2
-class Rotation2:
-
-    def __init__(self, v1, v2):
-        """ creates a rotation object
-        around the vector v2-v1"""
-
-        self.v1 = array(v1)
-        self.v2 = array(v2)
-        tmp = array(v2)
-        self.vec = tmp-self.v1
-        self.m1 = None
-        self.m2 = None
-        x = 1./linalg.norm(self.vec)
-        self.norm_vec = self.vec*x
-        self.__rm1()
-        self.__rm2()
-
-    def __rm1(self):
-
-        a = self.norm_vec
-        self.m1 = matrix([
-            [a[0]*a[0], a[0]*a[1], a[0]*a[2]],
-            [a[1]*a[0], a[1]*a[1], a[1]*a[2]],
-            [a[2]*a[0], a[2]*a[1], a[2]*a[2]]
-            ])
-
-    def __rm2(self):
-
-        a = self.norm_vec
-        self.m2 = matrix([
-            [0.0, -a[2], a[1]],
-            [a[2], 0.0, -a[0]],
-            [-a[1], a[0], 0.0]
-            ])
-
-    def apply(self, v, phi):
-
-        vec = v - self.v2
-        b = dot(self.m1, vec)
-        d = dot(self.m2, vec)
-        a = cos(phi) * vec
-        c = -cos(phi) * b
-        e = sin(phi) * d
-        vec = a + b + c + e
-        v = self.v2 + vec
-        # ?
-        return [x for x in v.getA()[0]]
+from __future__ import absolute_import, print_function, division
+from numpy import array, linalg, arccos, inner
+from . import _pmx as _p
 
 
 class Rotation:
