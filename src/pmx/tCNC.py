@@ -33,10 +33,13 @@
 """Some functions to deal with tCNC data
 """
 
+from __future__ import absolute_import, print_function, division
 import os
-from parser import readSection, kickOutComments, parseList
-import library
 from numpy import zeros
+from . import library
+from .parser import readSection, kickOutComments, parseList
+
+# TODO/QUESTION: should this whole module be part of utils?
 
 
 def read_atom_types(f):
@@ -44,11 +47,11 @@ def read_atom_types(f):
         fp = f
     else:
         fp = open(f, 'r')
-    l = fp.readlines()
-    l = kickOutComments(l, '#')
+    lines = fp.readlines()
+    lines = kickOutComments(lines, '#')
     keys = []
     # we search for [ XXX ]
-    for line in l:
+    for line in lines:
         if line.startswith('['):
             entr = line.split()[1]
             keys.append(entr)
@@ -56,7 +59,7 @@ def read_atom_types(f):
     dic = {}
     for key in keys:
         dic[key] = {}
-        sec = readSection(l, '[ '+key+' ]', "[")
+        sec = readSection(lines, '[ '+key+' ]', "[")
         for line in sec:
             entr = line.split()
             if len(entr) == 3:
@@ -70,17 +73,17 @@ def read_atom_types(f):
 
 def make_lib_dic(f):
     keys, dic = read_atom_types(f)
-    print 'atom_types = {'
+    print('atom_types = {')
     for key in keys:
         val = dic[key]
-        print "\t'%s': {" % key
+        print("\t'%s': {" % key)
         for name, entr in val.items():
-            print "\t\t\"%s\" : {" % name
-            print "\t\t\t'type':'%s'," % entr['type']
-            print "\t\t\t'hyb':'%s'" % entr['hyb']
-            print "\t\t},"
-        print "\t},"
-    print "}"
+            print("\t\t\"%s\" : {" % name)
+            print("\t\t\t'type':'%s'," % entr['type'])
+            print("\t\t\t'hyb':'%s'" % entr['hyb'])
+            print("\t\t},")
+        print("\t},")
+    print("}")
 
 
 def assign_types(model, verbose=False):
@@ -125,8 +128,8 @@ def assign_types(model, verbose=False):
                           (atom.id, atom.name, atom.resnr,
                            atom.resname, atom.long_name))
             else:
-                print 'Could not assign atom type to atom %d-%s/%d-%s' %\
-                          (atom.id, atom.name, atom.resnr, atom.resname)
+                print('Could not assign atom type to atom %d-%s/%d-%s' %
+                      (atom.id, atom.name, atom.resnr, atom.resname))
 
 
 def assign_radii(model):

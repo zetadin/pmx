@@ -33,7 +33,8 @@
 """Trajectory module
 """
 
-import xdrfile
+from __future__ import absolute_import, print_function, division
+from . import xdrfile
 
 
 class Trajectory(xdrfile.XDRFile):
