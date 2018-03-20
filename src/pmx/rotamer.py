@@ -33,11 +33,11 @@
 """This file contains stuff to deal with the Dunbrack rotamer
 library"""
 
-from library import pmx_data_file, _aacids_dic
-
-import molecule
+from __future__ import absolute_import, print_function, division
 import cPickle
-from geometry import fit
+from . import molecule
+from .library import pmx_data_file, _aacids_dic
+from .geometry import fit
 
 
 _aa_chi = { 'CYS' :
@@ -151,11 +151,13 @@ def load_bbdep():
 
 
 def real_resname(r):
-    dic = {'LYP':'LYS','LYSH':'LYS','LYN':'LYS','LSN':'LYS','CYM':'CYS',
-           'CYS2':'CYS','CYN':'CYS','HIE':'HIS','HIP':'HIS',
-           'HID':'HIS','HISA':'HIS','HISB':'HIS','HSE':'HIS','HSP':'HIS',
-           'HSD':'HIS','HISH':'HIS','HISD':'HIS','ASH':'ASP','ASPP':'ASP',
-           'ASPH':'ASP','GLH':'GLU','GLUH':'GLU','GLUP':'GLU',
+    dic = {'LYP': 'LYS', 'LYSH': 'LYS', 'LYN': 'LYS', 'LSN': 'LYS',
+           'CYM': 'CYS', 'CYS2': 'CYS', 'CYN': 'CYS',
+           'HIE': 'HIS', 'HIP': 'HIS', 'HID': 'HIS', 'HISA': 'HIS',
+           'HISB': 'HIS', 'HSE': 'HIS', 'HSP': 'HIS', 'HSD': 'HIS',
+           'HISH': 'HIS', 'HISD': 'HIS',
+           'ASH': 'ASP', 'ASPP': 'ASP', 'ASPH': 'ASP',
+           'GLH': 'GLU', 'GLUH': 'GLU', 'GLUP': 'GLU'
            }
     if r in dic:
         return dic[r]
@@ -200,7 +202,7 @@ def mini_nb(model, mol, cutoff):
     c = mol.com(vector_only=True)
     nb_list = []
     for atom in model.atoms:
-        if atom.resname not in ['SOL','NaS','ClS','NA','CL','NaJ','ClJ'] and \
+        if atom.resname not in ['SOL', 'NaS', 'ClS', 'NA', 'CL', 'NaJ', 'ClJ'] and \
            atom not in mol.atoms and \
            atom.x[0] >= c[0] - cutoff and atom.x[0] <= c[0]+cutoff and \
            atom.x[1] >= c[1] - cutoff and atom.x[1] <= c[1]+cutoff and \
@@ -213,7 +215,7 @@ def check_overlaps(model, mol, nb_list):
     score = 0.
     nat = 0
     for atom in mol.atoms:
-        if atom.name not in ['N','CA','C','O','H','CB','HA'] and atom.symbol !='H':
+        if atom.name not in ['N', 'CA', 'C', 'O', 'H', 'CB', 'HA'] and atom.symbol !='H':
             nat += 1
             for at in nb_list:
                 if at.symbol != 'H':
@@ -232,7 +234,7 @@ def select_best_rotamer(model, rotamers):
     rot_idx = 0
     for i, r in enumerate(rotamers):
         score = check_overlaps(model, r, nb_list)
-        print i, score
+        print('{0} {1}'.format(i, score))
         if score < .2:
             return r
         if score < min_score:
