@@ -41,7 +41,7 @@ real calc_lj_energy( PyObject *atom1, PyObject *atom2, real fudgeLJ )
 
   real sigma_ij = 0.5* ( sigma1 + sigma2 );
   real eps_ij = sqrt (eps1*eps2 );
-  
+
   real c6 = pow(sigma_ij,6)/pow(rij2,3);
   real c12 = sqr(c6);
   return 4*eps_ij*(c12-c6)*fudgeLJ;
@@ -61,7 +61,7 @@ real calc_bond_energy( PyObject *atom1, PyObject *atom2, real kb, real b0)
 {
   real rij = distance_from_atoms(atom1, atom2);
   rij*=.1; // nm
-  
+
   return 0.5*kb*sqr( rij-b0);
 
 }
@@ -71,7 +71,7 @@ real calc_angle_energy(PyObject *atom1, PyObject *atom2, PyObject *atom3, real k
 
   real angle = angle_from_atoms(atom1, atom2, atom3);
   phi0*=DEG2RAD;
-  
+
   return 0.5*kb*( sqr(angle-phi0) );
 }
 
@@ -93,15 +93,15 @@ real calc_dihedral_energy(PyObject *atom1, PyObject *atom2, PyObject *atom3, PyO
 real calc_improper_energy(PyObject *atom1, PyObject *atom2, PyObject *atom3, PyObject *atom4, real kb, real phi0, int mult)
 {
   real dih = dihedral_from_atoms( atom1, atom2, atom3, atom4)*RAD2DEG;
-  
+
   return kb*(1+cos( (mult*dih-phi0)*DEG2RAD ) );
 }
 
 
 PyObject *wrap_calc_lj_energy(PyObject *self, PyObject *args)
 {
-  
-  PyObject *atom1, *atom2; 
+
+  PyObject *atom1, *atom2;
   real fudgeLJ;
 
   if(!PyArg_ParseTuple(args,"OOd",&atom1, &atom2, &fudgeLJ))
@@ -112,8 +112,8 @@ PyObject *wrap_calc_lj_energy(PyObject *self, PyObject *args)
 
 PyObject *wrap_calc_coulomb_energy(PyObject *self, PyObject *args)
 {
-  
-  PyObject *atom1, *atom2; 
+
+  PyObject *atom1, *atom2;
   real fudgeQQ;
 
   if(!PyArg_ParseTuple(args,"OOd",&atom1, &atom2, &fudgeQQ))
@@ -125,7 +125,7 @@ PyObject *wrap_calc_coulomb_energy(PyObject *self, PyObject *args)
 
 PyObject *wrap_calc_bond_energy(PyObject *self, PyObject *args)
 {
-  
+
   PyObject *bondO; // object contains two atoms, b0 and k0
 
   if(!PyArg_ParseTuple(args,"O",&bondO))
@@ -135,7 +135,7 @@ PyObject *wrap_calc_bond_energy(PyObject *self, PyObject *args)
   real kb;
   PyObject *atom1 = PySequence_GetItem(bondO,0);
   PyObject *atom2 = PySequence_GetItem(bondO,1);
-  
+
   b0 = PyFloat_AsDouble( PySequence_GetItem(bondO,3) );
   kb = PyFloat_AsDouble( PySequence_GetItem(bondO,4) );
 
@@ -146,7 +146,7 @@ PyObject *wrap_calc_bond_energy(PyObject *self, PyObject *args)
 
 PyObject *wrap_total_bond_energy(PyObject *self, PyObject *args)
 {
-  
+
   PyObject *bond_list; // list with bond entries
 
   if(!PyArg_ParseTuple(args,"O",&bond_list))
@@ -171,7 +171,7 @@ PyObject *wrap_total_bond_energy(PyObject *self, PyObject *args)
 
 PyObject *wrap_calc_angle_energy(PyObject *self, PyObject *args)
 {
-  PyObject *angleO; // three atoms + ff 
+  PyObject *angleO; // three atoms + ff
   if(!PyArg_ParseTuple(args,"O",&angleO))
     return NULL;
 
@@ -180,7 +180,7 @@ PyObject *wrap_calc_angle_energy(PyObject *self, PyObject *args)
   PyObject *atom1 = PySequence_GetItem(angleO,0);
   PyObject *atom2 = PySequence_GetItem(angleO,1);
   PyObject *atom3 = PySequence_GetItem(angleO,2);
-  
+
   phi0 = PyFloat_AsDouble( PySequence_GetItem(angleO,4) );
   kb = PyFloat_AsDouble( PySequence_GetItem(angleO,5) );
 
@@ -206,19 +206,19 @@ PyObject *wrap_total_angle_energy(PyObject *self, PyObject *args)
     PyObject *atom1 = PySequence_GetItem(angleO,0);
     PyObject *atom2 = PySequence_GetItem(angleO,1);
     PyObject *atom3 = PySequence_GetItem(angleO,2);
-    
+
     phi0 = PyFloat_AsDouble( PySequence_GetItem(angleO,4) );
     kb = PyFloat_AsDouble( PySequence_GetItem(angleO,5) );
-    
+
     energy += calc_angle_energy( atom1, atom2, atom3, kb, phi0);
   }
   return Py_BuildValue("d",energy);
 }
-    
+
 
 PyObject *wrap_calc_dihedral_energy(PyObject *self, PyObject *args)
 {
-  PyObject *dihedO; // four atoms + dihed_type + 6 rb params 
+  PyObject *dihedO; // four atoms + dihed_type + 6 rb params
   if(!PyArg_ParseTuple(args,"O",&dihedO))
     return NULL;
 
@@ -228,7 +228,7 @@ PyObject *wrap_calc_dihedral_energy(PyObject *self, PyObject *args)
   PyObject *atom2 = PySequence_GetItem(dihedO,1);
   PyObject *atom3 = PySequence_GetItem(dihedO,2);
   PyObject *atom4 = PySequence_GetItem(dihedO,3);
-  
+
   int i;
   for(i=0;i<6;i++){
     rb_params[i] =  PyFloat_AsDouble( PySequence_GetItem(dihedO,5+i) );
@@ -255,7 +255,7 @@ PyObject *wrap_total_dihedral_energy(PyObject *self, PyObject *args)
     PyObject *atom2 = PySequence_GetItem(dihedO,1);
     PyObject *atom3 = PySequence_GetItem(dihedO,2);
     PyObject *atom4 = PySequence_GetItem(dihedO,3);
-    
+
     int k;
     for(k=0;k<6;k++){
       rb_params[k] =  PyFloat_AsDouble( PySequence_GetItem(dihedO,5+k) );
@@ -266,7 +266,7 @@ PyObject *wrap_total_dihedral_energy(PyObject *self, PyObject *args)
 }
 
 
-  
+
 PyObject *wrap_calc_improper_energy(PyObject *self, PyObject *args)
 {
   PyObject *dihedO; // four atoms + dihed_type + phi0 + kb + mult
@@ -426,11 +426,11 @@ real nb_energy( PyObject *atomlist )
   }
   return energy;
 }
-  
+
 
 PyObject *wrap_nb_lj_energy(PyObject *self, PyObject *args)
 {
-  PyObject *atomlist; 
+  PyObject *atomlist;
 
   if(!PyArg_ParseTuple(args,"O",&atomlist))
     return NULL;
@@ -441,7 +441,7 @@ PyObject *wrap_nb_lj_energy(PyObject *self, PyObject *args)
 
 PyObject *wrap_lj14_energy(PyObject *self, PyObject *args)
 {
-  PyObject *atomlist; 
+  PyObject *atomlist;
 
   if(!PyArg_ParseTuple(args,"O",&atomlist))
     return NULL;
@@ -452,7 +452,7 @@ PyObject *wrap_lj14_energy(PyObject *self, PyObject *args)
 
 PyObject *wrap_nb_coul_energy(PyObject *self, PyObject *args)
 {
-  PyObject *atomlist; 
+  PyObject *atomlist;
 
   if(!PyArg_ParseTuple(args,"O",&atomlist))
     return NULL;
@@ -464,7 +464,7 @@ PyObject *wrap_nb_coul_energy(PyObject *self, PyObject *args)
 
 PyObject *wrap_coul14_energy(PyObject *self, PyObject *args)
 {
-  PyObject *atomlist; 
+  PyObject *atomlist;
 
   if(!PyArg_ParseTuple(args,"O",&atomlist))
     return NULL;
@@ -475,7 +475,7 @@ PyObject *wrap_coul14_energy(PyObject *self, PyObject *args)
 
 PyObject *wrap_nb_energy(PyObject *self, PyObject *args)
 {
-  PyObject *atomlist; 
+  PyObject *atomlist;
 
   if(!PyArg_ParseTuple(args,"O",&atomlist))
     return NULL;
@@ -483,4 +483,3 @@ PyObject *wrap_nb_energy(PyObject *self, PyObject *args)
   real energy = nb_energy( atomlist );
   return Py_BuildValue("d",energy);
 }
-

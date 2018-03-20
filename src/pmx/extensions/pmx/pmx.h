@@ -27,6 +27,7 @@
 // CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 // CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 // ----------------------------------------------------------------------
+
 #ifndef PYMACS_H
 #define PYMACS_H
 #include <Python.h>
@@ -45,6 +46,12 @@ typedef int             ivec[DIM];
 typedef int             imatrix[DIM][DIM];
 typedef int             bool;
 
+
+// to support python 3 where all ints are long
+ #if PY_MAJOR_VERSION >= 3
+    #define PyInt_FromLong PyLong_FromLong
+    #define PyInt_AsLong PyLong_AsLong
+ #endif
 
 
 #define M_PI        3.14159265358979323846
@@ -109,4 +116,3 @@ PyObject *wrap_nb_energy(PyObject *self, PyObject *args);
 PyObject *apply_rotation( PyObject *self, PyObject *args);
 
 #endif
-

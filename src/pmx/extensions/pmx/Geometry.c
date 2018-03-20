@@ -34,7 +34,7 @@ void rotate_rvec(int n,rvec x[],matrix trans)
 {
   real   xt,yt,zt;
   int    i;
-  
+
   for(i=0; (i<n); i++) {
     xt=x[i][XX];
     yt=x[i][YY];
@@ -62,7 +62,7 @@ void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
     omega[i] = malloc(sizeof(double)*2*DIM);
     om[i] =  malloc(sizeof(double)*2*DIM);
   }
-  
+
   for(i=0; i<2*DIM; i++) {
     d[i]=0;
     for(j=0; j<2*DIM; j++) {
@@ -70,7 +70,7 @@ void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
       om[i][j]=0;
     }
   }
-  
+
   /*calculate the matrix U*/
   clear_mat(u);
   for(n=0;(n<natoms);n++)
@@ -82,7 +82,7 @@ void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
 	  u[c][r]+=mn*xnr*xpc;
 	}
       }
-  
+
   /*construct omega*/
   /*omega is symmetric -> omega==omega' */
   for(r=0; r<2*DIM; r++)
@@ -94,7 +94,7 @@ void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
         omega[r][c]=0;
         omega[c][r]=0;
       }
-  
+
   /*determine h and k*/
 
   jacobi6(omega,d,om,&irot);
@@ -105,11 +105,11 @@ void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
    *real       **v = v[0..n-1][0..n-1] contains the vectors in columns
    *int      *irot = number of jacobi rotations
    */
-  
-  
+
+
   index=0; /* For the compiler only */
 
-  /* Copy only the first DIM-1 eigenvectors */  
+  /* Copy only the first DIM-1 eigenvectors */
   for(j=0; j<DIM-1; j++) {
     max_d=-1000;
     for(i=0; i<2*DIM; i++)
@@ -126,11 +126,11 @@ void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
   /* Calculate the last eigenvector as the outer-product of the first two.
    * This insures that the conformation is not mirrored and
    * prevents problems with completely flat reference structures.
-   */  
+   */
   cprod(vh[0],vh[1],vh[2]);
   cprod(vk[0],vk[1],vk[2]);
 
- 
+
   /* determine R */
   clear_mat(R);
   for(r=0; r<DIM; r++)
@@ -229,19 +229,19 @@ real planarity(rvec *x, int n)
 //       cout << "here" << endl;
 //     }
 //   }
-  
+
   clear_mat(mat);
   clear_mat(trans);
-  
+
   center(xx, n);
-  
+
   clear_rvec(dd);
   princ_comp(n,xx,mat,dd);
   if (det(mat) < 0) {
     for(m=0; (m<DIM); m++)
       mat[ZZ][m] = -mat[ZZ][m];
   }
-  
+
   rotate_rvec(n,xx,mat);
   real adev = 0.;
   for(k=0;k<n;k++){
@@ -264,33 +264,33 @@ void set_planar(rvec *x, int n)
 //       cout << "here" << endl;
 //     }
 //   }
-  
+
   clear_mat(mat);
   clear_mat(trans);
-  
+
   center_and_get_vec(x, n, cm);
-  
+
   clear_rvec(dd);
   princ_comp(n,x,mat,dd);
   if (det(mat) < 0) {
     for(m=0; (m<DIM); m++)
       mat[ZZ][m] = -mat[ZZ][m];
   }
-  
+
   rotate_rvec(n,x,mat);
   real adev = 0.;
   for(k=0;k<n;k++){
     adev+=sqrt(sqr(x[k][0]));
   }
   adev/=(real)n;
-  
+
   /* make it flat */
   for(k=0;k<n;k++){
     x[k][0] = 0.;
   }
 
   transpose(mat,trans);
-  
+
   rotate_rvec(n,x,trans);
 
   for(i=0;i<n;i++){
@@ -367,7 +367,7 @@ void cryst1_to_box( char *line, matrix box)
       ePBC_file = epbcSCREW;
     }
   }
-  
+
   fa = atof(sa)*0.1;
   fb = atof(sb)*0.1;
   fc = atof(sc)*0.1;
@@ -460,9 +460,9 @@ int gridp(real x, real origin, real inv_spacing, int max)
 {
   real n;
   int point;
-  n = (x-origin)*inv_spacing; 
-  point = (int) n; 
-  return point; 
+  n = (x-origin)*inv_spacing;
+  point = (int) n;
+  return point;
 }
 
 typedef struct GridMap GridMap;
@@ -523,7 +523,7 @@ GridMap *spread_atoms_on_grid(rvec *x, ivec *cells, int natoms, GridMap *gp, rea
   max_crd(x,natoms,max);
   gp->spacing = cutoff;
   gp->inv_spacing = 1./cutoff;
-  
+
   for(i=0;i<DIM;i++){
     gp->origin[i] = max[i][XX]-gp->spacing/2.;
   }
@@ -534,11 +534,11 @@ GridMap *spread_atoms_on_grid(rvec *x, ivec *cells, int natoms, GridMap *gp, rea
   max[XX][ZZ]+=gp->spacing/2.;
   max[YY][ZZ]+=gp->spacing/2.;
   max[ZZ][ZZ]+=gp->spacing/2.;
-  
+
   xdim = (int) (max[XX][ZZ] - max[XX][XX])*gp->inv_spacing +1;
   ydim = (int) (max[YY][ZZ] - max[YY][XX])*gp->inv_spacing +1;
   zdim = (int) (max[ZZ][ZZ] - max[ZZ][XX])*gp->inv_spacing +1;
-  
+
   gp->n[XX] = xdim;
   gp->n[YY] = ydim;
   gp->n[ZZ] = zdim;
@@ -563,7 +563,7 @@ GridMap *spread_atoms_on_grid(rvec *x, ivec *cells, int natoms, GridMap *gp, rea
     idx = gpz*nx*ny + gpy*nx + gpx;
     gp->natom[idx]+=1;
     gp->cell[idx] = realloc(gp->cell[idx], sizeof(int)*gp->natom[idx] );
-    gp->cell[idx][gp->natom[idx]-1] = i;   
+    gp->cell[idx][gp->natom[idx]-1] = i;
   }
   return gp;
 }
@@ -584,21 +584,21 @@ void search_neighbors(rvec *x, int natoms, real cutoff, int **nlist, int *nat)
   rvec diff;
   real d;
   real cut2;
-  
+
   ivec cells[natoms];
-  
+
   xx = -1;
   yy = -1;
   zz = -1;
-  
+
   cut2 = sqr(cutoff);
   gp = spread_atoms_on_grid(x,cells,natoms,gp,cutoff);
   nx = gp->n[XX];
   ny = gp->n[YY];
   nz = gp->n[ZZ];
-  
-  
-  
+
+
+
   for(i=0;i<natoms;i++){
     xx = -1;
     while(xx<2){
@@ -606,7 +606,7 @@ void search_neighbors(rvec *x, int natoms, real cutoff, int **nlist, int *nat)
       while(yy<2){
 	zz = -1;
 	while(zz<2){
-	  
+
 	  gpx = xx+cells[i][XX];
 	  gpy = yy+cells[i][YY];
 	  gpz = zz+cells[i][ZZ];
@@ -621,8 +621,8 @@ void search_neighbors(rvec *x, int natoms, real cutoff, int **nlist, int *nat)
 		  d = norm2(diff);
 		  if(d < cut2){
 		    nat[i]+=1;
-		    nlist[i] = realloc(nlist[i], sizeof(int)*(nat[i]));  
-		    nlist[i][nat[i]-1] = atom_id;  
+		    nlist[i] = realloc(nlist[i], sizeof(int)*(nat[i]));
+		    nlist[i][nat[i]-1] = atom_id;
 		  }
 		}
 	      }
@@ -690,4 +690,3 @@ real dihedral_from_atoms( PyObject *atom1, PyObject *atom2, PyObject *atom3, PyO
   Pyvec2rvec(cs4,x4);
   return dihedral(x1,x2,x3,x4);
 }
-

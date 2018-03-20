@@ -71,7 +71,7 @@ void PyObject2matrix( PyObject *o, matrix R)
     }
   }
 }
-  
+
 
 void PyObject2real_array( PyObject *o, real *arr, int natoms)
 {
@@ -213,7 +213,7 @@ PyObject *wrap_fit(PyObject *self,PyObject *args)
   rvec cent;
   center_and_get_vec(x1, natoms1, cent);     // center x1 and get vector for back translation
   center(x2, natoms1);                                // center x2
-  do_fit(natoms1, m, x1, x2);               
+  do_fit(natoms1, m, x1, x2);
 
   int i;
   for(i=0;i<natoms1;i++)                    // translate back
@@ -337,7 +337,7 @@ bool atom_in_py_atomlist( PyObject *list, int id)
   }
   return atom_in_list;
 }
- 
+
 bool is_bound( PyObject *atom, int id)
 {
   // check if atom with id id is in the bonded lists of atom
@@ -479,9 +479,9 @@ con_table *build_table( PyObject *atomlist)
   t->con = malloc(sizeof(int*)*natoms);
   for(i=0;i<natoms;i++){
     PyObject *atom = PySequence_Fast_GET_ITEM(atomlist, i);
-    PyObject *bonds = PyObject_GetAttrString(atom,"bonds"); 
-    PyObject *b13 = PyObject_GetAttrString(atom,"b13"); 
-    PyObject *b14 = PyObject_GetAttrString(atom,"b14"); 
+    PyObject *bonds = PyObject_GetAttrString(atom,"bonds");
+    PyObject *b13 = PyObject_GetAttrString(atom,"b13");
+    PyObject *b14 = PyObject_GetAttrString(atom,"b14");
     int nbonds = PySequence_Length(bonds);
     int nb13 = PySequence_Length(b13);
     int nb14 = PySequence_Length(b14);
@@ -539,7 +539,7 @@ PyObject* wrap_search_neighbors(PyObject *self, PyObject *args)
   bool build_bonds;
   if(!PyArg_ParseTuple(args,"Odi",&atomlist,&cutoff,&build_bonds))
     return NULL;
-  
+
   int natoms = PySequence_Length(atomlist);
   rvec x[natoms];
   int *nlist[natoms];
@@ -565,7 +565,7 @@ PyObject* wrap_search_neighbors(PyObject *self, PyObject *args)
   // reset neighborlists
   for(i=0;i<natoms;i++){
     PyObject *atom = PySequence_Fast_GET_ITEM(atomlist, i);
-    PyObject *neighbor_list = PyObject_GetAttrString(atom,"neighbors"); 
+    PyObject *neighbor_list = PyObject_GetAttrString(atom,"neighbors");
     int list_size = PySequence_Length( neighbor_list );
     for(k=0;k<list_size;k++){
       PySequence_DelItem(neighbor_list,0);
@@ -643,9 +643,8 @@ PyObject *apply_rotation( PyObject *self, PyObject *args)
   rvec_add( a, b, vec);
   rvec_add( vec, c, vec );
   rvec_add( vec, e, vec );
-  
+
   clear_rvec(v);
   rvec_add( v2, vec, v);
   return Py_BuildValue("[ddd]", v[XX], v[YY], v[ZZ] );
  }
-
