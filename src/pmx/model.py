@@ -76,14 +76,15 @@ Some useful methods:
 """
 
 from __future__ import absolute_import, print_function, division
-from atomselection import Atomselection
 import sys
 import copy
-import library
-import chain
-from molecule import Molecule
-from atom import Atom
-import _pmx as _p
+from . import _pmx as _p
+from . import library
+from . import chain
+from .atomselection import Atomselection
+from .molecule import Molecule
+from .atom import Atom
+
 
 __all__ = ['Model']
 
