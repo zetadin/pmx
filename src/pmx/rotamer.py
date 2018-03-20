@@ -34,11 +34,13 @@
 library"""
 
 from __future__ import absolute_import, print_function, division
-import cPickle
 from . import molecule
 from .library import pmx_data_file, _aacids_dic
 from .geometry import fit
-
+try:
+    import cPickle as pickle
+except:
+    import pickle
 
 _aa_chi = { 'CYS' :
         { 1: [('N'  , 'CA' , 'CB' , 'SG' ),
@@ -143,7 +145,7 @@ def make_bbdep(min_val=.01):
             lst.sort(lambda a, b: cmp(float(a[0]), float(b[0])))
             lst.reverse()
     fp = open('bbdep.pkl', 'w')
-    cPickle.dump(dic, fp)
+    pickle.dump(dic, fp)
 
 
 def load_bbdep():

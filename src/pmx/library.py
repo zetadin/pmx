@@ -35,7 +35,10 @@
 from __future__ import print_function, division, absolute_import
 import sys
 import os
-import cPickle
+try:
+    import cPickle as pickle
+except:
+    import pickle
 
 __all__ = ['pdb_format', 'pdb_format2', 'pmx_data_file', 'PMX_DATA']
 
@@ -60,7 +63,7 @@ def pmx_data_file(filename, verbose=False):
     if verbose:
         print("pmx__> Loading data file \"%s\"" % data_file, file=sys.stderr)
     if data_file.split('.')[-1] == 'pkl':
-        return cPickle.load(open(data_file))
+        return pickle.load(open(data_file))
     else:
         return data_file
 
