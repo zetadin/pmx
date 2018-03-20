@@ -785,7 +785,8 @@ class Chain(Atomselection):
                         r.next = next_res
                         next_res.previous = r
                     else:
-                        print >>sys.stderr, 'Gap between residues ', r, '< - >', next_res, 'dist = ', d
+                        print('Gap between residues {r} < - > {next_res} dist = {d}'.format(r=r, next_res=next_res, d=d),
+                              file=sys.stderr)
                         self.residue_tree_ok = False
 
     def cterminus(self):

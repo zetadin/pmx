@@ -187,11 +187,11 @@ class Model(Atomselection):
         fp = open(filename, "w")
         if not title:
             title = '_'.join(self.title.split())
-        print >>fp, '>P1;%s' % title
-        print >>fp, 'sequence:::::::::'
+        print('>P1;%s' % title, file=fp)
+        print('sequence:::::::::', file=fp)
         for i in range(len(self.chains) - 1):
-            print >>fp, self.chains[i].get_sequence()+'/'
-        print >>fp, self.chains[-1].get_sequence()+'*'
+            print('%s/' % self.chains[i].get_sequence(), file=fp)
+        print('%s*' % self.chains[-1].get_sequence(), file=fp)
         fp.close()
 
     def writeFASTA(self, filename, title=""):
@@ -199,12 +199,12 @@ class Model(Atomselection):
         if not title:
             title = '_'.join(self.title.split())
         if len(self.chains) == 1:
-            print >>fp, '> %s' % title
-            print >>fp, self.chains[0].get_sequence()
+            print('> %s' % title, file=fp)
+            print(self.chains[0].get_sequence(), file=fp)
         else:
             for chain in self.chains:
-                print >>fp, '> %s_chain_%s' % (title, chain.id)
-                print >>fp, chain.get_sequence()
+                print('> %s_chain_%s' % (title, chain.id), file=fp)
+                print(chain.get_sequence(), file=fp)
 
     def write(self, fn, title='', nr=1, bPDBTER=False, bAssignChainIDs=False):
         ext = fn.split('.')[-1]
@@ -217,7 +217,7 @@ class Model(Atomselection):
         elif ext == 'fasta':
             self.writeFASTA(fn, title)
         else:
-            print >>sys.stderr, 'pmx_Error_> Can only write pdb or gro!'
+            print('pmx_Error_> Can only write pdb or gro!', file=sys.stderr)
             sys.exit(1)
 
     def make_chains(self):
@@ -471,7 +471,7 @@ class Model(Atomselection):
         elif ext == 'gro':
             return self.__readGRO(filename)
         else:
-            print >>sys.stderr, 'ERROR: Can only read pdb or gro!'
+            print('ERROR: Can only read pdb or gro!', file=sys.stderr)
             sys.exit(1)
 
     def renumber_residues(self):

@@ -135,12 +135,12 @@ class IndexFile:
         if fn:
             fp = open(fn, 'w')
         for gr in self.groups:
-            print >>fp, str(gr)+'\n'
+            print('{0}\n'.format(str(gr)), file=fp)
 
     def add_group(self, group):
         if group.name in self.names:
-            print >> sys.stderr, "IndexFile has group %s !! " % group.name
-            print >> sys.stderr, "Group %s will be replaced !!" % group.name
+            print("IndexFile has group %s !! " % group.name, file=sys.stderr)
+            print("Group %s will be replaced !!" % group.name, file=sys.stderr)
             self.delete_group(group.name)
         self.names.append(group.name)
         self.groups.append(group)

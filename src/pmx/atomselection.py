@@ -68,18 +68,18 @@ class Atomselection:
                 title = str(self.__class__)+' '+str(self)
 
         header = 'TITLE    '+title
-        print >>fp, header
-        print >>fp, 'MODEL%5d' % nr
+        print('{}'.format(header), file=fp)
+        print('MODEL%5d' % nr, file=fp)
         if not hasattr(self, "box"):
             self.box = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
         if self.box[0][0]*self.box[1][1]*self.box[2][2] != 0:
             box_line = _pmx.box_as_cryst1(self.box)
-            print >>fp, box_line
+            print(box_line, file=fp)
 
         chainID = self.atoms[0].chain_id
         for atom in self.atoms:
             if (bPDBTER is True) and (atom.chain_id != chainID):
-                print >>fp, 'TER'
+                print('TER', file=fp)
                 chainID = atom.chain_id
             if (len(resnrlist) > 0) and (atom.resnr not in resnrlist):
                 continue
@@ -91,10 +91,10 @@ class Atomselection:
             if (len(atom.name) > 4):  # too long atom name
                 foo = cp.deepcopy(atom)
                 foo.name = foo.name[:4]
-                print >>fp, foo
+                print(foo, file=fp)
             else:
-                print >>fp, atom
-        print >>fp, 'ENDMDL'
+                print(atom, file=fp)
+        print('ENDMDL', file=fp)
         fp.close()
 
     def writeGRO(self, filename, title=''):
@@ -108,8 +108,8 @@ class Atomselection:
                 title = self.title
             else:
                 title = str(self.__class__)+' '+str(self)
-        print >>fp, title
-        print >>fp, "%5d" % len(self.atoms)
+        print(title, file=fp)
+        print("%5d" % len(self.atoms), file=fp)
         if self.atoms[0].v[0] != 0.000:
             bVel = True
         else:
@@ -133,7 +133,7 @@ class Atomselection:
                 ff += gro_format % (atom.x[0]*fac,
                                     atom.x[1]*fac,
                                     atom.x[2]*fac)
-            print >>fp, ff
+            print(ff, file=fp)
 
         if not hasattr(self, "box"):
             self.box = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
@@ -145,11 +145,11 @@ class Atomselection:
             bTric = True
             ff = "%10.5f%10.5f%10.5f"
         if bTric:
-            print >>fp, ff % (self.box[0][0], self.box[1][1], self.box[2][2])
+            print(ff % (self.box[0][0], self.box[1][1], self.box[2][2]), file=fp)
         else:
-            print >>fp, ff % (self.box[0][0], self.box[1][1], self.box[2][2],
-                              self.box[0][1], self.box[0][2], self.box[1][0],
-                              self.box[1][2], self.box[2][0], self.box[2][1])
+            print(ff % (self.box[0][0], self.box[1][1], self.box[2][2],
+                        self.box[0][1], self.box[0][2], self.box[1][0],
+                        self.box[1][2], self.box[2][0], self.box[2][1]), file=fp)
         fp.close()
 
     def write(self, fn, title='', nr=1):
@@ -159,14 +159,14 @@ class Atomselection:
         elif ext == 'gro':
             self.writeGRO(fn, title)
         else:
-            print >>sys.stderr, 'pmx_Error_> Can only write pdb or gro!'
+            print('pmx_Error_> Can only write pdb or gro!', file=sys.stderr)
             sys.exit(1)
 
     def com(self, vector_only=False):
         """move atoms to center of mass or return vector only"""
         for atom in self.atoms:
             if atom.m == 0:
-                print >>sys.stderr, " Warning: Atom has zero mass: setting mass to 1."
+                print(" Warning: Atom has zero mass: setting mass to 1.", file=sys.stderr)
                 atom.m = 1.
         x = sum(map(lambda a: a.x[0]*a.m, self.atoms))
         y = sum(map(lambda a: a.x[1]*a.m, self.atoms))

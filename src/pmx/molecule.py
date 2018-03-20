@@ -598,14 +598,14 @@ class SDMolecule:
                         self.properties[prop] += line
 
     def write(self, fp):
-        print >>fp, self.name
-        print >>fp, self.name2,
-        print >>fp
-        print >>fp, self.molfile
+        print(self.name, file=fp)
+        print(self.name2, end='', file=fp)
+        print('', file=fp)
+        print(self.molfile, file=fp)
         for k, v in self.properties.items():
-            print >>fp, '>', k
-            print >>fp, v,
-        print >>fp, '$$$$'
+            print('>%s' % k, file=fp)
+            print(v, end='', file=fp)
+        print('$$$$', file=fp)
 
 
 class SDFile:
@@ -702,27 +702,27 @@ class Mol2Molecule:
             atom2 = self.atom_by_id(e[2])
             bond_type = e[3]
             if atom1 is None or atom2 is None:
-                print >>sys.stderr, 'Mol2Molecule: Error in bond parsing'
+                print('Mol2Molecule: Error in bond parsing', file=sys.stderr)
                 sys.exit(1)
             self.bonds.append([atom1, atom2, bond_type])
 
     def write(self, fp=sys.stdout):
-        print >>fp, '@<TRIPOS>MOLECULE'
-        print >>fp, self.name
-        print >>fp, self.num_atoms, self.num_bonds, self.num_substr, self.num_feat, self.num_sets
-        print >>fp, self.mol_type
-        print >>fp, self.charge_type
-        print >>fp
-        print >>fp, '@<TRIPOS>ATOM'
+        print('@<TRIPOS>MOLECULE', file=fp)
+        print(self.name, file=fp)
+        print('{0} {1} {2} {3} {4}'.format(self.num_atoms, self.num_bonds, self.num_substr, self.num_feat, self.num_sets), file=fp)
+        print(self.mol_type, file=fp)
+        print(self.charge_type, file=fp)
+        print('', file=fp)
+        print('@<TRIPOS>ATOM', file=fp)
         for atom in self.atoms:
-            print >>fp, "%7d %-8s %9.4f %9.4f %9.4f %-6s %3d %-8s %9.4f" %\
+            print("%7d %-8s %9.4f %9.4f %9.4f %-6s %3d %-8s %9.4f" %
                   (atom.id, atom.symbol, atom.x[0], atom.x[1], atom.x[2],
-                   atom.atype, atom.resnr, atom.resname, atom.q)
-        print >>fp, '@<TRIPOS>BOND'
+                   atom.atype, atom.resnr, atom.resname, atom.q), file=fp)
+        print('@<TRIPOS>BOND', file=fp)
         for i, b in enumerate(self.bonds):
-            print >>fp, "%6d %6d %6d %6s" % ((i+1), b[0].id, b[1].id, b[2])
+            print("%6d %6d %6d %6s" % ((i+1), b[0].id, b[1].id, b[2]), file=fp)
         for line in self.footer:
-            print >>fp, line
+            print(line, file=fp)
 
     def add_atom(self, atom):
         n = len(self.atoms)+1
