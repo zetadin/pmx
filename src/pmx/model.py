@@ -75,6 +75,7 @@ Some useful methods:
 
 """
 
+from __future__ import absolute_import, print_function, division
 from atomselection import Atomselection
 import sys
 import copy
@@ -488,8 +489,8 @@ class Model(Atomselection):
 
     def remove_chain(self, key):
         if key not in self.chdic:
-            print 'No chain %s to remove....' % key
-            print 'No changes applied.'
+            print('No chain %s to remove....' % key)
+            print('No changes applied.')
             return
         for ch in self.chains:
             if ch.id == key:
@@ -514,8 +515,8 @@ class Model(Atomselection):
 
     def insert_chain(self, pos, new_chain):
         if new_chain.id in self.chdic:
-            print 'Chain identifier %s already in use!' % new_chain.id
-            print 'Changing chain identifier to 0'
+            print('Chain identifier %s already in use!' % new_chain.id)
+            print('Changing chain identifier to 0')
             new_chain.set_chain_id('0')
         self.chains.insert(pos, new_chain)
         self.resl_from_chains()
