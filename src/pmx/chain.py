@@ -55,11 +55,12 @@ Some methods:
 
 """
 
-from atomselection import Atomselection
-from molecule import Molecule
+from __future__ import absolute_import, print_function, division
 import copy
-import library
 from numpy import array, linalg, pi, dot, arccos, cross
+from . import library
+from .atomselection import Atomselection
+from .molecule import Molecule
 from .geometry import Rotation
 import sys
 
@@ -417,7 +418,7 @@ class Chain(Atomselection):
     def __prepare_cterm_for_extension(self):
         cterm = self.cterminus()
         if cterm.resname not in library._protein_residues:
-            print " Cannot attach to this residue! ", cterm.resname
+            print(" Cannot attach to this residue! ", cterm.resname)
             sys.exit(1)
         a = cterm.fetch_atoms('OXT')
         if a:
