@@ -36,6 +36,8 @@ and to allow fast neighborsearching from a python script. With time, **pmx**
 has also become a library for the setup and analysis of alchemical free energy
 calculations in Gromacs."""
 
+from __future__ import absolute_import, print_function, division
+
 __version__ = '2.0dev'
 
 PMX_VERSION = __version__

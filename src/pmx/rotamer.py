@@ -34,7 +34,6 @@
 library"""
 
 from __future__ import absolute_import, print_function, division
-from . import molecule
 from .library import pmx_data_file, _aacids_dic
 from .geometry import fit
 try:
@@ -169,6 +168,7 @@ def real_resname(r):
 
 def get_rotamers(bbdep, resname, phi, psi, residue=False,
                  hydrogens=True, full=False):
+    from . import molecule
     key = (round(phi*.1, 0)*10, round(psi*.1, 0)*10)
     if resname not in ['ALA', 'GLY']:
         real_res = real_resname(resname)
