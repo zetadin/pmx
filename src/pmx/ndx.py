@@ -33,9 +33,10 @@
 """Module containing fuctions dealing with Gromacs index files.
 """
 
-from parser import readSection
+from __future__ import absolute_import, print_function, division
 import re
 import sys
+from .parser import readSection
 
 
 class IndexGroup:
@@ -161,7 +162,7 @@ class IndexFile:
 def get_index(atom_list=None, residue_list=None, chain_list=None):
     """ return atom indices from a list of atoms/residues/chains"""
     if not atom_list and not residue_list and not chain_list:
-        print 'Error: Need list~'
+        print('Error: Need list~')
         sys.exit(1)
     if atom_list:
         lst = map(lambda a: a.id, atom_list)

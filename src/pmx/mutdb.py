@@ -33,10 +33,11 @@
 """Functions to read the mutation database
 """
 
-from model import Model
-from atom import Atom
-from molecule import Molecule
-from parser import readSection, kickOutComments, parseList
+from __future__ import absolute_import, print_function, division
+from .model import Model
+from .atom import Atom
+from .molecule import Molecule
+from .parser import readSection, kickOutComments, parseList
 
 
 def read_mutpdb(filename='mutations_oplsaa.pdb'):
