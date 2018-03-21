@@ -37,6 +37,7 @@ free energy simulations.
 from __future__ import print_function
 import sys
 import argparse
+from builtins import input
 from pmx import library
 from pmx.model import Model
 from pmx.parser import read_and_format
@@ -63,7 +64,7 @@ def _print_sorted_dict(d):
 
 
 def _int_input():
-    inp = raw_input()
+    inp = input()
     try:
         inp = int(inp)
         return inp
@@ -97,7 +98,7 @@ def _check_residue_name(res):
 
 def _ask_next():
     sys.stdout.write('\nApply another mutation [y/n]? ')
-    res = raw_input().lower()
+    res = input().lower()
     if res == 'y':
         return True
     elif res == 'n':
@@ -202,7 +203,7 @@ class InteractiveSelection:
                 tl = library._aacids_ext_charmm.values()
 
         while aa is None:
-            aa = raw_input().upper()
+            aa = input().upper()
             # some special residues:
             #   CM - deprotonated cysteine
             #   YM - deprotonated tyrosine
@@ -229,7 +230,7 @@ class InteractiveSelection:
         print('\nSelect new base for %s-%s: ' % (residue.id, residue.resname))
         sys.stdout.write('One-letter code: ')
         while aa is None:
-            aa = raw_input().upper()
+            aa = input().upper()
             if residue.moltype == 'dna' and aa not in ['A', 'C', 'G', 'T']:
                 sys.stdout.write('Unknown DNA residue "%s"!\nOne-letter code: ' % aa)
                 aa = None
