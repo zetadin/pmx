@@ -36,11 +36,12 @@
 from __future__ import absolute_import, print_function, division
 import os
 import sys
-from glob import glob
 import types
 import numpy as np
 import re
 import logging
+from builtins import input
+from glob import glob
 
 
 # =============
@@ -220,7 +221,7 @@ def ff_selection(gmxlib=None):
     # allow choice of ff
     print('')
     print('Enter the index [i] of the chosen forcefield: ', end='')
-    i = int(raw_input())
+    i = int(input())
     ff = ffs_dict[i]
 
     return ff
