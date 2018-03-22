@@ -6,7 +6,7 @@
 # notices.
 #
 # ----------------------------------------------------------------------
-# pmx is Copyright (C) 2006-2013 by Daniel Seeliger
+# pmx is Copyright (C) 2006-2018 by Daniel Seeliger
 #
 #                        All Rights Reserved
 #
@@ -42,11 +42,12 @@ __version__ = '2.0dev'
 
 PMX_VERSION = __version__
 
-import os
-from .atom import *
-from .molecule import *
-from .chain import *
-from .model import *
-from .estimators import *
+from .atom import Atom
+from .molecule import Molecule
+from .chain import Chain
+from .model import Model
+from .forcefield import Topology
+from .estimators import BAR, Crooks, Jarz
 from .analysis import *
 from .alchemy import *
+from . import gmx
