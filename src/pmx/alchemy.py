@@ -258,8 +258,9 @@ def fill_bstate(topol, recursive=True, verbose=False):
     # -------------
     # Main topology
     # -------------
-    print('\nlog_> Reading input %s file "%s"'
-          % (topol.filename.split('.')[-1], topol.filename))
+    if verbose is True:
+        print('\nlog_> Reading input %s file "%s"'
+              % (topol.filename.split('.')[-1], topol.filename))
     pmx_top = process_topol(topol=topol, ff=ff, ffbonded_file=ffbonded_file,
                             verbose=verbose)
 
