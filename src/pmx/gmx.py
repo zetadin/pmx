@@ -140,7 +140,7 @@ def grompp(f, c, p, o='grompp.tpr', maxwarn=0, other_flags=''):
 def genion(s, p, o='genion.gro', np=0, nn=0, conc=0.15, neutral=True,
            other_flags=''):
 
-    """Simple ``gmx genion`` wrapper. By default, group SOL will be replaced
+    """Simple ``gmx genion`` wrapper. By default, group 'SOL' will be replaced
     by ions.
 
     Parameters
@@ -231,3 +231,32 @@ def trjconv(f, s, o='trjconv.xtc', ur='rect', pbc='none', fit='none',
              '{other_flags}'.format(gmx=gmx, f=f, s=s, o=o, ur=ur, pbc=pbc, fit=fit,
                                     out_grp=out_grp, fit_grp=fit_grp, other_flags=other_flags),
              shell=True)
+
+
+def mdrun(s, deffnm='md', verbose=False, other_flags=''):
+    """Simple ``gmx mdrun`` wrapper.
+
+    Parameters
+    ----------
+    s : str
+        input tpr file
+    deffnm : str, optional
+        set the default filename for all file options. Default is 'md'.
+    verbose : bool, optional
+        whether to activate verbose flag in Gromacs mdrun. Default is False.
+    other_flags : str, optional
+        additional flags to pass as you would type them in the shell.
+
+    Returns
+    -------
+    None
+
+    """
+
+    gmx = get_gmx()
+
+    if verbose is True:
+        other_flags += ' -v'
+
+    call('{gmx} mdrun -s {s} -deffnm {deffnm} {other_flags}'.format(gmx=gmx, s=s, deffnm=deffnm, other_flags=other_flags),
+         shell=True)
