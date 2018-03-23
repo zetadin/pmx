@@ -34,7 +34,7 @@ import argparse
 from pmx.forcefield import Topology
 from pmx.utils import ff_selection
 from pmx.utils import multiple_replace
-from pmx.alchemy import fill_bstate, write_split_top
+from pmx.alchemy import gen_hybrid_top, write_split_top
 
 
 def _change_outfile_format(filename, ext):
@@ -132,8 +132,8 @@ def main(args):
     topol = Topology(top_file, ff=ff, version='new')
 
     # fill the B states
-    pmxtop, pmxitps = fill_bstate(topol=topol, recursive=recursive,
-                                  verbose=True)
+    pmxtop, pmxitps = gen_hybrid_top(topol=topol, recursive=recursive,
+                                     verbose=True)
 
     # write hybrid itps if present
     replace = {}

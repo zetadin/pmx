@@ -16,7 +16,7 @@ from .mutdb import read_mtp_entry
 from .forcefield import Topology, _check_case, _atoms_morphe
 from .utils import get_mtp_file
 
-__all__ = ['mutate', 'fill_bstate', 'write_split_top']
+__all__ = ['mutate', 'gen_hybrid_top', 'write_split_top']
 
 
 # ==============
@@ -184,7 +184,7 @@ def get_nuc_hybrid_resname(residue, new_nuc_name):
     return(hybrid_residue_name, residue.resname[1], new_nuc_name)
 
 
-def fill_bstate(topol, recursive=True, verbose=False):
+def gen_hybrid_top(topol, recursive=True, verbose=False):
     """Fills the bstate of a topology file containing pmx hybrid residues. This
     can be either a top or itp file. If the file contains other itp files via
     include statements, the function can iterate through them if the recursive

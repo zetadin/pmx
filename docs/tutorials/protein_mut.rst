@@ -43,9 +43,9 @@ use the ``gmx`` tool ``pdb2gmx`` using the same force field you previously chose
 The output topology ``topol.top`` contains the hybrid residue W6F, like the structure
 file ``conf.pdb``. However, the B-state columns do not yet contain the right
 information for Gromacs to run the calculations. To fill the B-states with the
-necessary data, you can use the ``pmx filltop`` script::
+necessary data, you can use the ``pmx gentop`` script::
 
-    $ pmx filltop -p topol.top -o newtop.top
+    $ pmx gentop -p topol.top -o newtop.top
 
 Now with the ``conf.pdb`` and ``newtop.top`` files you are ready to setup the system
 as you would do for a typical Gromacs simulation.
@@ -70,7 +70,7 @@ also discussed in :ref:`the examples <examples>`::
 
     # load topology, fill B states, then write a new topology file
     topol = Topology('topol.top')
-    pmxtop, _ = fill_bstate(topol)
+    pmxtop, _ = gen_hybrid_top(topol)
     pmxtop.write('newtop.top')
 
 

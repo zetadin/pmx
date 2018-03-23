@@ -6,7 +6,7 @@ from argparse import ArgumentParser, RawTextHelpFormatter, SUPPRESS
 import sys
 
 
-class PmxCli(object):
+class PmxCli:
 
     def __init__(self):
         parser = ArgumentParser(
@@ -17,7 +17,7 @@ class PmxCli(object):
 
     Available commands are:
         mutate     Mutate protein or DNA/RNA
-        filltop    Fill hybrid topology with B states
+        gentop     Fill hybrid topology with B states
         analyse    Estimate free energy from Gromacs xvg files
 
         genlib     Generate pmx ff library
@@ -39,17 +39,17 @@ class PmxCli(object):
         from . import mutate
         mutate.entry_point()
 
-    def filltop(self):
-        from . import fill_topology_bstates
-        fill_topology_bstates.entry_point()
+    def gentop(self):
+        from . import generate_hybrid_topology
+        generate_hybrid_topology.entry_point()
 
     def analyse(self):
         from . import analyze_dgdl
         analyze_dgdl.entry_point()
 
     def genlib(self):
-        from . import generate_mutant_lib
-        generate_mutant_lib.entry_point()
+        from . import generate_hybrid_residue
+        generate_hybrid_residue.entry_point()
 
     def gmxlib(self):
         from . import set_gmxlib

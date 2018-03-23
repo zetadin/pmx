@@ -9,12 +9,12 @@ there are no itp files of other molecules included in the topology.
 ::
 
     >>> from pmx.forcefield import Topology
-    >>> from pmx.alchemy import fill_bstate
+    >>> from pmx.alchemy import gen_hybrid_top
 
     >>> # load the topology file
     >>> top = Topology('topol.top')
     >>> # fill B states for hybrid residues present
-    >>> pmxtop, _ = fill_bstate(topol=top)
+    >>> pmxtop, _ = gen_hybrid_top(topol=top)
     >>> # write topology to a new file
     >>> pmxtop.write('pmxtop.top')
 
@@ -26,7 +26,7 @@ these too can be modified and returned by setting the ``recursive`` argument to 
     >>> # load the topology file
     >>> top = Topology('topol2.top')
     >>> # fill B states for hybrid residues present in topol2.itp
-    >>> pmxtop, pmxitps = fill_bstate(topol=top, recursive=True)
+    >>> pmxtop, pmxitps = gen_hybrid_top(topol=top, recursive=True)
     >>> # write topology and itps to a new file
     >>> pmxtop.write('pmxtop.top')
     >>> for i, itp in enumerate(pmxitps):
@@ -36,7 +36,7 @@ these too can be modified and returned by setting the ``recursive`` argument to 
 If you like getting lots of screen output, you can set the ``verbose`` argument
 to ``True``. ::
 
-    >>> pmxtop, pmxitps = fill_bstate(topol=top, recursive=True, verbose=True)
+    >>> pmxtop, pmxitps = gen_hybrid_top(topol=top, recursive=True, verbose=True)
     log_> Reading input top file "topol2.top"
     log_> Making bonds for state B -> 0 bonds with perturbed atoms
     log_> Making angles for state B -> 0 angles with perturbed atoms

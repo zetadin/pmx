@@ -472,8 +472,7 @@ class Model(Atomselection):
         elif ext == 'gro':
             return self.__readGRO(filename)
         else:
-            print('ERROR: Can only read pdb or gro!', file=sys.stderr)
-            sys.exit(1)
+            raise IOError('ERROR: Can only read pdb or gro!')
 
     def renumber_residues(self):
         for i, res in enumerate(self.residues):

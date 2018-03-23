@@ -1,12 +1,12 @@
-Filltop
+Gentop
 -------
 
-The ``pmx filltop`` script can be used to fill out the B states for a topology
+The ``pmx gentop`` script can be used to fill out the B states for a topology
 file containing hybrid residues. You can obtain such topology by running
 the Gromacs command **pdb2gmx** on a structure file generated with the
 :ref:`pmx mutate <script_mutate>` command. ::
 
-    $ pmx filltop -h
+    $ pmx gentop -h
     usage: pmx [-h] [-p topol] [-o outfile] [-ff ff] [--split] [--scale_mass]
                [--norecursive]
 
