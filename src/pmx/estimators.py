@@ -11,7 +11,7 @@ __all__ = ['Jarz', 'Crooks', 'BAR']
 kb = 0.00831447215   # kJ/(K*mol)
 
 
-class Jarz(object):
+class Jarz:
     '''Jarzynski estimator.
 
     Description...
@@ -160,7 +160,7 @@ class Jarz(object):
         return err_blocks
 
 
-class Crooks(object):
+class Crooks:
     '''Crooks Gaussian Intersection (CGI) estimator. The forward and reverse work
     values are fitted to Gaussian functions and their intersection is taken
     as the free energy estimate. In some cases, when the two Gaussians are very
@@ -404,7 +404,7 @@ class Crooks(object):
         return err_blocks
 
 
-class BAR(object):
+class BAR:
     '''Bennett acceptance ratio (BAR).
 
     Description...
