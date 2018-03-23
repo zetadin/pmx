@@ -1,3 +1,5 @@
+.. _example_mutate:
+
 Create Mutant Structure
 -----------------------
 

@@ -4,7 +4,7 @@ Mutate
 ------
 
 The ``pmx mutate`` script can be used to create a hybrid structure file, which
-can be used for alchemical free energy calculations as shown in the tutorial. ::
+can be used for alchemical free energy calculations as shown in the :ref:`tutorials <tutorials>`. ::
 
     $ pmx mutate -h
     usage: mutate.py [-h] [-f infile] [-fB infileB] [-o outfile] [-ff ff]

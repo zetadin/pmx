@@ -1,8 +1,11 @@
+.. _script_analyse:
+
 Analyse
 -------
 
 The ``pmx analyse`` script can be used to analyse the xvg output from Gromacs.
-The tutorial [add link] discusses the analysis of the calculations more in detail. ::
+Effectively, it allows to perform all the steps described in the :ref:`API example <example_analysis>` 
+and more using a convenient command line tool. ::
 
     $ pmx analyse -h
     usage: pmx [-h] -fA dgdl [dgdl ...] -fB dgdl [dgdl ...]
@@ -35,7 +38,7 @@ The tutorial [add link] discusses the analysis of the calculations more in detai
                             bootstrap).
     -n nblocks              Number of blocks to divide the data into for an
                             estimate of the standard error. You can use this when
-                            multiple independent equilibrium simulationshave been
+                            multiple independent equilibrium simulations have been
                             run so to estimate the error from the repeats. Default
                             is 1 (i.e. no repeats). It assumes the dgdl files for
                             each repeat are read in order and are contiguous, e.g.

@@ -35,6 +35,14 @@ pmx.estimators
     :undoc-members:
     :show-inheritance:
 
+pmx.gmx
+-------
+
+.. automodule:: pmx.gmx
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 pmx.builder
 -----------
 
@@ -103,14 +111,6 @@ pmx.rotamer
 -----------
 
 .. automodule:: pmx.rotamer
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pmx.tCNC
---------
-
-.. automodule:: pmx.tCNC
     :members:
     :undoc-members:
     :show-inheritance:

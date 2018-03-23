@@ -23,6 +23,9 @@ The ``pmx`` help will show the scripts available. ::
         filltop    Fill hybrid topology with B states
         analyse    Estimate free energy from Gromacs xvg files
 
+        genlib     Generate pmx ff library
+        gmxlib     Show/set GMXLIB path
+
     optional arguments:
         -h, --help  show this help message and exit
 
