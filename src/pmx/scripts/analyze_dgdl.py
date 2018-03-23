@@ -118,6 +118,40 @@ def parse_options():
                         'are contiguous, e.g. dgdl_0 to dgdl_9 is the first '
                         'repeat, dgdl_10 to dgdl_19 is the second one, etc.',
                         default=1)
+    parser.add_argument('-w',
+                        metavar='plot',
+                        dest='wplot',
+                        type=str,
+                        help='Name of image file showing the distribution of '
+                        'work values. Default is "wplot.png". If you want to '
+                        'avoid saving this plot, pass "none" to this flag. '
+                        'If you choose to calculate the free energy with '
+                        'multiple estimators, the dG values shown on the plot '
+                        'will be chosen following the hierarchy '
+                        'BAR > CGI > JARZ.',
+                        default='wplot.png')
+    parser.add_argument('--nbins',
+                        metavar='',
+                        dest='nbins',
+                        type=int,
+                        help='Number of histograms bins for the plot. '
+                        'Default is 20.',
+                        default=20)
+    parser.add_argument('--dpi',
+                        metavar='',
+                        dest='dpi',
+                        type=int,
+                        help='Resolution of the plot. Default is 300.',
+                        default=300)
+    parser.add_argument('--reverseB',
+                        dest='reverseB',
+                        help='Whether to reverse the work values for the '
+                        'backward (B->A) transformation. This is useful '
+                        'when in Gromacs both forward and reverse simulations '
+                        'were run from lambda zero to one. '
+                        'Default is False.',
+                        default=False,
+                        action='store_true')
     parser.add_argument('--integ_only',
                         dest='integ_only',
                         help='Whether to do integration only; the integrated '
@@ -157,15 +191,6 @@ def parse_options():
                         'for the reverse (B->A) tranformation. Default is '
                         '"integB.dat"',
                         default='integB.dat')
-    parser.add_argument('--reverseB',
-                        dest='reverseB',
-                        help='Whether to reverse the work values for the '
-                        'backward (B->A) transformation. This is useful '
-                        'when in Gromacs both forward and reverse simulations '
-                        'were run from lambda zero to one.'
-                        'Default is False.',
-                        default=False,
-                        action='store_true')
     # The following are mutually exclusive options
     exclus.add_argument('--skip',
                         metavar='',
@@ -179,10 +204,10 @@ def parse_options():
                         metavar='',
                         dest='slice',
                         type=int,
-                        help='Subset of trajectories to analyze.'
-                        'Provide list slice, e.g. "10 50" will'
-                        ' result in selecting dgdl_files[10:50].'
-                        ' Default is all.',
+                        help='Subset of trajectories to analyze. '
+                        'Provide list slice, e.g. "10 50" will '
+                        'result in selecting dgdl_files[10:50]. '
+                        'Default is all.',
                         default=None,
                         nargs=2)
     exclus.add_argument('--rand',
@@ -231,27 +256,6 @@ def parse_options():
                         'holds. Default is True; this flag turns it to False.',
                         default=True,
                         action='store_false')
-    parser.add_argument('--cgi_plot',
-                        metavar='',
-                        dest='cgi_plot',
-                        type=str,
-                        help='Whether to plot the work histograms along with '
-                        'the CGI results. If the flag is used, you also need'
-                        'to specify a filename.',
-                        default=None)
-    parser.add_argument('--nbins',
-                        metavar='',
-                        dest='nbins',
-                        type=int,
-                        help='Number of histograms bins for the plot. '
-                        'Default is 10.',
-                        default=10)
-    parser.add_argument('--dpi',
-                        metavar='',
-                        dest='dpi',
-                        type=int,
-                        help='Resolution of the plot. Default is 300.',
-                        default=300)
     parser.add_argument('--quiet',
                         dest='quiet',
                         help='Minimal screen output.',
@@ -448,10 +452,10 @@ def main(args):
 
         _tee(out, '  CGI: dG = {dg:8.{p}f} {u}'.format(dg=cgi.dg*unit_fact,
                                                        p=prec, u=units), quiet=quiet)
-        _tee(out, '  CGI: Std Err (bootstrap:parametric) = {e:8.{p}f} {u}'.format(e=cgi.err_boot1*unit_fact,
-                                                                                  p=prec, u=units), quiet=quiet)
 
         if nboots > 0:
+            _tee(out, '  CGI: Std Err (bootstrap:parametric) = {e:8.{p}f} {u}'.format(e=cgi.err_boot1*unit_fact,
+                                                                                      p=prec, u=units), quiet=quiet)
             _tee(out, '  CGI: Std Err (bootstrap) = {e:8.{p}f} {u}'.format(e=cgi.err_boot2*unit_fact,
                                                                            p=prec, u=units), quiet=quiet)
 
@@ -546,11 +550,50 @@ def main(args):
 
     _tee(out, ' ========================================================', quiet=quiet)
 
-    if 'cgi' in methods and args.cgi_plot is not None:
+    # -----------------------
+    # plot work distributions
+    # -----------------------
+    if args.wplot.lower() is not 'none':
         if quiet is False:
             print('\n   Plotting histograms......')
-        plot_work_dist(fname=args.cgi_plot, wf=res_ab, wr=res_ba, dG=cgi.dg,
-                       dGerr=cgi.err_boot1, nbins=args.nbins, dpi=args.dpi)
+        # hierarchy of estimators: BAR > Crooks > Jarz
+        if 'bar' in locals():
+            show_dg = bar.dg * unit_fact
+            # hierarchy of error estimates : blocks > boots > analytical
+            if hasattr(bar, 'err_blocks'):
+                show_err = bar.err_blocks * unit_fact
+            elif hasattr(bar, 'err_boot') and not hasattr(bar, 'err_blocks'):
+                show_err = bar.err_boot * unit_fact
+            else:
+                show_err = bar.err * unit_fact
+            # plot
+            plot_work_dist(fname=args.wplot, wf=res_ab, wr=res_ba, dG=show_dg,
+                           dGerr=show_err, nbins=args.nbins, dpi=args.dpi,
+                           units=units)
+        elif 'bar' not in locals() and 'cgi' in locals():
+            show_dg = cgi.dg * unit_fact
+            # hierarchy of error estimates : blocks > boots
+            if hasattr(cgi, 'err_blocks'):
+                show_err = cgi.err_blocks * unit_fact
+            elif hasattr(cgi, 'err_boot2') and not hasattr(cgi, 'err_blocks'):
+                show_err = cgi.err_boot2 * unit_fact
+            else:
+                show_err = None
+            # plot
+            plot_work_dist(fname=args.wplot, wf=res_ab, wr=res_ba, dG=show_dg,
+                           dGerr=show_err, nbins=args.nbins, dpi=args.dpi,
+                           units=units)
+        elif 'bar' not in locals() and 'cgi' not in locals() and 'jarz' in locals():
+            # for the moment, show values only under specific circumstances
+            if hasattr(jarz, 'dg_mean'):
+                show_dg = jarz.dg_mean * unit_fact
+            else:
+                show_dg = None
+            show_err = None
+            # plot
+            plot_work_dist(fname=args.wplot, wf=res_ab, wr=res_ba, dG=show_dg,
+                           dGerr=show_err, nbins=args.nbins, dpi=args.dpi,
+                           units=units)
 
     if quiet is True:
         print('Done')
