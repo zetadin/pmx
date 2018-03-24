@@ -3,7 +3,7 @@ pmx: alchemistry in gromacs
 
 **Warning:** this is a development version of *pmx*, it is not stable or reliable yet. You are welcome to 
 try/test it and provide feedback, but use use at your own risk. The current stable version of *pmx* can
-be found here: <https://github.com/dseeliger/pmx>
+be found here: https://github.com/dseeliger/pmx
 
 **pmx** is a python library that allows users to setup and analyse molecular
 dynamics simulations with the `Gromacs <http://gromacs.org>`_ package.
