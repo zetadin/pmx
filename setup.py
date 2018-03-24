@@ -11,7 +11,7 @@ from setuptools import setup, Extension
 
 
 def readme():
-    with open('README.md') as f:
+    with open('README.rst') as f:
         return f.read()
 
 # ----------
@@ -46,9 +46,9 @@ setup(name='pmx',
       classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: GNU General Public License (GPL)',
-        'Programming Language :: Python :: 2.7',
-        'Topic :: Scientific/Engineering :: Bio-Informatics',
-        'Topic :: Scientific/Engineering :: Chemistry',
+        'Programming Language :: Python',
+        'Intended Audience :: Science/Research',
+        'Topic :: Scientific/Engineering',
       ],
       url='https://github.com/dseeliger/pmx/',
       author='Daniel Seeliger',
@@ -61,6 +61,6 @@ setup(name='pmx',
       ext_modules=extensions,
       tests_require=['pytest'],
       install_requires=['numpy', 'scipy', 'matplotlib', 'future'],
-      python_requires=">=2.6",
+      python_requires=">=2.7",
       entry_points={'console_scripts': ['pmx = pmx.scripts.cli:entry_point']},
       )
