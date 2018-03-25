@@ -111,25 +111,23 @@ class Frame:
         return self.step
     def get_prec(self):
         return self.prec
-	def get_box(self, mode='std'):
-		if mode == 'std':
-			box = [[0.,0.,0.],
-				   [0.,0.,0.],
-				   [0.,0.,0.]]
-		elif mode == 'numpy':
-			box = np.zeros((3,3))
-		for i in range(3):
-			for k in range(3):
-				box[i][k] = self.box[i][k]
-		return box
-
+    def get_box(self, mode='std'):
+        if mode == 'std':
+            box = [[0.,0.,0.],
+                   [0.,0.,0.],
+                   [0.,0.,0.]]
+        elif mode == 'numpy':
+            box = np.zeros((3,3))
+        for i in range(3):
+            for k in range(3):
+                box[i][k] = self.box[i][k]
+        return box
 
 
     def __str__(self):
 
         s = '< xdrlib.Frame: natoms = %d | step = %d | time = %8.2f >' % (self.get_natoms(), self.get_step(), self.get_time())
         return s
-
 
 
 
