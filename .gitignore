@@ -1,6 +1,12 @@
 *.[oa]
 *~
 *.pyc
-build.sh
 .localhistory
-build
+
+# tests
+.coverage
+.pytest_cache/
+tests/__pycache__/
+
+# docs 
+docs/build

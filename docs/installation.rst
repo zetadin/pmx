@@ -1,0 +1,48 @@
+Installation
+============
+
+At the moment you can install **pmx** from source. ::
+
+    $ python setup.py install
+
+Or from within the pmx folder. ::
+
+    $ pip install .
+
+Software requirements:
+
+* numpy_
+* scipy_
+* matplotlib_
+
+GMXLIB
+------
+In order to be able to use the hybrid/alchemical force fields available in
+**pmx**, the environment variable ``$GMXLIB`` needs to be set. You can either set
+``$GMXLIB`` in each of you shell sessions when you want to use **pmx**, or you
+can set the variable directly in your ~/.bashrc file.
+
+The ``pmx gmxlib`` command will tell you where the force field libraries
+were installed, and optionally allow you to automatically add ``$GMXLIB``
+to your bashrc file. ::
+
+    $ pmx gmxlib
+
+    In order to be able to use the hybrid/alchamical force fields
+    available in pmx, the environment variable GMXLIB needs to be set.
+
+    The path to your pmx force field library is the following:
+    /path/to/your/pmx/data/mutff
+
+    You can either set GMXLIB in your shell session as follows:
+    $ export GMXLIB=/path/to/your/pmx/data/mutff
+
+    Or you can add this directly in your bashrc file.
+
+    Do you wish pmx to set the GMXLIB variable in your ~/.bashrc? [yes|no]
+    >>>
+
+
+.. _numpy: http://www.numpy.org/
+.. _scipy: https://www.scipy.org/
+.. _matplotlib: https://matplotlib.org/
