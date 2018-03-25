@@ -24,15 +24,16 @@ install:
 
 script:
     - py.test --cov pmx tests/
-    - if [[ $TRAVIS_PYTHON_VERSION == "3.6" ]]; then
-    - set -e
-    - pip install doctr
-    - pip install sphinx sphinx_rtd_theme msmb_theme
-    - cd docs
-    - make html
-    - cd ../
-    - doctr deploy . --built-docs docs/build/html/
-    - fi
+    - |
+      if [[ $TRAVIS_PYTHON_VERSION == "3.6" ]]; then
+        set -e
+        pip install doctr
+        pip install sphinx sphinx_rtd_theme msmb_theme
+        cd docs
+        make html
+        cd ../
+        doctr deploy . --built-docs docs/build/html/
+      fi
 
 after_success:
     - codecov
