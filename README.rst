@@ -1,6 +1,8 @@
 pmx: alchemistry in gromacs
 ===========================
 
+|build|
+
 **Warning:** this is a development version of ``pmx``, it is not stable or reliable yet. You are welcome to 
 try/test it and provide feedback, but use at your own risk. The current stable version of ``pmx`` can
 be found here: https://github.com/dseeliger/pmx
@@ -44,3 +46,8 @@ Citations
 License
 -------
 ``pmx`` is licensed under the GNU Lesser General Public License v3.0 (LGPL v3).
+
+.. |build| image:: https://travis-ci.org/deGrootLab/pmx.svg?branch=master
+    :alt: Build Status
+    :scale: 100%
+    :target: https://travis-ci.org/deGrootLab/pmx
