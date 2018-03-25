@@ -24,7 +24,7 @@ install:
 
 script:
     - py.test --cov pmx tests/
-    - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then
+    - if [[ $TRAVIS_PYTHON_VERSION == "3.6" ]]; then
     - set -e
     - pip install doctr
     - pip install sphinx sphinx_rtd_theme msmb_theme
