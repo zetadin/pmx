@@ -22,8 +22,8 @@ __all__ = ['mutate', 'gen_hybrid_top', 'write_split_top']
 # ==============
 # Main Functions
 # ==============
-def mutate(m, mut_resid, mut_resname, ff, refB=None, inplace=False,
-           verbose=False):
+def mutate(m, mut_resid, mut_resname, ff, mut_chain=None,
+           refB=None, inplace=False, verbose=False):
     """Creates an hybrid structure file.
 
     Parameters
@@ -33,9 +33,13 @@ def mutate(m, mut_resid, mut_resname, ff, refB=None, inplace=False,
     mut_resid : int
         the ID of the residue to be mutated.
     mut_resname : str
-        the target residue.
+        the name of the target residue.
     ff : str
         the forcefield to use.
+    mut_chain : str, optional
+        the chain ID for the residue you want to mutate. This is needed if you
+        have multiple chains and are providing a Model that did not have its
+        residues renumbered.
     refB : str, optional
         reference structure file of the B state in PDB or GRO format. If it is
         provided, the dummy atoms will be built based on the position of the
@@ -58,15 +62,9 @@ def mutate(m, mut_resid, mut_resname, ff, refB=None, inplace=False,
     elif inplace is False:
         m2 = deepcopy(m)
 
-    # check selection is valid
-    if mut_resid not in [r.id for r in m2.residues]:
-        raise ValueError('mut_resid %s is not in the input Model' % mut_resid)
-    # check selection is unique
-    if [r.id for r in m2.residues].count(mut_resid) != 1:
-        raise ValueError('choice of mut_resid results in non-unique selection')
-
     # get the residue based on the index
-    residue = m2.fetch_residues_by_ID(mut_resid)
+    # fetch_residue also checks the selection is valid and unique
+    residue = m2.fetch_residue(idx=mut_resid, chain=mut_chain)
     # get the correct mtp file
     mtp_file = get_mtp_file(residue, ff)
 
@@ -127,11 +125,10 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None,
                         atom.x = atomB.x
     _rename_back(residue, hash1)
     _rename_back(hybrid_res, hash2)
-    # rename residue atoms back
 
-    print([r.id for r in m.residues])
+    # do the actual replacement
     m.replace_residue(residue=residue, new=hybrid_res, bKeepResNum=True)
-    print([r.id for r in m.residues])
+
     if verbose is True:
         print('log_> Inserted hybrid residue %s at position %d (chain %s)' %
               (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
