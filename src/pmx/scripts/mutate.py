@@ -130,31 +130,67 @@ class InteractiveSelection:
 
     """
 
-    def __init__(self, m, ff):
+    def __init__(self, m, ff, renumbered=True):
         self.m = m
         self.ffpath = get_ff_path(ff)
+
+        # get selection
+        if renumbered is True:
+            self.mut_chain = None
+        elif renumbered is False:
+            self.mut_chain = self.select_chain()
 
         self.mut_resid = self.select_residue()
         self.mut_resname = self.select_mutation()
 
+    def select_chain(self):
+        """Ask for the chain id to mutate.
+        """
+        # show selection
+        valid_ids = [c.id for c in self.m.chains]
+        print('\nSelect a chain:')
+        for c in self.m.chains:
+            print('{0:>6}'.format(c.id))
+
+        # select id
+        selected_chain_id = None
+        while selected_chain_id is None:
+            sys.stdout.write('Enter chain ID: ')
+            selected_chain_id = input()
+            if selected_chain_id is not None and selected_chain_id not in valid_ids:
+                print('Chain id %s not among valid IDs -> Try again' % selected_chain_id)
+                selected_chain_id = None
+        return selected_chain_id
+
     def select_residue(self):
         """Ask for the residue id to mutate.
         """
-        valid_ids = range(1, len(self.m.residues)+1)
-        print('\nSelect residue to mutate:')
-        for i, r in enumerate(self.m.residues):
-            if r.moltype not in ['water', 'ion']:
-                sys.stdout.write('%6d-%s-%s' % (r.id, r.resname, r.chain_id))
-                if r.id % 6 == 0:
-                    print("")
+        # show selection if we do not need chain ID
+        if self.mut_chain is None:
+            valid_ids = [r.id for r in self.m.residues]
+            print('\nSelect residue to mutate:')
+            for i, r in enumerate(self.m.residues):
+                if r.moltype not in ['water', 'ion']:
+                    sys.stdout.write('%6d-%s-%s' % (r.id, r.resname, r.chain_id))
+                    if (i+1) % 6 == 0:
+                        print("")
+        elif self.mut_chain is not None:
+            valid_ids = [r.id for r in self.m.chdic[self.mut_chain].residues]
+            print('\nSelect residue to mutate:')
+            for i, r in enumerate(self.m.chdic[self.mut_chain].residues):
+                if r.moltype not in ['water', 'ion']:
+                    sys.stdout.write('%6d-%s-%s' % (r.id, r.resname, r.chain_id))
+                    if (i+1) % 6 == 0:
+                        print("")
         print("")
+
+        # select id
         selected_residue_id = None
         while not selected_residue_id:
             sys.stdout.write('Enter residue number: ')
             selected_residue_id = _int_input()
             if selected_residue_id is not None and selected_residue_id not in valid_ids:
-                print('Residue id %d not in range %d-%d -> Try again' %
-                      (selected_residue_id, 1, len(self.m.residues)))
+                print('Residue id %d not among valid IDs -> Try again' % selected_residue_id)
                 selected_residue_id = None
         return selected_residue_id
 
@@ -162,7 +198,7 @@ class InteractiveSelection:
         """Ask which residue to mutate to.
         """
 
-        residue = self.m.residues[self.mut_resid - 1]
+        residue = self.m.fetch_residue(idx=self.mut_resid, chain=self.mut_chain)
         if residue.moltype == 'protein':
             aa = self.select_aa_mutation(residue)
         elif residue.moltype in ['dna', 'rna']:
@@ -256,8 +292,15 @@ The mutation information and dummy placements are taken from the hybrid residue
 database "mutres.mtp". The best way to use this script is to take a pdb/gro file
 that has been written with pdb2gmx with all hydrogen atoms present.
 
+By default, all residues are renumbered starting from 1, so to have unique
+residue IDs. If you want to keep the original residue IDs, you can use the flag
+--keep_resid. In this case, you will also need to provide chain information
+in order to be able to mutate the desired residue.
+
 The program can either be executed interactively or via script. The script file
-simply has to consist of "resi_number target_residue" pairs.
+simply has to consist of "residue_id target_residue_name" pairs (just with some
+space between the id and the name), or "chain_id residue_id target_residue_name"
+if you are keeping the original residue IDs.
 
 The script uses an extended one-letter code for amino acids to account for
 different protonation states. Use the --resinfo flag to print the dictionary.
@@ -298,6 +341,16 @@ different protonation states. Use the --resinfo flag to print the dictionary.
                         type=str,
                         help='Text file with list of mutations (optional).',
                         default=None)
+    parser.add_argument('--keep_resid',
+                        dest='renumber',
+                        help='Whether to renumber all residues or to keep the\n'
+                        'original residue IDs. By default, all residues are\n'
+                        'renumbered so to have unique IDs. With this flags set,\n'
+                        'the original IDs are kept. Because the IDs might not\n'
+                        'be unique anymore, you will also be asked to choose\n'
+                        'the chain ID where the residue you want to mutate is.',
+                        default=True,
+                        action='store_false')
     parser.add_argument('--resinfo',
                         dest='resinfo',
                         help='Show the list of 3-letter -> 1-letter residues',
@@ -362,18 +415,24 @@ def main(args):
     outfile = args.outfile
     ff = args.ff
     script = args.script
+    renumber = args.renumber
 
     # initialise Model
-    m = Model(infile, bPDBTER=True, for_gmx=True)
+    m = Model(infile, renumber_residues=renumber, bPDBTER=True, for_gmx=True)
 
     # if script is provided, do the mutations in that file
     if script is not None:
-        mutations_to_make = read_and_format(script, "is")
+        if renumber is True:
+            mutations_to_make = read_and_format(script, "is")
+        elif renumber is False:
+            mutations_to_make = read_and_format(script, "sis")
+
         for mut in mutations_to_make:
-            _check_residue_name(m.residues[mut[0]-1])
+            _check_residue_name(m.fetch_residue(idx=mut[1], chain=mut[0]))
             mutate(m=m,
-                   mut_resid=mut[0],
-                   mut_resname=mut[1],
+                   mut_chain=mut[0],
+                   mut_resid=mut[1],
+                   mut_resname=mut[2],
                    ff=ff,
                    refB=infileB,
                    inplace=True,
@@ -382,8 +441,9 @@ def main(args):
     else:
         do_more = True
         while do_more:
-            sele = InteractiveSelection(m, ff)
+            sele = InteractiveSelection(m=m, ff=ff, renumbered=renumber)
             mutate(m=m,
+                   mut_chain=sele.mut_chain,
                    mut_resid=sele.mut_resid,
                    mut_resname=sele.mut_resname,
                    ff=ff,
