@@ -10,7 +10,7 @@ import sys
 from copy import deepcopy
 from . import library
 from .model import Model
-from .utils import RangeCheckError, mtpError, UnknownResidueError, MissingTopolParamError
+from .utils import mtpError, UnknownResidueError, MissingTopolParamError
 from .geometry import Rotation, nuc_super, bb_super
 from .mutdb import read_mtp_entry
 from .forcefield import Topology, _check_case, _atoms_morphe
@@ -44,7 +44,7 @@ def mutate(m, mut_resid, mut_resname, ff, refB=None, inplace=False,
     inplace : bool, optional
         whether to modify the input Model in place. Default is False.
     verbose : bool, optional
-        whether to print info. Defaul is False.
+        whether to print info. Default is False.
 
     Returns
     -------
@@ -59,10 +59,14 @@ def mutate(m, mut_resid, mut_resname, ff, refB=None, inplace=False,
         m2 = deepcopy(m)
 
     # check selection is valid
-    if not _check_residue_range(m2, mut_resid):
-        raise RangeCheckError(mut_resid)
-    # get the residue
-    residue = m2.residues[mut_resid - 1]
+    if mut_resid not in [r.id for r in m2.residues]:
+        raise ValueError('mut_resid %s is not in the input Model' % mut_resid)
+    # check selection is unique
+    if [r.id for r in m2.residues].count(mut_resid) != 1:
+        raise ValueError('choice of mut_resid results in non-unique selection')
+
+    # get the residue based on the index
+    residue = m2.fetch_residues_by_ID(mut_resid)
     # get the correct mtp file
     mtp_file = get_mtp_file(residue, ff)
 
@@ -106,7 +110,7 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None,
                                                                   verbose=False)
     bb_super(residue, hybrid_res)
 
-    # VG rename residue atoms
+    # rename residue atoms
     hash1 = _rename_to_match_library(residue)
     hash2 = _rename_to_match_library(hybrid_res)
     _set_conformation(residue, hybrid_res, rotdic)
@@ -123,9 +127,11 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None,
                         atom.x = atomB.x
     _rename_back(residue, hash1)
     _rename_back(hybrid_res, hash2)
-    # VG rename residue atoms back
+    # rename residue atoms back
 
-    m.replace_residue(residue, hybrid_res)
+    print([r.id for r in m.residues])
+    m.replace_residue(residue=residue, new=hybrid_res, bKeepResNum=True)
+    print([r.id for r in m.residues])
     if verbose is True:
         print('log_> Inserted hybrid residue %s at position %d (chain %s)' %
               (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
@@ -147,7 +153,7 @@ def apply_nuc_mutation(m, residue, new_nuc_name, mtp_file, verbose=False):
     for atom in hybrid_res.atoms:
         if atom.name[0] != 'D':
             atom.x = residue[atom.name].x
-    m.replace_residue(residue, hybrid_res)
+    m.replace_residue(residue=residue, new=hybrid_res, bKeepResNum=True)
     if verbose is True:
         print('log_> Inserted hybrid residue %s at position %d (chain %s)' %
               (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
@@ -371,13 +377,6 @@ def _convert_aa_name(aa):
         return library._ext_one_letter[aa.upper()]
     else:
         raise UnknownResidueError(aa)
-
-
-def _check_residue_range(m, idx):
-    valid_ids = range(1, len(m.residues)+1)
-    if idx not in valid_ids:
-        return False
-    return True
 
 
 def _rename_ile(residue):
