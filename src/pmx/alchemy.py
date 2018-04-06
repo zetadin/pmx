@@ -288,8 +288,6 @@ def gen_hybrid_top(topol, recursive=True, verbose=False):
 def write_split_top(pmxtop, outfile='pmxtop.top', scale_mass=False,
                     verbose=False):
     """
-    WARNING: Appears to be currently broken
-
     Write three topology files to be used for three separate free energy
     calculations: charges off, vdw on, changes on. This can be useful when one
     wants to avoid using a soft-core for the electrostatic interactions.
@@ -325,7 +323,6 @@ def write_split_top(pmxtop, outfile='pmxtop.top', scale_mass=False,
 
         print('log_> Making "qoff" topology : "%s"' % out_file_qoff)
     contQ = deepcopy(qA)
-    # BUG: program crashes here - also in the proline branch
     pmxtop.write(out_file_qoff, stateQ='AB', stateTypes='AA', dummy_qB='off',
                  scale_mass=scale_mass, target_qB=qA, stateBonded='AA',
                  full_morphe=False)
