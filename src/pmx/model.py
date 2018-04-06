@@ -136,7 +136,7 @@ class Model(Atomselection):
     """
     def __init__(self, filename=None, pdbline=None, renumber_atoms=True,
                  renumber_residues=True, bPDBTER=True, bNoNewID=True,
-                 for_gmx=True, **kwargs):
+                 for_gmx=False, **kwargs):
 
         Atomselection.__init__(self)
         self.title = 'PMX MODEL'
