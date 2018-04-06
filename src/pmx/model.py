@@ -117,7 +117,9 @@ class Model(Atomselection):
     title : str
         title of model
     chains : list
-        list of chains
+        list of Chain instances
+    chdic : dict
+        dict with chain IDs as keys and Chain instances as values
     residues : list
         list of molecules/residues
     unity : str
@@ -137,9 +139,9 @@ class Model(Atomselection):
         self.chains = []
         self.chdic = {}
         self.residues = []
-        self.name = None
+        self.name = None  # FIXME/QUESTION: self.name not used anywhere? remove?
         self.id = 0
-        self.have_bonds = 0
+        self.have_bonds = 0  # FIXME/QUESTION: same as above: never used -> remove?
         self.box = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
         self.unity = 'A'
         for key, val in kwargs.items():
