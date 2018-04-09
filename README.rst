@@ -1,7 +1,3 @@
-DO NOT USE THIS VERSION
------------------------
-THIS IS STRICTLY A DEVELOPERS' VERSION
------------------------
 pmx: alchemistry in gromacs
 ===========================
 
