@@ -1,12 +1,13 @@
 Installation
 ============
 
-At the moment you can install **pmx** from source. ::
+Clone the source code from GitHub with::
 
-    $ python setup.py install
+    $ git clone https://github.com/deGrootLab/pmx.git
 
-Or from within the pmx folder. ::
-
+Then::
+    
+    $ cd pmx
     $ pip install .
 
 Software requirements:

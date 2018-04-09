@@ -37,6 +37,9 @@ allows to modify structure files in various ways. E.g.:
 1. Rename atoms, residues, chains
 2. Delete or add atoms, residues and chains
 
+By default, all residues are renumbered from 1. This option can be deactivated
+by setting renumber_residues to False.
+
 The Model instance contains:
 
 * model.atoms       -> list of atoms
@@ -96,16 +99,17 @@ class Model(Atomselection):
     ----------
     filename : str
         filename of input structure
-    pdbline : ??
+    pdbline : bool(?)
         ...describe - what is pdbline?
     renumber_atoms : bool
-        ...describe
+        renumber all atoms from 1. Default is True.
     renumber_residues : bool
-        ...describe
-    bPDBTER : bool
+        renumber all residues from 1. In this way, each residue will have a
+        unique ID, also across chains. Default is True.
+    bPDBTER : bool(?)
         flag indicating input PDB file has TER lines(?). Default is True.
-    bNoNewID : bool
-        ...describe
+    bNoNewID : bool(?)
+        ...describe - what does this do?
     for_gmx : bool
         rename atoms and scale coordinates. Set this to True
         if the Model is then written to file and used as input for Gromacs
@@ -117,7 +121,9 @@ class Model(Atomselection):
     title : str
         title of model
     chains : list
-        list of chains
+        list of Chain instances
+    chdic : dict
+        dict with chain IDs as keys and Chain instances as values
     residues : list
         list of molecules/residues
     unity : str
@@ -130,16 +136,16 @@ class Model(Atomselection):
     """
     def __init__(self, filename=None, pdbline=None, renumber_atoms=True,
                  renumber_residues=True, bPDBTER=True, bNoNewID=True,
-                 for_gmx=True, **kwargs):
+                 for_gmx=False, **kwargs):
 
         Atomselection.__init__(self)
         self.title = 'PMX MODEL'
         self.chains = []
         self.chdic = {}
         self.residues = []
-        self.name = None
+        self.name = None  # FIXME/QUESTION: self.name not used anywhere? remove?
         self.id = 0
-        self.have_bonds = 0
+        self.have_bonds = 0  # FIXME/QUESTION: same as above: never used -> remove?
         self.box = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
         self.unity = 'A'
         for key, val in kwargs.items():
@@ -531,7 +537,69 @@ class Model(Atomselection):
         idx = len(self.chains)
         self.insert_chain(idx, new_chain)
 
+    def fetch_residue(self, idx, chain=None):
+        """Get a residue based on its index, or index and chain.
+
+        Parameters
+        ----------
+        idx : int
+            ID of the residue to fetch.
+        chain : str, optional
+            chain ID of the residue. This is needed when you have multiple
+            chains and you have not renumbered the residues.
+
+        Returns
+        -------
+        residue : Molecule
+            Molecule instance of the residue found.
+        """
+
+        # check idx is a valid selection
+        if idx not in [r.id for r in self.residues]:
+            raise ValueError('resid %s not found in Model residues' % idx)
+
+        if chain is None:
+            # check selection is unique
+            if [r.id for r in self.residues].count(idx) != 1:
+                raise ValueError('idx choice %s results in non-unique selection' % idx)
+        else:
+            # check chain is a valid selection
+            if chain not in [c.id for c in self.chains]:
+                raise ValueError('chain ID "%s" not found in Model chains' % chain)
+            # check idx+chain is a valid selection
+            if idx not in [r.id for r in self.chdic[chain].residues]:
+                raise ValueError('resid %s not found in chain "%s"' % (idx, chain))
+            # check selection is unique
+            if [r.id for r in self.chdic[chain].residues].count(idx) != 1:
+                raise ValueError('idx choice %s for chain "%s" results in non-unique selection' % (idx, chain))
+
+        # then find and return the residue
+        if chain is None:
+            for r in self.residues:
+                if r.id == idx:
+                    return r
+        elif chain is not None:
+            for r in self.chdic[chain].residues:
+                if r.id == idx:
+                    return r
+
     def fetch_residues(self, key, inv=False):
+        """Get residues by resnames.
+
+        Parameters
+        ----------
+        key : str or list
+            resname
+        inv : bool
+            invert selection. Default is False. If True, it finds all residues
+            with resnames different from those in key.
+
+        Returns
+        -------
+        residues : list
+            list of Molecule instances with the residues
+
+        """
         if not hasattr(key, "append"):
             key = [key]
         result = []
@@ -544,12 +612,6 @@ class Model(Atomselection):
                 if r.resname not in key:
                     result.append(r)
         return result
-
-    def fetch_residues_by_ID(self, ind):
-        for r in self.residues:
-            if r.id == ind:
-                return r
-        return False
 
     def al_from_resl(self):
         self.atoms = []
