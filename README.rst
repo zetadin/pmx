@@ -12,6 +12,7 @@ dynamics simulations with the `Gromacs <http://gromacs.org>`_ package.
 Among its main features are the setup and analysis of alchemical free energy
 calculations for protein, nucleic acid, and small molecule mutations.
 
+https://degrootlab.github.io/pmx/
 
 Citations
 ---------
