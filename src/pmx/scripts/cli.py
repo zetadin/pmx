@@ -44,8 +44,8 @@ class PmxCli:
         generate_hybrid_topology.entry_point()
 
     def analyse(self):
-        from . import analyze_dgdl
-        analyze_dgdl.entry_point()
+        from . import analyze_dhdl
+        analyze_dhdl.entry_point()
 
     def genlib(self):
         from . import generate_hybrid_residue
