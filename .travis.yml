@@ -5,9 +5,13 @@ python:
    - "2.7"
    - "3.6"
 
+env:
+  global:
+    # Doctr deploy key for deGrootLab/pmx
+    - secure: "DN9ww1dFo6Ahjnm17F8AxBkXDh6Vc0z3oFVDQuL1rKpxkF09PdH6CW460RArAXPcmBnBxOMynBHK4csqu+I5ee5JNUES07UEwwphQ/NjMhpsFRj+P7T/iU/X4FW2z6aWT1JTRMPfoUNW8BAxQ6oVTWc/My7/40GF9Y0QaJ4DhnG1hJXD+oc3cAutDaErQRVga1rsZBCLPlabaxIwlW5EBN6YjKavAuXisrdO5RFqPlUTXizKaHas62gXp0ts7Nz0w70u4RwlyLweH4JPeqTbanPHUXsMvH0tFjajPeaO7UtW4+WlzhwUDrs2uuIhwf/fO/ZYu6eHs36MjjtZSm0yrDSsRhk1OepTcz/pKrcttY0YR6Ao1SAp7k3FJHgirL9YIuIKrNJkKLQSD8uluzVb3ApP0qot9BfsWcp7P6xVzEkZkcA0C33awAOuap1bBDqEUYNe3aUu0vRlU5WQxKIpnnE2kxet8xe/CbtJTGhHc7is4tLjs1MAb8+5FsNTm9pOUculaLWW1zb0UWJUSsdkr+D+n2nR9XkTbSr9B8U4un/twtEOJt9LqivZNvT3sZcMHVRV9EOM2IF199HIgNFqlEY8/jfQc2ciBCmAKoK7Kl+9lxa3lqGYjpIqeJdc26uyvzShSoJW1SlnzA7BsxbFI0uCk3D1P97CUCaSnOraB6w="
+
 branches:
     only:
-        - master
         - develop
 
 install:
@@ -19,6 +23,16 @@ install:
 
 script:
     - py.test --cov pmx tests/
+    - |
+      if [[ $TRAVIS_PYTHON_VERSION == "3.6" ]]; then
+        set -e
+        pip install doctr
+        pip install sphinx sphinx_rtd_theme msmb_theme
+        cd docs
+        make html
+        cd ../
+        doctr deploy . --built-docs docs/build/html/
+      fi
 
 after_success:
     - codecov

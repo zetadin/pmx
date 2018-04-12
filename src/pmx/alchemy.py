@@ -10,7 +10,7 @@ import sys
 from copy import deepcopy
 from . import library
 from .model import Model
-from .utils import RangeCheckError, mtpError, UnknownResidueError, MissingTopolParamError
+from .utils import mtpError, UnknownResidueError, MissingTopolParamError
 from .geometry import Rotation, nuc_super, bb_super
 from .mutdb import read_mtp_entry
 from .forcefield import Topology, _check_case, _atoms_morphe
@@ -22,8 +22,8 @@ __all__ = ['mutate', 'gen_hybrid_top', 'write_split_top']
 # ==============
 # Main Functions
 # ==============
-def mutate(m, mut_resid, mut_resname, ff, refB=None, inplace=False,
-           verbose=False):
+def mutate(m, mut_resid, mut_resname, ff, mut_chain=None,
+           refB=None, inplace=False, verbose=False):
     """Creates an hybrid structure file.
 
     Parameters
@@ -33,9 +33,13 @@ def mutate(m, mut_resid, mut_resname, ff, refB=None, inplace=False,
     mut_resid : int
         the ID of the residue to be mutated.
     mut_resname : str
-        the target residue.
+        the name of the target residue.
     ff : str
         the forcefield to use.
+    mut_chain : str, optional
+        the chain ID for the residue you want to mutate. This is needed if you
+        have multiple chains and are providing a Model that did not have its
+        residues renumbered.
     refB : str, optional
         reference structure file of the B state in PDB or GRO format. If it is
         provided, the dummy atoms will be built based on the position of the
@@ -44,7 +48,7 @@ def mutate(m, mut_resid, mut_resname, ff, refB=None, inplace=False,
     inplace : bool, optional
         whether to modify the input Model in place. Default is False.
     verbose : bool, optional
-        whether to print info. Defaul is False.
+        whether to print info. Default is False.
 
     Returns
     -------
@@ -58,11 +62,9 @@ def mutate(m, mut_resid, mut_resname, ff, refB=None, inplace=False,
     elif inplace is False:
         m2 = deepcopy(m)
 
-    # check selection is valid
-    if not _check_residue_range(m2, mut_resid):
-        raise RangeCheckError(mut_resid)
-    # get the residue
-    residue = m2.residues[mut_resid - 1]
+    # get the residue based on the index
+    # fetch_residue also checks the selection is valid and unique
+    residue = m2.fetch_residue(idx=mut_resid, chain=mut_chain)
     # get the correct mtp file
     mtp_file = get_mtp_file(residue, ff)
 
@@ -106,7 +108,7 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None,
                                                                   verbose=False)
     bb_super(residue, hybrid_res)
 
-    # VG rename residue atoms
+    # rename residue atoms
     hash1 = _rename_to_match_library(residue)
     hash2 = _rename_to_match_library(hybrid_res)
     _set_conformation(residue, hybrid_res, rotdic)
@@ -123,9 +125,10 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None,
                         atom.x = atomB.x
     _rename_back(residue, hash1)
     _rename_back(hybrid_res, hash2)
-    # VG rename residue atoms back
 
-    m.replace_residue(residue, hybrid_res)
+    # do the actual replacement
+    m.replace_residue(residue=residue, new=hybrid_res, bKeepResNum=True)
+
     if verbose is True:
         print('log_> Inserted hybrid residue %s at position %d (chain %s)' %
               (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
@@ -147,7 +150,7 @@ def apply_nuc_mutation(m, residue, new_nuc_name, mtp_file, verbose=False):
     for atom in hybrid_res.atoms:
         if atom.name[0] != 'D':
             atom.x = residue[atom.name].x
-    m.replace_residue(residue, hybrid_res)
+    m.replace_residue(residue=residue, new=hybrid_res, bKeepResNum=True)
     if verbose is True:
         print('log_> Inserted hybrid residue %s at position %d (chain %s)' %
               (hybrid_res.resname, hybrid_res.id, hybrid_res.chain_id))
@@ -288,8 +291,6 @@ def gen_hybrid_top(topol, recursive=True, verbose=False):
 def write_split_top(pmxtop, outfile='pmxtop.top', scale_mass=False,
                     verbose=False):
     """
-    WARNING: Appears to be currently broken
-
     Write three topology files to be used for three separate free energy
     calculations: charges off, vdw on, changes on. This can be useful when one
     wants to avoid using a soft-core for the electrostatic interactions.
@@ -325,7 +326,6 @@ def write_split_top(pmxtop, outfile='pmxtop.top', scale_mass=False,
 
         print('log_> Making "qoff" topology : "%s"' % out_file_qoff)
     contQ = deepcopy(qA)
-    # BUG: program crashes here - also in the proline branch
     pmxtop.write(out_file_qoff, stateQ='AB', stateTypes='AA', dummy_qB='off',
                  scale_mass=scale_mass, target_qB=qA, stateBonded='AA',
                  full_morphe=False)
@@ -374,13 +374,6 @@ def _convert_aa_name(aa):
         return library._ext_one_letter[aa.upper()]
     else:
         raise UnknownResidueError(aa)
-
-
-def _check_residue_range(m, idx):
-    valid_ids = range(1, len(m.residues)+1)
-    if idx not in valid_ids:
-        return False
-    return True
 
 
 def _rename_ile(residue):

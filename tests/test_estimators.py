@@ -5,6 +5,8 @@ from numpy.testing import assert_almost_equal
 
 
 def test_BAR(gf):
+    # these pickled files had to be created with py3 using protocol=2
+    # in order to be py2/3 compatible
     wf = pickle.load(open(gf("dgdl/wf.pkl"), "rb"))
     wr = pickle.load(open(gf("dgdl/wr.pkl"), "rb"))
 

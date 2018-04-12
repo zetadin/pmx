@@ -125,6 +125,10 @@ def parseList(format_string, lst, ignore_missing=False):
 
 def read_and_format(filename, format_string, comment='#',
                     ignore_missing=False):
+    """
+    format_string : str
+        e.g. 'is' = [int, str]; 'iis' = [int, int, str] etc.
+    """
     l = open(filename).readlines()
     if comment is not None:
         l = kickOutComments(l, comment)
