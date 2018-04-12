@@ -56,25 +56,27 @@ def parse_options():
             'Benett Acceptance Ratio (BAR); '
             'Jarzinski equality (JARZ).')
 
-    exclus = parser.add_mutually_exclusive_group()
+    exclu1 = parser.add_mutually_exclusive_group()
+    # the following exclusion groups are for fA/iA and fB/iB:
+    # one can either specify -fA or -iA, but one of them is required.
+    exclu2 = parser.add_mutually_exclusive_group(required=True)
+    exclu3 = parser.add_mutually_exclusive_group(required=True)
 
-    parser.add_argument('-fA',
-                        metavar='dgdl',
+    exclu2.add_argument('-fA',
+                        metavar='dhdl',
                         dest='filesAB',
                         type=str,
-                        help='dgdl.xvg files for the A->B simulations. Use '
+                        help='dhdl.xvg files for the A->B simulations. Use '
                         'wildcard to select multiple xvg files: e.g. "-fa '
-                        './forward_results/dgdl*.xvg"',
-                        required=True,
+                        './forward_results/dhdl*.xvg"',
                         nargs='+')
-    parser.add_argument('-fB',
-                        metavar='dgdl',
+    exclu3.add_argument('-fB',
+                        metavar='dhdl',
                         dest='filesBA',
                         type=str,
-                        help='dgdl.xvg files for the B->A simulations Use '
+                        help='dhdl.xvg files for the B->A simulations Use '
                         'wildcard to select multiple xvg files: e.g. "-fb '
-                        './backward_results/dgdl*.xvg"',
-                        required=True,
+                        './backward_results/dhdl*.xvg"',
                         nargs='+')
     parser.add_argument('-m',
                         metavar='method',
@@ -114,9 +116,9 @@ def parse_options():
                         'when multiple independent equilibrium simulations'
                         'have been run so to estimate the error from the '
                         'repeats. Default is 1 (i.e. no repeats). It assumes '
-                        'the dgdl files for each repeat are read in order and '
-                        'are contiguous, e.g. dgdl_0 to dgdl_9 is the first '
-                        'repeat, dgdl_10 to dgdl_19 is the second one, etc.',
+                        'the dhdl files for each repeat are read in order and '
+                        'are contiguous, e.g. dhdl_0 to dhdl_9 is the first '
+                        'repeat, dhdl_10 to dhdl_19 is the second one, etc.',
                         default=1)
     parser.add_argument('-w',
                         metavar='plot',
@@ -159,14 +161,14 @@ def parse_options():
                         'terminated. Default is False.',
                         default=False,
                         action='store_true')
-    parser.add_argument('-iA',
+    exclu2.add_argument('-iA',
                         metavar='work input',
                         dest='iA',
                         type=str,
                         help='Two-column dat file containing the list of input'
                         ' files and their respective integrated work values '
                         'for the forward (A->B) tranformation.')
-    parser.add_argument('-iB',
+    exclu3.add_argument('-iB',
                         metavar='work input',
                         dest='iB',
                         type=str,
@@ -177,7 +179,7 @@ def parse_options():
                         metavar='work output',
                         dest='oA',
                         type=str,
-                        help='File where to save the list of input dgdl'
+                        help='File where to save the list of input dhdl'
                         ' files and their respective integrated work values '
                         'for the forward (A->B) tranformation. Default is '
                         '"integA.dat"',
@@ -186,13 +188,13 @@ def parse_options():
                         metavar='work output',
                         dest='oB',
                         type=str,
-                        help='File where to save the list of input dgdl'
+                        help='File where to save the list of input dhdl'
                         ' files and their respective integrated work values '
                         'for the reverse (B->A) tranformation. Default is '
                         '"integB.dat"',
                         default='integB.dat')
     # The following are mutually exclusive options
-    exclus.add_argument('--skip',
+    exclu1.add_argument('--skip',
                         metavar='',
                         dest='skip',
                         type=int,
@@ -200,32 +202,32 @@ def parse_options():
                         'Default is 1 (all); with 2, every other work value '
                         'is discarded, etc.',
                         default=1)
-    exclus.add_argument('--slice',
+    exclu1.add_argument('--slice',
                         metavar='',
                         dest='slice',
                         type=int,
                         help='Subset of trajectories to analyze. '
                         'Provide list slice, e.g. "10 50" will '
-                        'result in selecting dgdl_files[10:50]. '
+                        'result in selecting dhdl_files[10:50]. '
                         'Default is all.',
                         default=None,
                         nargs=2)
-    exclus.add_argument('--rand',
+    exclu1.add_argument('--rand',
                         metavar='',
                         dest='rand',
                         type=int,
                         help='Take a random subset of trajectories. '
                         'Default is None (do not take random subset)',
                         default=None)
-    exclus.add_argument('--index',
+    exclu1.add_argument('--index',
                         metavar='',
                         dest='index',
                         type=int,
                         help='Zero-based index of files to analyze (e.g.'
                         ' 0 10 20 50 60). It keeps '
-                        'the dgdl.xvg files according to their position in the'
-                        ' list, sorted according to the filenames. Default '
-                        'is None (i.e. all dgdl are used).',
+                        'the dhdl.xvg files according to their position in '
+                        'the list, sorted according to the filenames. '
+                        'Default is None (i.e. all dhdl are used).',
                         default=None,
                         nargs='+')
     parser.add_argument('--prec',
@@ -284,8 +286,6 @@ def main(args):
 
     # input arguments
     out = open(args.outfn, 'w')
-    filesAB = natural_sort(args.filesAB)
-    filesBA = natural_sort(args.filesBA)
     T = args.temperature
     skip = args.skip
     prec = args.precision
@@ -314,7 +314,7 @@ def main(args):
     else:
         exit('No unit type \'%s\' available' % units)
 
-    print("# analyze_dgdl.py, pmx version = %s" % __version__, file=out)
+    print("# analyze_dhdl.py, pmx version = %s" % __version__, file=out)
     print("# pwd = %s" % os.getcwd(), file=out)
     print("# %s (%s)" % (time.asctime(), os.environ.get('USER')), file=out)
     print("# command = %s" % ' '.join(sys.argv), file=out)
@@ -324,8 +324,11 @@ def main(args):
     # Parse Data
     # ==========
 
-    # If list of dgdl.xvg files are provided, parse dgdl
-    if args.iA is None and args.iB is None:
+    # If list of dhdl.xvg files are provided, parse dhdl
+    # --------------------------------------------------
+    if args.filesAB is not None and args.filesBA is not None:
+        filesAB = natural_sort(args.filesAB)
+        filesBA = natural_sort(args.filesBA)
         # If random selection is chosen, do this before reading files and
         # calculating the work values.
         if args.rand is not None:
@@ -387,19 +390,30 @@ def main(args):
         _dump_integ_file(args.oA, filesAB, res_ab)
         _dump_integ_file(args.oB, filesBA, res_ba)
 
-    # If work values are given as input instead, read those
+    # If integrated work values are given instead, read those
+    # -------------------------------------------------------
     elif args.iA is not None and args.iB is not None:
         res_ab = []
         res_ba = []
-        for fn in args.iA:
-            print('\t\tReading integrated values (A->B) from ', fn)
-            res_ab.extend(_data_from_file(fn))
-        for fn in args.iB:
-            print('\t\tReading integrated values (B->A) from ', fn)
-            res_ba.extend(_data_from_file(fn))
+        print('\t\tReading integrated values (A->B) from', args.iA)
+        res_ab.extend(_data_from_file(args.iA))
+        print('\t\tReading integrated values (B->A) from', args.iB)
+        res_ba.extend(_data_from_file(args.iB))
+
+    # If a mix of dhdl.xvg files and integrated work values are given
+    # ---------------------------------------------------------------
+    # TODO: we are currently not handling this - do we want to add it?
+    elif (args.iA is not None and args.filesBA is not None) or (args.iB is not None and args.filesAB is not None):
+        raise ValueError('you need to provide either -fA and -fB, or -iA and '
+                         '-iB. Mixing dhdl.xvg files and integrated work '
+                         'values is not currently supported.')
+    # The following code should never get executed, as the case where the input
+    # is not provided should have already by handled by argparse within
+    # parse_options
     else:
-        raise ValueError('you need to provide either none of both sets of '
-                         'integrated work values.')
+        raise ValueError('you need to provide dhdl.xvg files or integrated '
+                         'work values for both forward (-fA or -iA) ',
+                         'and reverse (-fB or -iB) transisions.')
 
     # If asked to only do the integration of dhdl.xvg, exit
     if integ_only is True:
@@ -602,8 +616,8 @@ def main(args):
 
     if args.pickle and quiet is False:
         print('   NOTE: units of results in pickled files are as in the\n'
-              '   provided dgdl.xvg or integ.dat files. These are typically\n'
-              '   in kJ/mol when using dgdl.xvg files from Gromacs.\n')
+              '   provided dhdl.xvg or integ.dat files. These are typically\n'
+              '   in kJ/mol when using dhdl.xvg files from Gromacs.\n')
     # execution time
     etime = time.time()
     h, m, s = _time_stats(etime-stime)
