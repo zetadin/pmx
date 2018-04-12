@@ -313,12 +313,12 @@ def plot_work_dist(wf, wr, fname='Wdist.png', nbins=20, dG=None, dGerr=None,
     res_y = [0, size*1.2]
     if dG is not None and dGerr is not None:
         plt.plot(res_y, res_x, 'k--', linewidth=2,
-                 label=r'$\Delta$G = %.2f $\pm$ %.2f kJ/mol' % (dG, dGerr))
+                 label=r'$\Delta$G = %.2f $\pm$ %.2f %s' % (dG, dGerr, units))
         plt.legend(shadow=True, fancybox=True, loc='upper center',
                    prop={'size': 12})
     elif dG is not None and dGerr is None:
         plt.plot(res_y, res_x, 'k--', linewidth=2,
-                 label=r'$\Delta$G = %.2f kJ/mol' % dG)
+                 label=r'$\Delta$G = %.2f %s' % (dG, units))
         plt.legend(shadow=True, fancybox=True, loc='upper center',
                    prop={'size': 12})
     else:
