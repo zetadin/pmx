@@ -199,7 +199,7 @@ class Atomselection:
             atom.id = i+1
 
     def rename_atoms_to_gmx(self):
-        """Rename atoms to comply with Gromacs syntax: if the name starts with
+        """Renames atoms to comply with Gromacs syntax. If the name starts with
         a digit, the digit is moved at the end of the name. E.g. "1CA" becomes
         "CA1".
         """
