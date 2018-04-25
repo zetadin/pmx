@@ -412,13 +412,25 @@ class Molecule(Atomselection):
             self.set_chi(chi+1, rotamer[chi+1])
 
     def set_resname(self, resname):
-        """Set the residue name for each atom in Molecule."""
+        """Set the residue name.
+
+        Parameters
+        ---------
+        resname : str
+            the residue name
+        """
         self.resname = resname
         for atom in self.atoms:
             atom.resname = resname
 
     def set_resid(self, resid):
-        """Set the resid for each atom Molecule."""
+        """Set the residue ID.
+
+        Parameters
+        ---------
+        resname : int
+            the residue index
+        """
         self.id = resid
         for atom in self.atoms:
             atom.resnr = resid
