@@ -65,10 +65,10 @@ class Atom:
 
     Parameters
     ----------
-    line : str
-        input line in PDB format
-    mol2line : str
-        input line in MOL2 format
+    line : str, optional
+        input line in PDB format. Default is None.
+    mol2line : str, optional
+        input line in MOL2 format.  Default is None.
 
 
     Attributes
@@ -425,10 +425,6 @@ class Atom:
         v : array
             vector of length 3 containing the values by which to translate the
             atom in the x, y, and z dimensions.
-
-        Returns
-        -------
-        None
         """
         self.x[0] += v[0]
         self.x[1] += v[1]
