@@ -31,7 +31,7 @@ script:
         cd docs
         make html
         cd ../
-        doctr deploy . --built-docs docs/build/html/ --branch-whitelist develop
+        doctr deploy . --built-docs docs/build/html/ --no-require-master --branch-whitelist develop
       fi
 
 after_success:
