@@ -57,6 +57,27 @@ class Atomselection:
 
     def writePDB(self, fname, title="", nr=1, bPDBTER=False,
                  bAssignChainIDs=False, resnrlist=[]):
+        """Writes Atomselection to file in PDB format.
+
+        Parameters
+        ----------
+        fname : str
+            filename
+        title : str, optional
+            title of the PDB file. If not given, it is taken from the instance
+            title
+        nr : int, optional
+            what is nr? it seems to choose whether to overwrite or append to a
+            file?
+        bPDBTER : bool, optional
+            whether to separate chains with TER entries.
+        bAssignChainIDs : bool, optional
+            whether to write the chains IDs to file. Default is False.
+        resnrlist : list, optional
+            list of residues to write to file. If empty list provided, all
+            residues are written to file, otherwise only the ones in the list
+            will be written.
+        """
         if nr > 1:
             fp = open(fname, 'a')
         else:
@@ -193,6 +214,14 @@ class Atomselection:
         return self
 
     def renumber_atoms(self, start=1):
+        """Renumber all atoms starting from a chosen number (default is 1).
+        The original atom IDs are stored in the attribute ``orig_id``
+
+        Parameters
+        ----------
+        start : int, optional
+            integer from which to start the indexing of the atoms
+        """
         for i, atom in enumerate(self.atoms):
             if not hasattr(atom, "orig_id") or atom.orig_id == 0:
                 atom.orig_id = atom.id
