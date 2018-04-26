@@ -40,7 +40,25 @@ from .parser import readSection
 
 
 class IndexGroup:
-    """ CLASS TO DEAL WITH GROMACS INDEX FILES"""
+    """Class for storing information about a Gromacs index group.
+
+    Parameters
+    ----------
+    name : str
+        name of the group
+    ids : list, optional
+        list of atom indices
+    atoms : list, optional
+        list of ``Atom`` instances. If this is provided, the ids will be taken from
+        the Atom instances.
+
+    Attributes
+    ----------
+    name : str
+        name of the group
+    ids : list
+        list of atom indices
+    """
     def __init__(self, name='', ids=[], atoms=[]):
         self.ids = []
         if atoms:
@@ -86,6 +104,29 @@ class IndexGroup:
 
 
 class IndexFile:
+    """Class for storing ``ndx`` file information. It can be initialsed as an empty
+    index file, or by providing an ``ndx`` file as input, or by providing a list
+    of names and ``IndexGroup`` instances.
+
+    Parameters
+    ----------
+    fname : str, optional
+        input index file. Default is None.
+    names : list, optional
+        list of the group names.
+    groups : list, optional
+        list of IndexGroup instances.
+
+    Attributes
+    ----------
+    groups : list
+        list of IndexGroup instances
+    names : list
+        list if index group names
+    dic : dict
+        dictionary containg index group names as keys and ``IndexGroup``
+        instances as values
+    """
 
     def __init__(self, fname=None, names=[], groups=[]):
         self.groups = []
@@ -110,6 +151,14 @@ class IndexFile:
         self.delete_group(item)
 
     def parse(self, fp):
+        """Reads an index file.
+
+        Parameters
+        ----------
+        fp : str|object
+            filename of the index file, or the file object of the ndx file
+            already opened.
+        """
         if hasattr(fp, "read"):
             f = fp.read()
         else:
@@ -130,6 +179,16 @@ class IndexFile:
         return r
 
     def write(self, fn=None, fp=None):
+        """Writes the index file.
+
+        Parameters
+        ----------
+        fn : str, optional
+            filename. Default is ``None``. If both ``fn`` and ``fp`` are
+            ``None``, the index is printed to screen.
+        fp : object, optional
+            file object to write the index to. Default is ``None``.
+        """
         if not fn and not fp:
             fp = sys.stdout
         if fn:
@@ -138,6 +197,13 @@ class IndexFile:
             print('{0}\n'.format(str(gr)), file=fp)
 
     def add_group(self, group):
+        """Adds a group to the IndexFile.
+
+        Parameters
+        ----------
+        group : IndexGroup
+            instance of IndexGroup to add
+        """
         if group.name in self.names:
             print("IndexFile has group %s !! " % group.name, file=sys.stderr)
             print("Group %s will be replaced !!" % group.name, file=sys.stderr)
@@ -147,6 +213,13 @@ class IndexFile:
         self.dic[group.name] = group
 
     def delete_group(self, name):
+        """Removes a group from the IndexFile.
+
+        Parameters
+        ----------
+        name : str
+            name of the group to remove
+        """
         idx = -1
         for i, group in enumerate(self.groups):
             if group.name == name:
