@@ -158,7 +158,7 @@ def planarity(atom_list):
 def apply_fit_R(atoms, R):
 
     for atom in atoms:
-        x_old = map(lambda x: x, atom.x)
+        x_old = list(map(lambda x: x, atom.x))
         for r in range(3):
             atom.x[r] = 0
             for c in range(3):
@@ -209,8 +209,8 @@ def translate_by_ndx(struct, ndx):
 
 def fit_atoms(fit_atoms1, fit_atoms2, rot_atoms2):
 
-    cs1 = map(lambda a: a.x, fit_atoms1)
-    cs2 = map(lambda a: a.x, fit_atoms2)
+    cs1 = list(map(lambda a: a.x, fit_atoms1))
+    cs2 = list(map(lambda a: a.x, fit_atoms2))
     assert len(cs1) == len(cs2)
     m = map(lambda x: 1., cs1)  # dummy array
     v = _p.center_vec(cs1)
