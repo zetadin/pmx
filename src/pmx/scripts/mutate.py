@@ -225,18 +225,18 @@ class InteractiveSelection:
         else:
             rol = library._one_letter[residue.resname]
         aa = None
-        ol = library._aacids_dic.keys()
-        tl = library._aacids_dic.values()
+        ol = list(library._aacids_dic.keys())
+        tl = list(library._aacids_dic.values())
         ffpathlower = self.ffpath.lower()
         if 'amber' in ffpathlower:
-                ol = library._aacids_ext_amber.keys()
-                tl = library._aacids_ext_amber.values()
+                ol = list(library._aacids_ext_amber.keys())
+                tl = list(library._aacids_ext_amber.values())
         if 'opls' in ffpathlower:
-                ol = library._aacids_ext_oplsaa.keys()
-                tl = library._aacids_ext_oplsaa.values()+['ASPP', 'GLUP', 'LSN']
+                ol = list(library._aacids_ext_oplsaa.keys())
+                tl = list(library._aacids_ext_oplsaa.values()) + ['ASPP', 'GLUP', 'LSN']
         if 'charmm' in ffpathlower:
-                ol = library._aacids_ext_charmm.keys()
-                tl = library._aacids_ext_charmm.values()
+                ol = list(library._aacids_ext_charmm.keys())
+                tl = list(library._aacids_ext_charmm.values())
 
         while aa is None:
             aa = input().upper()
