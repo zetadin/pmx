@@ -424,6 +424,9 @@ def main(args):
     if script is not None:
         if renumber is True:
             mutations_to_make = read_and_format(script, "is")
+            # modify mut lists in mutations_to_make so that they have same
+            # len of 3, both in the case where renumber is True or False
+            mutations_to_make = [[None]+x for x in mutations_to_make]
         elif renumber is False:
             mutations_to_make = read_and_format(script, "sis")
 
