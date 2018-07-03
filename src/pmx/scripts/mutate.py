@@ -107,6 +107,57 @@ def _ask_next():
         return _ask_next()
 
 
+def _match_mutation(m, ref_m, ref_chain, ref_resid):
+    """Matches chain/indices of two Models. Given the chain and resid of a
+    reference Model (ref_m), return the resid of the Model (m).
+
+    Parameters
+    ----------
+    m: Model
+        model you want to mutate
+    ref_m : Model
+        reference model
+    ref_chain: str
+        chain of residue in reference model
+    ref_resid: int
+        resid of residue in reference model
+
+    Returns
+    -------
+    resid: int
+        residue ID of model that corresponds to the chain/resid in the
+        reference.
+    """
+
+    # select non-solvent residues
+    res = [r for r in m.residues if r.moltype not in ['water', 'ion']]
+    ref_res = [r for r in ref_m.residues if r.moltype not in ['water', 'ion']]
+    # check they have same len
+    assert len(res) == len(ref_res)
+
+    # iterate through all residue pairs
+    resmap = {}
+    for r, rref in zip(res, ref_res):
+        # first, check that the sequence is the same
+        if r.resname != rref.resname:
+            raise ValueError('residue %s in the input file does not match '
+                             'residue %s in the input reference file'
+                             % (r.resname, rref.resname))
+        # then, create a dict to map (chain_id, res_id) in the reference
+        # to the residues ID in the input file
+        resmap[(rref.chain_id, rref.id)] = r.id
+
+    resid = resmap[(ref_chain, ref_resid)]
+    print('log_> Residue {ref_id} (chain {ref_ch}) in file {ref} mapped to residue '
+          '{m_id} in file {m} after renumbering'.format(ref_ch=ref_chain,
+                                                        ref_id=ref_resid,
+                                                        ref=ref_m.filename,
+                                                        m_id=resid,
+                                                        m=m.filename))
+
+    return resid
+
+
 # ===============================
 # Class for interactive selection
 # ===============================
@@ -295,17 +346,23 @@ that has been written with pdb2gmx with all hydrogen atoms present.
 By default, all residues are renumbered starting from 1, so to have unique
 residue IDs. If you want to keep the original residue IDs, you can use the flag
 --keep_resid. In this case, you will also need to provide chain information
-in order to be able to mutate the desired residue.
+in order to be able to mutate the desired residue. Alternatively, if you would
+like to use the original residue IDs but these have been changed, e.g. by gromacs,
+you can provide a reference PDB file (with chain information too) using the --ref
+flag. The input structure will be mutated according to the IDs chosen for the
+reference structure after having mapped the two residue indices.
 
 The program can either be executed interactively or via script. The script file
 simply has to consist of "residue_id target_residue_name" pairs (just with some
 space between the id and the name), or "chain_id residue_id target_residue_name"
-if you are keeping the original residue IDs.
+if you are keeping the original residue IDs or providing a reference structure.
 
 The script uses an extended one-letter code for amino acids to account for
 different protonation states. Use the --resinfo flag to print the dictionary.
 
 ''', formatter_class=argparse.RawTextHelpFormatter)
+
+    exclus = parser.add_mutually_exclusive_group()
 
     parser.add_argument('-f',
                         metavar='infile',
@@ -341,7 +398,7 @@ different protonation states. Use the --resinfo flag to print the dictionary.
                         type=str,
                         help='Text file with list of mutations (optional).',
                         default=None)
-    parser.add_argument('--keep_resid',
+    exclus.add_argument('--keep_resid',
                         dest='renumber',
                         help='Whether to renumber all residues or to keep the\n'
                         'original residue IDs. By default, all residues are\n'
@@ -351,6 +408,17 @@ different protonation states. Use the --resinfo flag to print the dictionary.
                         'the chain ID where the residue you want to mutate is.',
                         default=True,
                         action='store_false')
+    exclus.add_argument('--ref',
+                        metavar='',
+                        dest='ref_infile',
+                        help='Provide a reference PDB structure from which to map\n'
+                        'the chain and residue IDs onto the file to be mutated (-f).\n'
+                        'This can be useful when wanting to mutate a file that\n'
+                        'has had its residues renumbered or the chain information\n'
+                        'removed (e.g. after gmx grompp). As in the --keep_resid\n'
+                        'option, if --ref is chosen, you will need to provide chain\n'
+                        'information either interactively or via the --script flag.',
+                        default=None)
     parser.add_argument('--resinfo',
                         dest='resinfo',
                         help='Show the list of 3-letter -> 1-letter residues',
@@ -416,19 +484,45 @@ def main(args):
     ff = args.ff
     script = args.script
     renumber = args.renumber
+    ref_infile = args.ref_infile
 
     # initialise Model
     m = Model(infile, renumber_residues=renumber, bPDBTER=True, for_gmx=True)
 
+    # if reference structure provided, initialise that Model too
+    if ref_infile is not None:
+        ref_m = Model(ref_infile, renumber_residues=False,
+                      bPDBTER=True, for_gmx=True)
+
     # if script is provided, do the mutations in that file
+    # ----------------------------------------------------
     if script is not None:
-        if renumber is True:
+        # 1) defualt: renumbering and not providing a ref struct
+        if renumber is True and ref_infile is None:
             mutations_to_make = read_and_format(script, "is")
             # modify mut lists in mutations_to_make so that they have same
             # len of 3, both in the case where renumber is True or False
             mutations_to_make = [[None]+x for x in mutations_to_make]
-        elif renumber is False:
+        # 2) not renumbering and not providing a ref struct
+        elif renumber is False and ref_infile is None:
             mutations_to_make = read_and_format(script, "sis")
+        # 3) renumbering and providing a ref struct
+        elif renumber is True and ref_infile is not None:
+            # we read mutations according to numbering in the reference
+            ref_mutations_to_make = read_and_format(script, "sis")
+            mutations_to_make = []
+            # we map these onto the file to be mutated
+            for ref_mut in ref_mutations_to_make:
+                m_resid = _match_mutation(m=m, ref_m=ref_m,
+                                          ref_chain=ref_mut[0],
+                                          ref_resid=ref_mut[1])
+                # mut = [No Chain, resid in m, target residue]
+                mut = [None, m_resid, ref_mut[2]]
+                mutations_to_make.append(mut)
+
+        # 4) NOT ALLOWED: providing a ref struct while not renumbering. This is
+        # not allowed because we want to make sure there are unique indices for
+        # each residue
 
         for mut in mutations_to_make:
             _check_residue_name(m.fetch_residue(idx=mut[1], chain=mut[0]))
@@ -440,11 +534,25 @@ def main(args):
                    refB=infileB,
                    inplace=True,
                    verbose=True)
-    # if not provided, interactive selection
+
+    # if script not provided, interactive selection
+    # ---------------------------------------------
     else:
         do_more = True
         while do_more:
-            sele = InteractiveSelection(m=m, ff=ff, renumbered=renumber)
+            # if no reference provided, choose from infile (Model m)
+            if ref_infile is None:
+                sele = InteractiveSelection(m=m, ff=ff, renumbered=renumber)
+            # if reference IS provided, then choose from reference, then map
+            # mutation onto infile (Model m)
+            elif ref_infile is not None:
+                sele = InteractiveSelection(m=ref_m, ff=ff, renumbered=False)
+                sele.mut_resid = _match_mutation(m=m, ref_m=ref_m,
+                                                 ref_chain=sele.mut_chain,
+                                                 ref_resid=sele.mut_resid)
+                sele.mut_chain = None
+
+            # we have the needed info ==> carry out the mutation
             mutate(m=m,
                    mut_chain=sele.mut_chain,
                    mut_resid=sele.mut_resid,
@@ -453,6 +561,8 @@ def main(args):
                    refB=infileB,
                    inplace=True,
                    verbose=True)
+
+            # ask whether to do more mutations or stop
             if not _ask_next():
                 do_more = False
 
