@@ -122,6 +122,8 @@ class Model(Atomselection):
     ----------
     title : str
         title of model. Default is 'PMX MODEL'.
+    filename : str
+        filename from which the Model was imported, otherwise None.
     chains : list
         list of Chain instances
     chdic : dict
@@ -142,6 +144,7 @@ class Model(Atomselection):
 
         Atomselection.__init__(self)
         self.title = 'PMX MODEL'
+        self.filename = filename
         self.chains = []
         self.chdic = {}
         self.residues = []
