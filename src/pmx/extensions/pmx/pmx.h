@@ -51,7 +51,7 @@ typedef int             bool;
  #if PY_MAJOR_VERSION >= 3
     #define PyInt_FromLong PyLong_FromLong
     #define PyInt_AsLong PyLong_AsLong
-    #define PyString_FromString PyBytes_FromString
+    #define PyString_FromString PyUnicode_FromString
     #define PyString_AsString PyBytes_AsString
  #endif
 
