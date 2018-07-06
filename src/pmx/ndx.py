@@ -34,6 +34,7 @@
 """
 
 from __future__ import absolute_import, print_function, division
+from builtins import map
 import re
 import sys
 from .parser import readSection
@@ -62,7 +63,7 @@ class IndexGroup:
     def __init__(self, name='', ids=[], atoms=[]):
         self.ids = []
         if atoms:
-            self.ids = map(lambda a: a.id, atoms)
+            self.ids = list(map(lambda a: a.id, atoms))
         else:
             self.ids = ids
         self.name = name
@@ -238,15 +239,15 @@ def get_index(atom_list=None, residue_list=None, chain_list=None):
         print('Error: Need list~')
         sys.exit(1)
     if atom_list:
-        lst = map(lambda a: a.id, atom_list)
+        lst = list(map(lambda a: a.id, atom_list))
         return lst
     if residue_list:
         al = []
-        map(lambda r: al.extend(r.atoms), residue_list)
+        list(map(lambda r: al.extend(r.atoms), residue_list))
         return get_index(atom_list=al)
     if chain_list:
         al = []
-        map(lambda c: al.extend(c.atoms), chain_list)
+        list(map(lambda c: al.extend(c.atoms), chain_list))
         return get_index(atom_list=al)
 
 

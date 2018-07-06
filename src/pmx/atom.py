@@ -51,6 +51,7 @@ Geometric measurements:
 """
 
 from __future__ import absolute_import, print_function, division
+from builtins import map
 import copy
 from numpy import pi
 from . import library
@@ -146,7 +147,7 @@ class Atom:
     def __str__(self):
         """Prints the Atom in PDB format"""
         if self.unity == 'nm':
-            coords = map(lambda x: x*10, self.x)
+            coords = list(map(lambda x: x*10, self.x))
         else:
             coords = self.x
         if len(self.resname) < 4:

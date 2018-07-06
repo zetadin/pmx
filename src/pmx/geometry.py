@@ -45,6 +45,7 @@ Examples
 """
 
 from __future__ import absolute_import, print_function, division
+from builtins import map
 from numpy import array, linalg, arccos, inner
 from . import _pmx as _p
 
@@ -150,7 +151,7 @@ def nuc_super(mol1, mol2, name1=None, name2=None):
 
 def planarity(atom_list):
 
-    coords = map(lambda a: a.x, atom_list)
+    coords = list(map(lambda a: a.x, atom_list))
     plan = _p.planarity(coords)
     return plan
 
@@ -169,14 +170,14 @@ def fit(model1, model2, atom_names=[]):
     if atom_names:
         subset1 = model1.fetch_atoms(atom_names)
         subset2 = model2.fetch_atoms(atom_names)
-        cs1 = map(lambda a: a.x, subset1)
-        cs2 = map(lambda a: a.x, subset2)
+        cs1 = list(map(lambda a: a.x, subset1))
+        cs2 = list(map(lambda a: a.x, subset2))
     else:
         cs1 = model1.coords()
         cs2 = model2.coords()
 
     assert(len(cs1) == len(cs2))
-    m = map(lambda x: 1., cs1)  # dummy array
+    m = list(map(lambda x: 1., cs1))  # dummy array
     v = _p.center_vec(cs1)
     v2 = _p.center_vec(cs2)
     R = _p.calc_fit_R(cs1, cs2, m)
@@ -186,11 +187,11 @@ def fit(model1, model2, atom_names=[]):
 
 
 def fit_by_ndx(ref, model, ndx1, ndx2):
-    crd1 = map(lambda i: ref.atoms[i-1].x, ndx1)
-    crd2 = map(lambda i: model.atoms[i-1].x, ndx2)
+    crd1 = list(map(lambda i: ref.atoms[i-1].x, ndx1))
+    crd2 = list(map(lambda i: model.atoms[i-1].x, ndx2))
 
     assert(len(crd1) == len(crd2))
-    m = map(lambda x: 1., crd1)  # dummy array
+    m = list(map(lambda x: 1., crd1))  # dummy array
     v = _p.center_vec(crd1)
     v2 = _p.center_vec(crd2)
     R = _p.calc_fit_R(crd1, crd2, m)
@@ -200,8 +201,8 @@ def fit_by_ndx(ref, model, ndx1, ndx2):
 
 
 def translate_by_ndx(struct, ndx):
-    crd = map(lambda i: struct.atoms[i-1].x, ndx)
-    m = map(lambda x: 1., crd)  # FIXME: variable m is not used
+    crd = list(map(lambda i: struct.atoms[i-1].x, ndx))
+    m = list(map(lambda x: 1., crd))  # FIXME: variable m is not used
     v = _p.center_vec(crd)
     struct.translate([-v[0], -v[1], -v[2]])
     return(v)

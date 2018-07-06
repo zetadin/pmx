@@ -5,6 +5,7 @@ structures and topologies needed for alchemical free energy calculations.
 """
 
 from __future__ import absolute_import, print_function, division
+from builtins import map
 import os
 import sys
 from copy import deepcopy
@@ -1340,7 +1341,7 @@ def _get_hybrid_residues(m, ff, version='new', verbose=False):
                                       verbose=verbose)
             rdic[res.resname] = mtp
             hybrid_res = mtp[0]
-            atom_names = map(lambda a: a.name, hybrid_res.atoms)
+            atom_names = list(map(lambda a: a.name, hybrid_res.atoms))
             atoms = res.fetchm(atom_names)
             for i, atom in enumerate(hybrid_res.atoms):
                 atoms[i].atomtypeB = atom.atomtypeB

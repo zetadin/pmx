@@ -36,6 +36,7 @@ Take a look there for details...
 """
 
 from __future__ import absolute_import, print_function, division
+from builtins import map
 import sys
 import random
 import copy as cp
@@ -269,9 +270,9 @@ class Atomselection:
             atom.get_order()
 
     def max_crd(self):
-        x = map(lambda a: a.x[0], self.atoms)
-        y = map(lambda a: a.x[1], self.atoms)
-        z = map(lambda a: a.x[2], self.atoms)
+        x = list(map(lambda a: a.x[0], self.atoms))
+        y = list(map(lambda a: a.x[1], self.atoms))
+        z = list(map(lambda a: a.x[2], self.atoms))
         return (min(x), max(x)), (min(y), max(y)), (min(z), max(z))
 
     def search_neighbors(self, cutoff=8., build_bonds=True):
@@ -282,7 +283,7 @@ class Atomselection:
         _pmx.search_neighbors(self.atoms, cutoff, build_bonds)
 
     def coords(self):
-        return map(lambda a: a.x, self.atoms)
+        return list(map(lambda a: a.x, self.atoms))
 
     def fetch_atoms(self, key, how='byname', wildcard=False, inv=False):
         result = []

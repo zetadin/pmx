@@ -45,6 +45,7 @@ Usage:
 """
 
 from __future__ import absolute_import, print_function, division
+from builtins import map
 from collections import OrderedDict
 
 
@@ -166,6 +167,6 @@ def read_xvg(fn,  style='xy'):
     if style == 'list':
         return res
     else:
-        x = map(lambda a: a[0],  res)
-        y = map(lambda a: a[1],  res)
+        x = list(map(lambda a: a[0],  res))
+        y = list(map(lambda a: a[1],  res))
         return x,  y
