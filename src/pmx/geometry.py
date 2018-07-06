@@ -212,7 +212,7 @@ def fit_atoms(fit_atoms1, fit_atoms2, rot_atoms2):
     cs1 = list(map(lambda a: a.x, fit_atoms1))
     cs2 = list(map(lambda a: a.x, fit_atoms2))
     assert len(cs1) == len(cs2)
-    m = map(lambda x: 1., cs1)  # dummy array
+    m = list(map(lambda x: 1., cs1))  # dummy array
     v = _p.center_vec(cs1)
     v2 = _p.center_vec(cs2)
     R = _p.calc_fit_R(cs1, cs2, m)
