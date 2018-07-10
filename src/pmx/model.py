@@ -107,7 +107,8 @@ class Model(Atomselection):
         renumber all residues from 1. In this way, each residue will have a
         unique ID, also across chains. Default is True.
     bPDBTER : bool(?)
-        flag indicating input PDB file has TER lines(?). Default is True.
+        whether to recognize TER lines and other chain breaks, e.g.
+        discontinuous residue indices(?). Default is True.
     bNoNewID : bool(?)
         whether to assign new chain IDs? If True, new chain IDs starting
         with 'pmx' will be assigned(?). Only relevant if bPDBTER is True.
