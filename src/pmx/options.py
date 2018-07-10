@@ -36,7 +36,7 @@
 from __future__ import absolute_import, print_function, division
 import sys
 import os
-from pmx import PMX_VERSION
+from pmx import __version__
 
 
 class OptionBase:
@@ -363,7 +363,7 @@ class Commandline:
 
     def __str__(self):
         s = '---------------------------------------------------------------------------------------------------------\n'
-        s += ' Program: %s (v. %s) | pmx version %s\n' % (self.prog_name, self.version, PMX_VERSION)
+        s += ' Program: %s (v. %s) | pmx version %s\n' % (self.prog_name, self.version, __version__)
         s += '---------------------------------------------------------------------------------------------------------\n'
         s += '     %-20s  | %-15s | %-20s   | %s \n' % ("File Options", "Type(s)|Mode", "File(s)", "Description")
         s += '---------------------------------------------------------------------------------------------------------\n'
