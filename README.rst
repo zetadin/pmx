@@ -3,7 +3,7 @@ pmx: alchemistry in gromacs
 
 |build| |cov|
 
-**Warning:** this is a development version of ``pmx``, it is not stable or reliable yet. You are welcome to 
+**Warning:** this is a development version of ``pmx``, it is not stable or reliable yet. You are welcome to
 try/test it and provide feedback, but use at your own risk. The current stable version of ``pmx`` can
 be found in the master branch: https://github.com/deGrootLab/pmx
 
@@ -53,7 +53,7 @@ License
     :scale: 100%
     :target: https://travis-ci.org/deGrootLab/pmx
 
-.. |cov| image:: https://codecov.io/gh/deGrootLab/pmx/branch/master/graph/badge.svg
+.. |cov| image:: https://codecov.io/gh/deGrootLab/pmx/branch/develop/graph/badge.svg
     :alt: Code coverage
     :scale: 100%
     :target: https://codecov.io/gh/deGrootLab/pmx
