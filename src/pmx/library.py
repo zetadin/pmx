@@ -75,8 +75,9 @@ def pmx_aamut_pairs(lst):
     pairs = []
     for i in lst:
         for j in lst:
-            if i != j:
-                mut = "{0}2{1}".format(i, j)
+#            if i != j:
+            mut = "{0}2{1}".format(i, j)
+            if mut not in pairs:
                 pairs.append(mut)
     return pairs
 
