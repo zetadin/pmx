@@ -344,9 +344,9 @@ _protein_residues = set([
     'CMET','SEP','HISH','HIS1','HISE','GLUH'
     ])
 
-_pmx_mut_resisdues = set(pmx_aamut_pairs(lst=_ext_one_letter.values()))
+_pmx_mut_residues = set(pmx_aamut_pairs(lst=_ext_one_letter.values()))
 
-_protein_residues_incl_pmx_mut = _protein_residues.union(_pmx_mut_resisdues)
+_protein_residues_incl_pmx_mut = _protein_residues.union(_pmx_mut_residues)
 
 # -------------
 # Nucleic Acids
