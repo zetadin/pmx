@@ -12,9 +12,13 @@ kb = 0.00831447215   # kJ/(K*mol)
 
 
 class Jarz:
-    '''Jarzynski estimator.
+    '''Jarzynski estimator. [1]_
 
-    Description...
+    Both the forward and reverse estimates, as well as the mean of the two
+    are calculated.
+
+    The standard error is calculated via bootstrap when ``nboots``>0, and by
+    separating the work values into groups when ``nblocks``>1.
 
     Parameters
     ----------
@@ -22,20 +26,47 @@ class Jarz:
         array of forward work values.
     wr : array_like
         array of reverse work values.
-    T : float or int
-    nboots : int
-        number of bootstrap samples to use for error estimation.
+    T : float, optional
+        temperature in Kelvin. Default is 298.15 K.
+    nboots : int, optional
+        how many bootstrap samples to draw for estimating the standard error.
+        Default is zero (do not estimate the error).
+    nblocks : int, optional
+        how many blocks to divide the input work values into for the estimation
+        of the standard error. Default is one (do not estimate the error).
 
     Examples
     --------
-
+    >>> estimate = Jarz(wf, wr, T=300, nboots=1000, nblocks=10)
+    >>> dg_forward = estimate.dg_for
+    >>> dg_reverse = estimate.dg_rev
+    >>> dg_mean = estimate.dg_mean
+    >>> dg_forward_err1 = estimate.err_boot_for
+    >>> dg_forward_err2 = estimate.err_blocks_for
 
     Attributes
     ----------
-
+    dg_for : float
+        the forward free energy estimate.
+    dg_rev : float
+        the reverse free energy estimate.
+    dg_mean : float
+        the mean of the forward and reverse free energy estimates.
+    err_boot_for : float
+        standard error of the forward free energy estimate calculated
+        via bootstrap.
+    err_boot_rev : float
+        standard error of the reverse free energy estimate calculated
+        via bootstrap.
+    err_blocks_for : float
+        standard error of the forward free energy estimate calculated by
+        separating the input work values into groups/blocks.
+    err_blocks_rev : float
+        standard error of the reverse free energy estimate calculated by
+        separating the input work values into groups/blocks.
     '''
 
-    def __init__(self, wf, wr, T, nboots=0, nblocks=1):
+    def __init__(self, wf, wr, T=298.15, nboots=0, nblocks=1):
         self.wf = np.array(wf)
         self.wr = np.array(wr)
         self.T = float(T)
@@ -63,8 +94,31 @@ class Jarz:
 
     @staticmethod
     def calc_dg(w, T, c):
-        '''to be filled
+        '''Calculates the free energy difference using Jarzynski's equality.
+        [1]_
+
+        Parameters
+        ----------
+        w : array_like
+            array of work values.
+        T : float
+            temperature in Kelvin.
+        c : 1 or -1
+            either 1 or -1, indicating whether the work values for a
+            forward (1) or reverse (-1) transition are provided.
+
+        Returns
+        -------
+        float
+            location of the intersection.
+        bool
+            whether the intersection could be calculated. If the intersection
+            was calculated as expected a True value is returned.
+            If the Gaussians are too close to each other, the intersection
+            cannot be calculated and a False value is returned; in this case,
+            the first float value retured is the average of the Gaussian means.
         '''
+
         beta = 1./(kb*T)
         n = float(len(w))
         mexp = 0.0
@@ -78,8 +132,10 @@ class Jarz:
         m = m/n
         m2 = m2/n
         var = (m2-m*m)*(n/(n-1))
+
         # Jarzynski estimator
         dg = -kb*T*np.log(mexp)
+
         # Fluctuation-Dissipation estimator
         # FIXME: unused atm, remove or return?
         dg2 = m - beta*var/2.0
@@ -100,15 +156,16 @@ class Jarz:
             work values.
         T : float
             temperature.
-        c : [0,1]
-            ???
+        c : 1 or -1
+            either 1 or -1, indicating whether the work values for a
+            forward (1) or reverse (-1) transition are provided.
         nboots: int
             number of bootstrap samples to use for the error estimate.
 
         Returns
-        -------
-        err : float
-            standard error of the mean.
+        ----------
+        sderr : float
+            the standard error of the estimate.
         '''
         dg_boots = []
         n = len(w)
@@ -137,12 +194,18 @@ class Jarz:
             array of work values.
         T : float
             temperature.
-        c : [0,1]
-            ???
+        c : 1 or -1
+            either 1 or -1, indicating whether the work values for a
+            forward (1) or reverse (-1) transition are provided.
         nblocks: int
             number of blocks to divide the data into. This can be for
             instance the number of independent equilibrium simulations
             you ran.
+
+        Returns
+        ----------
+        sderr : float
+            the standard error of the estimate.
         '''
 
         dg_blocks = []
@@ -161,12 +224,20 @@ class Jarz:
 
 
 class Crooks:
-    '''Crooks Gaussian Intersection (CGI) estimator. The forward and reverse work
+    '''Crooks Gaussian Intersection (CGI) estimator. [2]_
+
+    The forward and reverse work
     values are fitted to Gaussian functions and their intersection is taken
     as the free energy estimate. In some cases, when the two Gaussians are very
     close to each other, the intersection cannot be taken and the average of
-    the two Gaussian means is taken as the free energy estimate insted. The
-    standard error is by default calculated via bootstrap using 1000 samples.
+    the two Gaussian means is taken as the free energy estimate insted.
+
+    The standard error is calculated via bootstrap when ``nboots``>0, and by
+    separating the work values into groups when ``nblocks``>1. Bootstrap errors
+    are calculating with two different bootstrap procedures: a parametric one
+    in which samples are drawn from Gaussian distributions fitted to the
+    original work distributions, and a nonparametric one in which the work
+    values themself are drawn at random with replacement.
 
     Parameters
     ----------
@@ -174,19 +245,34 @@ class Crooks:
         array of forward work values.
     wr : array_like
         array of reverse work values.
+    nboots : int, optional
+        how many bootstrap samples to draw for estimating the standard error.
+        Default is zero (do not estimate the error).
+    nblocks : int, optional
+        how many blocks to divide the input work values into for the estimation
+        of the standard error. Default is one (do not estimate the error).
 
     Examples
     --------
-    >>> Crooks(wf, wr)
-    >>> cgi_dg = Crooks.dg
-    >>> cgi_err = Crooks.err_boot
+    >>> estimate = Crooks(wf, wr, nboots=1000, nblocks=10)
+    >>> dg = estimate.dg
+    >>> dg_err1 = estimate.err_boot1
+    >>> dg_err2 = estimate.err_boot2
+    >>> dg_err3 = estimate.err_blocks
 
     Attributes
     ----------
     dg : float
         the free energy estimate.
-    err_boot : float
-        standard error of the free energy estimate calculated via bootstrap.
+    err_boot1 : float
+        standard error of the free energy estimate calculated via parametric
+        bootstrap.
+    err_boot2 : float
+        standard error of the free energy estimate calculated via
+        nonparametric bootstrap.
+    err_blocks : float
+        standard error of the free energy estimate calculated by separating
+        the input work values into groups/blocks.
     inters_bool : bool
         whether the interection could be taken. If False, the free energy
         estimate is the average of the two Gaussian means.
@@ -202,6 +288,7 @@ class Crooks:
         mean of the reverse Gaussian.
     devr : float
         standard deviation of the reverse Gaussian.
+
     '''
 
     def __init__(self, wf, wr, nboots=0, nblocks=1):
@@ -311,9 +398,9 @@ class Crooks:
             two Gaussians.
 
         Returns
-        -------
-        float
-            standard error of the mean.
+        ----------
+        sderr : float
+            the standard error of the estimate.
         '''
 
         dg_boots = []
@@ -345,9 +432,9 @@ class Crooks:
             number of bootstrap samples to use for the error estimate.
 
         Returns
-        -------
-        err : float
-            standard error of the mean.
+        ----------
+        sderr : float
+            the standard error of the estimate.
         '''
 
         nf = len(wf)
@@ -386,6 +473,11 @@ class Crooks:
             number of blocks to divide the data into. This can be for
             instance the number of independent equilibrium simulations
             you ran.
+
+        Returns
+        ----------
+        sderr : float
+            the standard error of the estimate.
         '''
 
         dg_blocks = []
@@ -405,15 +497,51 @@ class Crooks:
 
 
 class BAR:
-    '''Bennett acceptance ratio (BAR).
+    '''Bennett acceptance ratio (BAR) estimator. [3]_
 
-    Description...
+    The standard error is calculated via bootstrap when ``nboots``>0, and by
+    separating the work values into groups when ``nblocks``>1.
 
     Parameters
     ----------
+    wf : array_like
+        array of forward work values.
+    wr : array_like
+        array of reverse work values.
+    T : float, optional
+        temperature in Kelvin. Default is 298.15 K.
+    nboots : int, optional
+        how many bootstrap samples to draw for estimating the standard error.
+        Default is zero (do not estimate the error).
+    nblocks : int, optional
+        how many blocks to divide the input work values into for the estimation
+        of the standard error. Default is one (do not estimate the error).
 
     Examples
     --------
+    >>> estimate = BAR(wf, wr, T=300, nboots=1000, nblocks=10)
+    >>> dg = estimate.dg
+    >>> dg_err1 = estimate.err
+    >>> dg_err2 = estimate.err_boot
+    >>> dg_err3 = estimate.err_blocks
+    >>> dg_convergece = estimate.conv
+
+    Attributes
+    ----------
+    dg : float
+        the free energy estimate.
+    err : float
+        analytical estimate of the standard error.
+    err_boot : float
+        standard error of the free energy estimate calculated via bootstrap.
+    err_blocks : float
+        standard error of the free energy estimate calculated by separating
+        the input work values into groups/blocks.
+    conv : float
+        convergence of the free energy estimate. [4]_
+    conv_err_boot : float
+        standard error of the convergence estimate calculated via bootstrap.
+
     '''
 
     def __init__(self, wf, wr, T, nboots=0, nblocks=1):
@@ -500,6 +628,11 @@ class BAR:
             array of reverse work values.
         T : float
             temperature
+
+        Returns
+        ----------
+        sderr : float
+            the standard error of the estimate.
         '''
 
         nf = float(len(wf))
@@ -534,6 +667,10 @@ class BAR:
         nboots: int
             number of bootstrap samples.
 
+        Returns
+        ----------
+        sderr : float
+            the standard error of the estimate.
         '''
 
         nf = len(wf)
@@ -573,6 +710,11 @@ class BAR:
             number of blocks to divide the data into. This can be for
             instance the number of independent equilibrium simulations
             you ran.
+
+        Returns
+        ----------
+        sderr : float
+            the standard error of the estimate.
         '''
 
         dg_blocks = []
@@ -592,8 +734,9 @@ class BAR:
 
     @staticmethod
     def calc_conv(dg, wf, wr, T):
-        '''Evaluates BAR convergence as described in Hahn & Then, Phys Rev E
-        (2010), 81, 041117. Returns a value between -1 and 1: the closer this
+        '''Evaluates BAR convergence as described by Hahn & Then. [4]_
+
+        Returns a value between -1 and 1: the closer this
         value to zero the better the BAR convergence.
 
         Parameters
@@ -607,6 +750,10 @@ class BAR:
         T : float
             temperature
 
+        Returns
+        ----------
+        conv : float
+            convergence estimate.
         '''
 
         wf = np.array(wf)
@@ -629,6 +776,27 @@ class BAR:
 
     @staticmethod
     def calc_conv_err_boot(dg, wf, wr, nboots, T):
+        '''Calculates the error in the convergence measure by bootstrapping.
+
+        Parameters
+        ----------
+        dg : float
+            the BAR free energy estimate
+        wf : array_like
+            array of forward work values.
+        wr : array_like
+            array of reverse work values.
+        T : float
+            temperature
+        nboots: int
+            number of bootstrap samples.
+
+        Returns
+        ----------
+        sderr : float
+            the standard error of the convergence measure.
+        '''
+
         nf = len(wf)
         nr = len(wr)
         conv_boots = []
