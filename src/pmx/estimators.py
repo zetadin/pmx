@@ -222,7 +222,7 @@ class Crooks:
             self.err_boot1 = self.calc_err_boot1(m1=self.mf, s1=self.devf,
                                                  n1=len(wf), m2=self.mr,
                                                  s2=self.devr, n2=len(wr),
-                                                 nboots=1000)
+                                                 nboots=nboots)
             self.err_boot2 = self.calc_err_boot2(wf=self.wf, wr=self.wr,
                                                  nboots=nboots)
 
