@@ -74,26 +74,30 @@ class Jarz:
         self.nblocks = nblocks
 
         # Calculate all Jarz properties available
-        self.dg_for = self.calc_dg(w=self.wf, c=1.0, T=self.T)
-        self.dg_rev = -1.0 * self.calc_dg(w=self.wr, c=-1.0, T=self.T)
+        self.dg_for = self.calc_dg(w=self.wf, T=self.T, forward=True)
+        self.dg_rev = self.calc_dg(w=self.wr, T=self.T, forward=False)
         self.dg_mean = (self.dg_for + self.dg_rev) * 0.5
 
         if nboots > 0:
             self.err_boot_for = self.calc_err_boot(w=self.wf, T=self.T,
-                                                   c=1.0, nboots=nboots)
+                                                   nboots=self.nboots,
+                                                   forward=True)
             self.err_boot_rev = self.calc_err_boot(w=self.wr, T=self.T,
-                                                   c=-1.0, nboots=nboots)
+                                                   nboots=self.nboots,
+                                                   forward=False)
 
         if nblocks > 1:
-            self.err_blocks_for = self.calc_err_blocks(w=self.wf, c=1.0,
+            self.err_blocks_for = self.calc_err_blocks(w=self.wf,
                                                        T=self.T,
-                                                       nblocks=nblocks)
-            self.err_blocks_rev = self.calc_err_blocks(w=self.wr, c=-1.0,
+                                                       nblocks=self.nblocks,
+                                                       forward=True)
+            self.err_blocks_rev = self.calc_err_blocks(w=self.wr,
                                                        T=self.T,
-                                                       nblocks=nblocks)
+                                                       nblocks=self.nblocks,
+                                                       forward=False)
 
     @staticmethod
-    def calc_dg(w, T, c):
+    def calc_dg(w, T, forward=True):
         '''Calculates the free energy difference using Jarzynski's equality.
         [1]_
 
@@ -103,9 +107,10 @@ class Jarz:
             array of work values.
         T : float
             temperature in Kelvin.
-        c : 1 or -1
-            either 1 or -1, indicating whether the work values for a
-            forward (1) or reverse (-1) transition are provided.
+        forward : bool, optional
+            whether the work values provided are for the forward transition.
+            Default if True. If they are for the reverse transition, set it to
+            False.
 
         Returns
         -------
@@ -118,6 +123,11 @@ class Jarz:
             cannot be calculated and a False value is returned; in this case,
             the first float value retured is the average of the Gaussian means.
         '''
+
+        if forward is True:
+            c = 1.0
+        elif forward is False:
+            c = -1.0
 
         beta = 1./(kb*T)
         n = float(len(w))
@@ -134,16 +144,16 @@ class Jarz:
         var = (m2-m*m)*(n/(n-1))
 
         # Jarzynski estimator
-        dg = -kb*T*np.log(mexp)
+        dg = -kb * T * np.log(mexp)
 
         # Fluctuation-Dissipation estimator
-        # FIXME: unused atm, remove or return?
+        # FIXME: unused atm, make available
         dg2 = m - beta*var/2.0
 
-        return dg
+        return c * dg
 
     @staticmethod
-    def calc_err_boot(w, T, c, nboots):
+    def calc_err_boot(w, T, nboots, forward=True):
         '''Calculates the standard error via bootstrap. The work values are
         resampled randomly with replacement multiple (nboots) times,
         and the Jarzinski free energy recalculated for each bootstrap samples.
@@ -156,9 +166,10 @@ class Jarz:
             work values.
         T : float
             temperature.
-        c : 1 or -1
-            either 1 or -1, indicating whether the work values for a
-            forward (1) or reverse (-1) transition are provided.
+        forward : bool, optional
+            whether the work values provided are for the forward transition.
+            Default if True. If they are for the reverse transition, set it to
+            False.
         nboots: int
             number of bootstrap samples to use for the error estimate.
 
@@ -175,14 +186,14 @@ class Jarz:
             sys.stdout.flush()
 
             boot = np.random.choice(w, size=n, replace=True)
-            dg_boot = -1.0 * Jarz.calc_dg(boot, T, c)
+            dg_boot = Jarz.calc_dg(w=boot, T=T, forward=forward)
             dg_boots.append(dg_boot)
         sys.stdout.write('\n')
         err = np.std(dg_boots)
         return err
 
     @staticmethod
-    def calc_err_blocks(w, T, c, nblocks):
+    def calc_err_blocks(w, T, nblocks, forward=True):
         '''Calculates the standard error based on a number of blocks the
         work values are divided into. It is useful when you run independent
         equilibrium simulations, so that you can then use their respective
@@ -194,9 +205,10 @@ class Jarz:
             array of work values.
         T : float
             temperature.
-        c : 1 or -1
-            either 1 or -1, indicating whether the work values for a
-            forward (1) or reverse (-1) transition are provided.
+        forward : bool, optional
+            whether the work values provided are for the forward transition.
+            Default if True. If they are for the reverse transition, set it to
+            False.
         nblocks: int
             number of blocks to divide the data into. This can be for
             instance the number of independent equilibrium simulations
@@ -214,7 +226,7 @@ class Jarz:
 
         # calculate all dg
         for w_block in w_split:
-            dg_block = -1.0 * Jarz.calc_dg(w_block, T, c)
+            dg_block = Jarz.calc_dg(w=w_block, T=T, forward=forward)
             dg_blocks.append(dg_block)
 
         # get std err
