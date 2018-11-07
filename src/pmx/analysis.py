@@ -5,6 +5,7 @@ from scipy.integrate import simps
 from matplotlib import pyplot as plt
 from copy import deepcopy
 from scipy.special import erf
+from builtins import map, filter, range
 from .utils import data2gauss, gauss_func
 
 __all__ = ['read_dgdl_files', 'integrate_dgdl',
@@ -88,7 +89,7 @@ def integrate_dgdl(fn, ndata=-1, lambda0=0, invert_values=False):
     # optional files integrity check before calling this integration func
 
     lines = [l for l in lines if l[0] not in '#@&']
-    r = map(lambda x: float(x.split()[1]), lines)
+    r = list(map(lambda x: float(x.split()[1]), lines))
 
     if ndata != -1 and len(r) != ndata:
         try:
@@ -203,7 +204,7 @@ def ks_norm_test(data, alpha=0.05, refks=None):
     check = np.sqrt(N)*dmax
     if not refks:
         refks = ksref()
-    lst = filter(lambda x: x[1] > siglev, refks)
+    lst = list(filter(lambda x: x[1] > siglev, refks))
     lam0 = lst[0][0]
     if check >= lam0:
         bOk = False
@@ -267,8 +268,8 @@ def plot_work_dist(wf, wr, fname='Wdist.png', nbins=20, dG=None, dGerr=None,
         return y[window_len-1:-window_len+1]
 
     plt.figure(figsize=(8, 6))
-    x1 = range(len(wf))
-    x2 = range(len(wr))
+    x1 = list(range(len(wf)))
+    x2 = list(range(len(wr)))
     if x1 > x2:
         x = x1
     else:
@@ -313,12 +314,12 @@ def plot_work_dist(wf, wr, fname='Wdist.png', nbins=20, dG=None, dGerr=None,
     res_y = [0, size*1.2]
     if dG is not None and dGerr is not None:
         plt.plot(res_y, res_x, 'k--', linewidth=2,
-                 label=r'$\Delta$G = %.2f $\pm$ %.2f kJ/mol' % (dG, dGerr))
+                 label=r'$\Delta$G = %.2f $\pm$ %.2f %s' % (dG, dGerr, units))
         plt.legend(shadow=True, fancybox=True, loc='upper center',
                    prop={'size': 12})
     elif dG is not None and dGerr is None:
         plt.plot(res_y, res_x, 'k--', linewidth=2,
-                 label=r'$\Delta$G = %.2f kJ/mol' % dG)
+                 label=r'$\Delta$G = %.2f %s' % (dG, units))
         plt.legend(shadow=True, fancybox=True, loc='upper center',
                    prop={'size': 12})
     else:

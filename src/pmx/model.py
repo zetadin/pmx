@@ -100,16 +100,19 @@ class Model(Atomselection):
     filename : str
         filename of input structure
     pdbline : bool(?)
-        ...describe - what is pdbline?
+        what is pdbline?
     renumber_atoms : bool
         renumber all atoms from 1. Default is True.
     renumber_residues : bool
         renumber all residues from 1. In this way, each residue will have a
         unique ID, also across chains. Default is True.
     bPDBTER : bool(?)
-        flag indicating input PDB file has TER lines(?). Default is True.
+        whether to recognize TER lines and other chain breaks, e.g.
+        discontinuous residue indices(?). Default is True.
     bNoNewID : bool(?)
-        ...describe - what does this do?
+        whether to assign new chain IDs? If True, new chain IDs starting
+        with 'pmx' will be assigned(?). Only relevant if bPDBTER is True.
+        Default is True.
     for_gmx : bool
         rename atoms and scale coordinates. Set this to True
         if the Model is then written to file and used as input for Gromacs
@@ -119,7 +122,9 @@ class Model(Atomselection):
     Attributes
     ----------
     title : str
-        title of model
+        title of model. Default is 'PMX MODEL'.
+    filename : str
+        filename from which the Model was imported, otherwise None.
     chains : list
         list of Chain instances
     chdic : dict
@@ -140,6 +145,7 @@ class Model(Atomselection):
 
         Atomselection.__init__(self)
         self.title = 'PMX MODEL'
+        self.filename = filename
         self.chains = []
         self.chdic = {}
         self.residues = []
@@ -191,6 +197,7 @@ class Model(Atomselection):
         return s
 
     def writePIR(self, filename, title=""):
+        """Prints sequence to screen in PIR format"""
         fp = open(filename, "w")
         if not title:
             title = '_'.join(self.title.split())
@@ -202,6 +209,7 @@ class Model(Atomselection):
         fp.close()
 
     def writeFASTA(self, filename, title=""):
+        """Prints sequence to screen in FASTA format"""
         fp = open(filename, "w")
         if not title:
             title = '_'.join(self.title.split())
@@ -213,7 +221,30 @@ class Model(Atomselection):
                 print('> %s_chain_%s' % (title, chain.id), file=fp)
                 print(chain.get_sequence(), file=fp)
 
+    # FIXME/TODO: this function is overwriting the write function inherited from
+    # Atomselection. Should we keep only one of the 2?
+    # writePIR and writeFASTA could be moved to Atomselection so that all
+    # write functions are in one place
     def write(self, fn, title='', nr=1, bPDBTER=False, bAssignChainIDs=False):
+        """Writes Model to file. The format is deduced from the filename
+        extension given, and available options are '.gro', '.pdb', '.fasta',
+        '.pir'.
+
+        Parameters
+        ----------
+        fn : str
+            filename
+        title : str, optional
+            title of the Model to write in fn
+        nr : int, optional
+            what is nr?
+        bPDBTER : bool, optional
+            whether to separate chains with TER entries. Only relevant when
+            writing PDB files. Default is False.
+        bAssignChainIDs : bool, optional
+            whether to write the chains IDs to file. Only relevant when
+            writing PDB files. Default is False.
+        """
         ext = fn.split('.')[-1]
         if ext == 'pdb':
             self.writePDB(fn, title, nr, bPDBTER, bAssignChainIDs)
@@ -228,6 +259,7 @@ class Model(Atomselection):
             sys.exit(1)
 
     def make_chains(self):
+        """Initialises the Chain instances from the input"""
         self.chains = []
         self.chdic = {}
         cur_chain = None
@@ -265,6 +297,7 @@ class Model(Atomselection):
             self.chdic[idx] = ch
 
     def make_residues(self):
+        """Initialises the Molecule instances from the input"""
         self.residues = []
         for ch in self.chains:
             cur_mol = None
@@ -310,6 +343,7 @@ class Model(Atomselection):
                 r.chain_id = ch.id
 
     def __readPDB(self, fname=None, pdbline=None):
+        """Reads a PDB file"""
         if pdbline:
             lines = pdbline.split('\n')
         else:
@@ -328,6 +362,7 @@ class Model(Atomselection):
     # TODO: make readPDB and readPDBTER a single function. It seems like
     # readPDBTER is more general PDB reader?
     def __readPDBTER(self, fname=None, pdbline=None, bNoNewID=True):
+        """Reads a PDB file with more options than __readPDB ?"""
         if pdbline:
             lines = pdbline.split('\n')
         else:
@@ -387,6 +422,7 @@ class Model(Atomselection):
         return self
 
     def __readGRO(self, filename):
+        """Reads a GRO file"""
         l = open(filename).readlines()
         # first line is name/comment
         name = l[0].rstrip()
@@ -445,10 +481,9 @@ class Model(Atomselection):
         return self
 
     def assign_moltype(self):
-        """Identifies what type of molecule the Model is:
-        protein, dna, or rna.
+        """Identifies what type of molecule the Model is: protein, dna, or rna.
         If it is a mix, or if it is an organic molecule, "unknown" is
-        returned.
+        assigned to self.moltype.
         """
         residues = set([r.resname for r in self.residues])
 
@@ -467,6 +502,19 @@ class Model(Atomselection):
             self.moltype = 'unknown'
 
     def read(self, filename, bPDBTER=False, bNoNewID=True):
+        """PDB/GRO file reader.
+
+        Parameters
+        ----------
+        filename : str
+            name of input file
+        bPDBTER : bool, optional
+            whether the file contains TER records?. Default is False.
+        bNoNewID : bool, optional
+            whether to assign new chain IDs. If True, new chain IDs starting
+            with 'pmx' will be assigned(?). Only relevant if bPDBTER is also
+            True. Default is True.
+        """
         ext = filename.split('.')[-1]
         if ext == 'pdb':
             if bPDBTER is True:
@@ -481,19 +529,44 @@ class Model(Atomselection):
             raise IOError('ERROR: Can only read pdb or gro!')
 
     def renumber_residues(self):
+        """Renumbers all residues from 1."""
         for i, res in enumerate(self.residues):
             res.set_orig_resid(res.id)
             res.set_resid(i+1)
 
+    # TODO/FIXME: should add/remove/append atoms all be only once in
+    # Atomselection? At the moment they are repeated in Molecule, Chain,
+    # and Model
     def remove_atom(self, atom):
+        """Removes an Atom instance.
+
+        Parameters
+        ----------
+        atom : Atom
+            Atom instance to remove
+        """
         m = atom.molecule
         m.remove_atom(atom)
 
     def remove_residue(self, residue):
+        """Removes a Molecule/residue instance.
+
+        Parameters
+        ----------
+        residue : Molecule
+            Molecule instance to remove
+        """
         ch = residue.chain
         ch.remove_residue(residue)
 
     def remove_chain(self, key):
+        """Removes a Chain instance given the chain ID.
+
+        Parameters
+        ----------
+        key : str
+            ID of the chain to remove
+        """
         if key not in self.chdic:
             print('No chain %s to remove....' % key)
             print('No changes applied.')
@@ -512,14 +585,46 @@ class Model(Atomselection):
         self.remove_chain(key)
 
     def insert_residue(self, pos, res, chain_id):
+        """Inserts a residue in Model.
+
+        Parameters
+        ----------
+        pos : int
+            position/index where to insert the residue
+        res : Molecule
+            Molecule instance to insert containig the residue of interest
+        chain_id : str
+            ID of the chain where to insert the residue
+        """
         ch = self.chdic[chain_id]
         ch.insert_residue(pos, res)
 
     def replace_residue(self, residue, new, bKeepResNum=False):
+        """Replaces a residue.
+
+        Parameters
+        ----------
+        residue : Molecule
+            residue to replace
+        new : Molecule
+            residue to insert
+        bKeepResNum : bool, optional
+            whether to keep residue ID of the residue that is inserted.
+            Default is False
+        """
         ch = residue.chain
         ch.replace_residue(residue, new, bKeepResNum)
 
     def insert_chain(self, pos, new_chain):
+        """Inserts a Chain in Model.
+
+        Parameters
+        ----------
+        pos : int
+            index where to insert the chain within the list of chains
+        new_chain : Chain
+            instance of the Chain to insert in Model
+        """
         if new_chain.id in self.chdic:
             print('Chain identifier %s already in use!' % new_chain.id)
             print('Changing chain identifier to 0')
@@ -584,7 +689,7 @@ class Model(Atomselection):
                     return r
 
     def fetch_residues(self, key, inv=False):
-        """Get residues by resnames.
+        """Gets residues using a list of residue names.
 
         Parameters
         ----------
@@ -598,7 +703,6 @@ class Model(Atomselection):
         -------
         residues : list
             list of Molecule instances with the residues
-
         """
         if not hasattr(key, "append"):
             key = [key]

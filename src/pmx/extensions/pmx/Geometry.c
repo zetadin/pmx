@@ -144,7 +144,14 @@ void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
     free(omega[i]);
     free(om[i]);
   }
-
+#if PY_MAJOR_VERSION >= 3
+    /* this solves a problem in py3 in which this func raises the error:
+     * SystemError: <built-in function calc_fit_R> returned a result with an error set
+     * however, this fix is 100% empirical - it works but there may be better
+     * ways to do this
+     */
+    PyErr_Clear();
+#endif
 }
 
 

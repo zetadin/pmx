@@ -1,9 +1,10 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # simple interface to the available scripts
 from __future__ import print_function, absolute_import
 from argparse import ArgumentParser, RawTextHelpFormatter, SUPPRESS
 import sys
+from pmx import __version__
 
 
 class PmxCli:
@@ -24,6 +25,8 @@ class PmxCli:
         gmxlib     Show/set GMXLIB path''',
             formatter_class=RawTextHelpFormatter)
 
+        parser.add_argument('-v', '--version', action='version',
+                            version=__version__)
         parser.add_argument('command', help=SUPPRESS)
         # parse_args defaults to [1:] for args, but you need to
         # exclude the rest of the args too, or validation will fail
@@ -44,8 +47,8 @@ class PmxCli:
         generate_hybrid_topology.entry_point()
 
     def analyse(self):
-        from . import analyze_dgdl
-        analyze_dgdl.entry_point()
+        from . import analyze_dhdl
+        analyze_dhdl.entry_point()
 
     def genlib(self):
         from . import generate_hybrid_residue

@@ -8,6 +8,7 @@ or
 """
 
 from setuptools import setup, Extension
+import versioneer
 
 
 def readme():
@@ -39,7 +40,8 @@ extensions = [pmx, xdrio]
 # Setup
 # -----
 setup(name='pmx',
-      version='2.0dev0',
+      version=versioneer.get_version(),
+      cmdclass=versioneer.get_cmdclass(),
       description='Toolkit for free-energy calculation setup/analysis '
                   'and biomolecular structure handling',
       long_description=readme(),

@@ -36,6 +36,7 @@ Take a look there for details...
 """
 
 from __future__ import absolute_import, print_function, division
+from builtins import map
 import sys
 import random
 import copy as cp
@@ -57,6 +58,27 @@ class Atomselection:
 
     def writePDB(self, fname, title="", nr=1, bPDBTER=False,
                  bAssignChainIDs=False, resnrlist=[]):
+        """Writes Atomselection to file in PDB format.
+
+        Parameters
+        ----------
+        fname : str
+            filename
+        title : str, optional
+            title of the PDB file. If not given, it is taken from the instance
+            title
+        nr : int, optional
+            what is nr? it seems to choose whether to overwrite or append to a
+            file?
+        bPDBTER : bool, optional
+            whether to separate chains with TER entries.
+        bAssignChainIDs : bool, optional
+            whether to write the chains IDs to file. Default is False.
+        resnrlist : list, optional
+            list of residues to write to file. If empty list provided, all
+            residues are written to file, otherwise only the ones in the list
+            will be written.
+        """
         if nr > 1:
             fp = open(fname, 'a')
         else:
@@ -193,13 +215,21 @@ class Atomselection:
         return self
 
     def renumber_atoms(self, start=1):
+        """Renumber all atoms starting from a chosen number (default is 1).
+        The original atom IDs are stored in the attribute ``orig_id``
+
+        Parameters
+        ----------
+        start : int, optional
+            integer from which to start the indexing of the atoms
+        """
         for i, atom in enumerate(self.atoms):
             if not hasattr(atom, "orig_id") or atom.orig_id == 0:
                 atom.orig_id = atom.id
             atom.id = i+1
 
     def rename_atoms_to_gmx(self):
-        """Rename atoms to comply with Gromacs syntax: if the name starts with
+        """Renames atoms to comply with Gromacs syntax. If the name starts with
         a digit, the digit is moved at the end of the name. E.g. "1CA" becomes
         "CA1".
         """
@@ -240,9 +270,9 @@ class Atomselection:
             atom.get_order()
 
     def max_crd(self):
-        x = map(lambda a: a.x[0], self.atoms)
-        y = map(lambda a: a.x[1], self.atoms)
-        z = map(lambda a: a.x[2], self.atoms)
+        x = list(map(lambda a: a.x[0], self.atoms))
+        y = list(map(lambda a: a.x[1], self.atoms))
+        z = list(map(lambda a: a.x[2], self.atoms))
         return (min(x), max(x)), (min(y), max(y)), (min(z), max(z))
 
     def search_neighbors(self, cutoff=8., build_bonds=True):
@@ -253,7 +283,7 @@ class Atomselection:
         _pmx.search_neighbors(self.atoms, cutoff, build_bonds)
 
     def coords(self):
-        return map(lambda a: a.x, self.atoms)
+        return list(map(lambda a: a.x, self.atoms))
 
     def fetch_atoms(self, key, how='byname', wildcard=False, inv=False):
         result = []

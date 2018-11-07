@@ -68,6 +68,27 @@ __all__ = ['Chain']
 
 
 class Chain(Atomselection):
+    """Chain Class.
+
+    Parameters
+    ----------
+    seq : str, optional
+        amino acid sequence. If Chain is initialised with a sequence, a peptide
+        is built. By default seq=None.
+
+    Attributes
+    ----------
+    residues: list
+        list of residues in Chain
+    nres : int
+        number of residues in Chain
+    atoms : list
+        list of atoms in Chain
+    natoms : int
+        number of atoms in Chain
+    id : int
+        atom id
+    """
 
     def __init__(self, seq=None, **kwargs):
         Atomselection.__init__(self)
@@ -93,7 +114,7 @@ class Chain(Atomselection):
         self.remove_residue(res)
 
     def get_sequence(self):
-        """ returns the sequence as string (for fasta format)"""
+        """Returns the sequence of residues in FASTA format."""
         seq = ''
         for i, res in enumerate(self.residues):
             try:
@@ -104,6 +125,8 @@ class Chain(Atomselection):
                 seq += '-'+res.resname+'-'
         return seq
 
+    # TODO: this is basically the same as get_sequence
+    # I would suggest to remove it
     def sequence(self):
         seq = ''
         for i, res in enumerate(self.residues):
@@ -122,6 +145,18 @@ class Chain(Atomselection):
                 atom.chain = self
 
     def insert_residue(self, pos, mol, newResNum=False):
+        """Inserts a residue at a specified position.
+
+        Parameters
+        ----------
+        pos : int
+            index of the residue to be inserted
+        mol : Molecule
+            Molecule instance to insert
+        newResNum : int, optional
+            assigns a specific residue number that differs from the
+            ID in pos
+        """
         if self.model is not None:
             have_model = True
         else:
@@ -165,10 +200,12 @@ class Chain(Atomselection):
         self.make_residue_tree()
 
     def renumber_residues(self):
+        """Renumbers residues from 1."""
         for i, res in enumerate(self.residues):
             res.set_resid(i+1)
 
     def insert_chain(self, pos, chain):
+        """Inserts a Chain into the Model the current Chain is part of (?)"""
         idx_model = -1
         if self.model is not None:
             have_model = True
@@ -216,6 +253,16 @@ class Chain(Atomselection):
         self.make_residue_tree()
 
     def remove_residue(self, residue, bKeepResNum=False):
+        """Removes a residue.
+
+        Parameters
+        ----------
+        residue : Molecule
+            Molecule instance to remove
+        bKeepResNum : bool, optional
+            whether to keep the original residue IDs. Default is False (i.e.
+            renumber all residues from 1).
+        """
         idx = self.residues.index(residue)
         try:
             midx = self.model.residues.index(residue)
@@ -239,6 +286,18 @@ class Chain(Atomselection):
         self.make_residue_tree()
 
     def replace_residue(self, residue, new, bKeepResNum=False):
+        """Replaces a residue.
+
+        Parameters
+        ----------
+        residue : Molecule
+            residue to replace
+        new : Molecule
+            residue to insert
+        bKeepResNum : bool, optional
+            whether to keep residue ID of the residue that is inserted.
+            Default is False
+        """
         idx = self.residues.index(residue)
         if bKeepResNum is True:
             self.insert_residue(idx, new, residue.id)
@@ -251,6 +310,21 @@ class Chain(Atomselection):
         m.remove_atom(atom)
 
     def fetch_residues(self, key, inv=False):
+        """Fetch residues by residue names.
+
+        Parameters
+        ----------
+        key : list
+            list of residue names
+        inv : bool, optional
+            whether to invert the selection, i.e. select all residues with
+            names not in *key*. Default is False.
+
+        Returns
+        -------
+        result : list
+            list of residues
+        """
         if not hasattr(key, "append"):
             key = [key]
         result = []
@@ -265,6 +339,13 @@ class Chain(Atomselection):
         return result
 
     def set_chain_id(self, chain_id):
+        """Sets the chain ID.
+
+        Parameters
+        ----------
+        chain_id : int
+            the chain ID
+        """
         old_id = self.id
         self.id = chain_id
         for r in self.residues:
@@ -274,6 +355,13 @@ class Chain(Atomselection):
             del self.model.chdic[old_id]
 
     def append(self, mol):
+        """Appends a residue to the Chain.
+
+        Parameters
+        ----------
+        mol : Molecule
+            Molecule instance to append
+        """
         if not isinstance(mol, Molecule):
             raise(TypeError, "%s is not a Molecule instance" % str(mol))
         else:
@@ -284,6 +372,7 @@ class Chain(Atomselection):
         return copy.deepcopy(self)
 
     def get_bonded(self):
+        """Gets information about bonds ???"""
         for r in self.residues:
             r.get_bonded()
         for i, r in enumerate(self.residues[:-1]):
@@ -324,6 +413,8 @@ class Chain(Atomselection):
                 r.mol2_resname = r.resname.lower()
 
     def add_nterm_cap(self):
+        """Adds N-terminal cap (ACE).
+        """
         if self.unity == 'nm':
             self.nm2a()
             changed = True
@@ -345,6 +436,8 @@ class Chain(Atomselection):
             self.a2nm()
 
     def add_cterm_cap(self):
+        """Adds C-terminal cap (NME).
+        """
         if self.unity == 'nm':
             self.nm2a()
             changed = True
@@ -373,7 +466,7 @@ class Chain(Atomselection):
             changed = False
 
         cterm = self.residues[-1]
-        ch = builder.attach_chain(cterm, newchain, phi=phi, psi=psi)  # BUG? builder moddule does not contain func attach_chain
+        ch = builder.attach_chain(cterm, newchain, phi=phi, psi=psi)  # BUG? builder module does not contain func attach_chain
         self.insert_chain(len(self.residues), ch)
         if changed:
             self.a2nm()
@@ -437,6 +530,17 @@ class Chain(Atomselection):
             a[0].name = 'O'
 
     def cbuild(self, resn, next_phi=-139., psi=135.):
+        """Extend Chain at C-terminus.
+
+        Parameters
+        ----------
+        resn : str
+            residue name using 1- or 3-letter code
+        next_phi : float, optional
+            phi angle. Default is -139.
+        next_psi : float, optional
+            psi angle. Default is 135.
+        """
         if len(resn) == 1:
             resn = library._aacids_dic[resn]
         new = Molecule().new_aa(resn)
@@ -546,6 +650,17 @@ class Chain(Atomselection):
             self.a2nm()
 
     def nbuild(self, resn, phi=-139., psi=135.):
+        """Extend Chain at N-terminus.
+
+        Parameters
+        ----------
+        resn : str
+            residue name using 1- or 3-letter code
+        phi : float, optional
+            phi angle. Default is -139.
+        psi : float, optional
+            psi angle. Default is 135.
+        """
 
         if len(resn) == 1:
             resn = library._aacids_dic[resn]
@@ -648,7 +763,15 @@ class Chain(Atomselection):
         nterm.set_phi_down(phi, True)
         new.set_psi_down(psi, True)
 
+    # FIXME: arguments phi_psi and ss are unused
     def create(self, seq, phi_psi=[], ss=[]):
+        """Populates a Chain with residues from a specified sequence.
+
+        Parameters
+        ----------
+        seq : str
+            amino acid sequence (use 1-letter codes).
+        """
         first_res = seq[0]
         resn = library._aacids_dic[first_res]
         new = Molecule().new_aa(resn)
@@ -663,7 +786,7 @@ class Chain(Atomselection):
 
     def fuse(self, new, phi=-139, psi=135):
         if new.unity != 'A':
-            newchain.nm2a()  # possible BUG? newchain not defined
+            newchain.nm2a()  # BUG? newchain not defined
         nterm = new.nterminus()
         self.__prepare_cterm_for_extension()
         cterm = self.cterminus()
@@ -771,6 +894,7 @@ class Chain(Atomselection):
             self.a2nm()
 
     def make_residue_tree(self):
+        """Checks whether the Chain is continous."""
         self.residue_tree_ok = True
         for i, r in enumerate(self.residues[:-1]):
             if r.is_protein_residue():
@@ -790,6 +914,7 @@ class Chain(Atomselection):
                         self.residue_tree_ok = False
 
     def cterminus(self):
+        """Returns C-terminal residue"""
         i = len(self.residues) - 1
         r = self.residues[i]
         if r.is_protein_residue():
@@ -802,6 +927,7 @@ class Chain(Atomselection):
         return None
 
     def nterminus(self):
+        """Returns N-terminal residue"""
         i = 0
         r = self.residues[0]
         if r.is_protein_residue():
@@ -828,4 +954,17 @@ class Chain(Atomselection):
                     atom.make_long_name()
 
     def residue(self, idx):
+        """Returns a residue using 1-based indices. E.g. to get the 10-th
+        residue in Chain.residues, you can do Chain.residue(10).
+
+        Parameters
+        ----------
+        idx : int
+            index
+
+        Returns
+        -------
+        residue : Molecule
+            the residue
+        """
         return self.residues[idx-1]

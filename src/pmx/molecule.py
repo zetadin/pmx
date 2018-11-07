@@ -74,7 +74,26 @@ __all__ = ['Molecule']
 
 
 class Molecule(Atomselection):
-    """ Storage class for a Molecule/residue"""
+    """Class for storing molecule/residue data.
+
+    Attributes
+    ----------
+    resname : str
+        residue/molecule name
+    id : int
+        residue ID
+    natoms : int
+        number of atoms in the Molecule
+    atoms : list
+        list of atoms in Molecule
+    chain : Chain
+        the Chain instance the Molecule is part of
+    chain_id : int
+        ID of the chain the residue is part of
+    moltype : str
+        the type of molecule/residue (protein, dna, rna, ion, water, or
+        unknown).
+    """
 
     def __init__(self, **kwargs):
         Atomselection.__init__(self)
@@ -114,9 +133,9 @@ class Molecule(Atomselection):
 
     def assign_moltype(self):
         """Identifies what type of molecule/residue the molecule is:
-        - protein (residue)
-        - dna (residue)
-        - rna (residue)
+        - protein
+        - dna
+        - rna
         - water
         - ion
         - unknown.
@@ -156,12 +175,14 @@ class Molecule(Atomselection):
             return False
 
     def has_atom(self, atom_name):
+        """check whether a certain atom is present"""
         if self.fetch(atom_name):
             return True
         else:
             return False
 
     def new_aa(self, aa, hydrogens=True):
+        """add a new amino acids (?)"""
         aa = aa.upper()
         if len(aa) == 1:
             resname = library._aacids_dic[aa]
@@ -207,6 +228,7 @@ class Molecule(Atomselection):
             self.real_resname = self.resname
 
     def get_psi(self, degree=False):
+        """Calculate psi angle"""
         chidx = self.chain.residues.index(self)
         if chidx == len(self.chain.residues)-1:
             return -999.
@@ -221,6 +243,7 @@ class Molecule(Atomselection):
             return dih*180/pi
 
     def set_psi(self, degree, propagate=True):
+        """Set psi angle"""
         psi = self.get_psi()
         diff = degree*pi/180. - psi
         CA, C = self.fetchm(['CA', 'C'])
@@ -268,6 +291,7 @@ class Molecule(Atomselection):
             return dih*180/pi
 
     def set_phi(self, degree, propagate=True):
+        """set phi angle (C-1)-N-CA-C"""
         if self.resname == 'PRO':
             return  # does not work
         phi = self.get_phi()
@@ -388,40 +412,69 @@ class Molecule(Atomselection):
             self.set_chi(chi+1, rotamer[chi+1])
 
     def set_resname(self, resname):
+        """Set the residue name.
+
+        Parameters
+        ---------
+        resname : str
+            the residue name
+        """
         self.resname = resname
         for atom in self.atoms:
             atom.resname = resname
 
     def set_resid(self, resid):
+        """Set the residue ID.
+
+        Parameters
+        ---------
+        resname : int
+            the residue index
+        """
         self.id = resid
         for atom in self.atoms:
             atom.resnr = resid
 
     def set_orig_resid(self, resid):
+        """Set the original residue/molecule ID."""
         if self.orig_id == 0:
             self.orig_id = resid
 
     def set_chain(self, chain):
+        """Set the chain for each atom in Molecule."""
         self.chain = chain
         for atom in self.atoms:
             atom.chain = chain
 
     def set_molecule(self):
+        """Set the molecule for each atom in Molecule."""
         for atom in self.atoms:
             atom.molecule = self
 
     def set_chain_id(self, chain_id):
+        """Set the chain ID for each atom in Molecule."""
         self.chain_id = chain_id
         for atom in self.atoms:
             atom.chain_id = chain_id
 
     def insert_atom(self, pos, atom, id=True):
-        """ insert atom at a certain position"""
+        """Insert an atom at a certain position.
+
+        Parameters
+        ----------
+        pos : int
+            index where to insert the atom
+        atom : Atom
+            Atom instance to insert
+        id : bool, optional
+            whether to assign the resnr, resname, and chain_id attributes from
+            Molecule to the Atom instance. Default is True.
+        """
         if pos not in range(len(self.atoms)+1):
             print('Molecule has only %d atoms' % len(self.atoms))
             return
         else:
-            if id:
+            if id is True:
                 atom.resnr = self.id
                 atom.resname = self.resname
                 atom.chain_id = self.chain_id
@@ -452,7 +505,23 @@ class Molecule(Atomselection):
                 self.model.renumber_atoms()
 
     def fetch(self, key, how='byname', wildcard=False):
-        """ select atoms by name or by element"""
+        """Fetch atoms. It selects atoms by name or by element.
+
+        Parameters
+        ----------
+        key : str
+            atom name or element
+        how : str
+            choose 'byname' or 'byelem'
+        wildcard : bool
+            whether to match the 'key' (False) or to check if the 'key' is in
+            the name/element (True). Default is False.
+
+        Returns
+        -------
+        result : list
+            list of atoms
+        """
         result = []
         if how == 'byname':
             if not wildcard:
@@ -470,7 +539,21 @@ class Molecule(Atomselection):
         return result
 
     def fetchm(self, keys, how='byname'):
-        """select list of atom by name or element"""
+        """Fetch multiple atoms. It select atoms using a list names or
+        elements.
+
+        Parameters
+        ----------
+        keys : list
+            list of atom names or elements
+        how : str
+            choose 'byname' or 'byelem'
+
+        Returns
+        -------
+        result : list
+            list of atoms
+        """
         result = []
         if how == 'byname':
             for key in keys:
@@ -484,7 +567,13 @@ class Molecule(Atomselection):
         return result
 
     def remove_atom(self, atom):
-        """ delete atom from molecule"""
+        """Delete an atom from Molecule.
+
+        Parameters
+        ----------
+        atom : Atom
+            Atom instance to be removed
+        """
         if self.chain is not None:
             have_chain = True
         else:
@@ -507,7 +596,13 @@ class Molecule(Atomselection):
             self.model.renumber_atoms()
 
     def append(self, atom):
-        """ attach atom at the end"""
+        """Append an atom to the Molecule.
+
+        Parameters
+        ----------
+        atom : Atom
+            Atom instance to append
+        """
         if not isinstance(atom, Atom):
             raise(TypeError, "%s is not an Atom instance" % str(atom))
         else:
@@ -521,6 +616,7 @@ class Molecule(Atomselection):
         """ copy molecule"""
         return copy.deepcopy(self)
 
+    # TODO: add docstring - what does this do?
     def get_bonded(self):
         bl = library._bonds[self.resname]
         for i, atom in enumerate(self.atoms[:-1]):
@@ -551,6 +647,8 @@ class Molecule(Atomselection):
                     atom.atype = dic[atom.name][0]
                     atom.q = dic[atom.name][1]
 
+    # FIXME: redundant function - task can be carried out by asking whether the
+    # Molecule.moltype == 'protein'
     def is_protein_residue(self):
         if self.resname in library._protein_residues:
             return True

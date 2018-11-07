@@ -51,6 +51,7 @@ Geometric measurements:
 """
 
 from __future__ import absolute_import, print_function, division
+from builtins import map
 import copy
 from numpy import pi
 from . import library
@@ -61,12 +62,14 @@ __all__ = ['Atom']
 
 
 class Atom:
-    """ class for storage of atom properties and methods
+    """Atom Class.
 
     Parameters
     ----------
-    line : str
-    mol2line : str
+    line : str, optional
+        input line in PDB format. Default is None.
+    mol2line : str, optional
+        input line in MOL2 format.  Default is None.
 
 
     Attributes
@@ -77,7 +80,18 @@ class Atom:
         atom name
     resname : str
         name of residue atom is part of
-
+    chain_id : str
+        ID of the chain atom belongs to
+    x : array
+        atom coordinates
+    occ : float
+        occupancy
+    bfac : float
+        B-factor
+    symbol : str
+        chemical element of the atom
+    unity : str
+        unit of the coordinates, either 'A' or 'nm'. Default is 'A'.
     """
     def __init__(self, line=None, mol2line=None, **kwargs):
 
@@ -130,108 +144,10 @@ class Atom:
         if mol2line is not None:
             self.read_mol2_line(mol2line)
 
-    def readPDBString(self, line, origID=0):
-        """PDB String to Atom"""
-
-        self.race = line[0:6]
-        self.id = int(line[7:11])
-        self.orig_id = origID
-        self.name = line[12:16].strip()
-        self.altloc = line[16]
-        self.resname = line[17:21].strip()
-        self.chain_id = line[21]
-        try:
-            self.resnr = int(line[22:27])
-        except:
-            self.resnr = line[22:27]  # contains insertion code
-
-        self.x = [float(line[30:38]),
-                  float(line[39:46]),
-                  float(line[47:54])]
-        try:
-            self.occ = float(line[55:60])
-        except:
-            self.occ = 1.
-        try:
-            self.bfac = float(line[61:66])
-        except:
-            self.bfac = 0.
-        try:
-            self.symbol = line[70:73].strip()
-        except:
-            self.symbol = None
-        self.unity = 'A'
-        if not self.symbol:
-            self.get_symbol()
-        return self
-
-    def dist(self, other):
-        """ returns the distance between two atoms
-        Usage: dist=atom1.dist(atom2)
-        This function is also called by typing
-        d=atom1-atom2"""
-        return _p.dist(self.x, other.x)
-
-    def dist2(self, other):
-        """ returns the squared distance between two atoms
-        Usage: dist=atom1.dist2(atom2)"""
-
-        return _p.dist2(self.x, other.x)
-
-    def __sub__(self, other):
-        """ Overloading of the '-' operator for using
-        atom1-atom2 instead of atom1.dist(atom2)"""
-        return self.dist(other)
-
-    def translate(self, v):
-        self.x[0] += v[0]
-        self.x[1] += v[1]
-        self.x[2] += v[2]
-
-    def nm2a(self):
-        if self.unity == 'nm':
-            self.x[0] *= 10
-            self.x[1] *= 10
-            self.x[2] *= 10
-            self.unity = 'A'
-
-    def a2nm(self):
-        if self.unity == 'A':
-            self.x[0] *= .1
-            self.x[1] *= .1
-            self.x[2] *= .1
-            self.unity = 'nm'
-
-    def angle(self, other1, other2, degree=None):
-        """ Calcluates the angle between 3 atoms
-        Usage: atom1.angle(atom2,atom3)
-        The degree flag causes the function to return the angle
-        in degrees.
-        (Note: atom1 must be between 2 and 3)"""
-
-        angle = _p.angle(other1.x, self.x, other2.x)
-        if degree:
-            return angle*180.0/pi
-        else:
-            return angle
-
-    def dihedral(self, other1, other2, other3, degree=None):
-
-        """ Calculates the dihedral between four atoms.
-        Usage: atom1.dihedral(atom2,atom3,atom4)
-        The degree flag causes the function to return the dihedral
-        in degrees."""
-
-        ang = _p.dihedral(self.x, other1.x, other2.x, other3.x)
-        if degree:
-            return ang*180.0/pi
-        else:
-            return ang
-
     def __str__(self):
-        """ prints the atom in PDB format """
+        """Prints the Atom in PDB format"""
         if self.unity == 'nm':
-            coords = map(lambda x: x*10, self.x)
+            coords = list(map(lambda x: x*10, self.x))
         else:
             coords = self.x
         if len(self.resname) < 4:
@@ -269,16 +185,80 @@ class Atom:
                                self.occ, self.bfac)
         return s
 
-    def set_resname(self, resname):
-        self.resname = resname
+    def __sub__(self, other):
+        """ Overloading of the '-' operator for using
+        atom1-atom2 instead of atom1.dist(atom2)"""
+        return self.dist(other)
 
-    def set_chain_id(self, chain_id):
-        """ change chain identifier"""
-        self.chain_id = chain_id
+    def readPDBString(self, line, origID=0):
+        """PDB String to Atom"""
+
+        self.race = line[0:6]
+        self.id = int(line[7:11])
+        self.orig_id = origID
+        self.name = line[12:16].strip()
+        self.altloc = line[16]
+        self.resname = line[17:21].strip()
+        self.chain_id = line[21]
+        try:
+            self.resnr = int(line[22:27])
+        except:
+            self.resnr = line[22:27]  # contains insertion code
+
+        self.x = [float(line[30:38]),
+                  float(line[39:46]),
+                  float(line[47:54])]
+        try:
+            self.occ = float(line[55:60])
+        except:
+            self.occ = 1.
+        try:
+            self.bfac = float(line[61:66])
+        except:
+            self.bfac = 0.
+        try:
+            self.symbol = line[70:73].strip()
+        except:
+            self.symbol = None
+        self.unity = 'A'
+        if not self.symbol:
+            self.get_symbol()
+        return self
+
+    def read_mol2_line(self, line):
+        entr = line.split()
+        if len(entr) == 9:
+            self.id = int(entr[0])
+            self.name = entr[1]
+            self.x[0] = float(entr[2])
+            self.x[1] = float(entr[3])
+            self.x[2] = float(entr[4])
+            self.atype = entr[5]
+            self.resnr = int(entr[6])
+            self.resname = entr[7]
+            self.q = float(entr[8])
+            self.unity = 'A'
+            self.symbol = self.atype.split('.')[0]
+        elif len(entr) == 10:
+            self.id = int(entr[0])
+            self.name = entr[1]
+            self.x[0] = float(entr[3])
+            self.x[1] = float(entr[4])
+            self.x[2] = float(entr[5])
+            self.atype = entr[6]
+            self.resnr = int(entr[7])
+            self.resname = entr[8]
+            self.q = float(entr[9])
+            self.unity = 'A'
+            self.symbol = self.atype.split('.')[0]
+        else:
+            print(line)
+            raise ValueError('Error: Cannot convert line to atom')
+        return self
 
     def make_long_name(self):
-        """ make extended name to determine element
-        and order"""
+        """Make extended name to determine element and order.
+        """
         # check for aliases first
         ali = library._aliases
         if self.resname in ali and self.name in ali[self.resname]:
@@ -305,11 +285,11 @@ class Atom:
         self.long_name = name
 
     def copy(self):
-        """ copy atom"""
+        """copy atom"""
         return copy.deepcopy(self)
 
     def get_symbol(self):
-        """ get element"""
+        """Set atom element"""
         if self.long_name == '':
             self.make_long_name()
         if self.resname in library._protein_residues or \
@@ -357,7 +337,7 @@ class Atom:
                 self.symbol = 'UN'
 
     def get_order(self):
-        """ get the order (number of bonds to mainchain)"""
+        """Get the order (number of bonds to mainchain)"""
         if self.long_name == '':
             self.make_long_name()
         if self.symbol == '':
@@ -405,33 +385,148 @@ class Atom:
                 elif x == 'H':
                     self.order = 7
 
-    def read_mol2_line(self, line):
-        entr = line.split()
-        if len(entr) == 9:
-            self.id = int(entr[0])
-            self.name = entr[1]
-            self.x[0] = float(entr[2])
-            self.x[1] = float(entr[3])
-            self.x[2] = float(entr[4])
-            self.atype = entr[5]
-            self.resnr = int(entr[6])
-            self.resname = entr[7]
-            self.q = float(entr[8])
+    # ==============
+    # Public Methods
+    # ==============
+    def dist(self, other):
+        """Calculates the distance between two atoms. This function is also when
+        subtracting two atom instances, as in the example.
+
+        Examples
+        --------
+        >>> dist = atom1.dist(atom2)
+        >>> dist = atom1 - atom2
+
+        Returns
+        -------
+        dist : float
+            distance between two Atom instances.
+        """
+        return _p.dist(self.x, other.x)
+
+    def dist2(self, other):
+        """Calculates the squared distance between two atoms.
+
+        Examples
+        --------
+        >>> dist = atom1.dist2(atom2)
+
+        Returns
+        -------
+        dist2 : float
+            squared of the distance between two Atom instances
+        """
+        return _p.dist2(self.x, other.x)
+
+    def translate(self, v):
+        """Translates the position of the atom.
+
+        Parameters
+        ----------
+        v : array
+            vector of length 3 containing the values by which to translate the
+            atom in the x, y, and z dimensions.
+        """
+        self.x[0] += v[0]
+        self.x[1] += v[1]
+        self.x[2] += v[2]
+
+    def nm2a(self):
+        """Converts the Atom coordinates from nanometers (nm) to Angstrom (A).
+        """
+        if self.unity == 'nm':
+            self.x[0] *= 10
+            self.x[1] *= 10
+            self.x[2] *= 10
             self.unity = 'A'
-            self.symbol = self.atype.split('.')[0]
-        elif len(entr) == 10:
-            self.id = int(entr[0])
-            self.name = entr[1]
-            self.x[0] = float(entr[3])
-            self.x[1] = float(entr[4])
-            self.x[2] = float(entr[5])
-            self.atype = entr[6]
-            self.resnr = int(entr[7])
-            self.resname = entr[8]
-            self.q = float(entr[9])
-            self.unity = 'A'
-            self.symbol = self.atype.split('.')[0]
+
+    def a2nm(self):
+        """Converts the Atom coordinates from Angstrom (A) to nanometers (nm).
+        """
+        if self.unity == 'A':
+            self.x[0] *= .1
+            self.x[1] *= .1
+            self.x[2] *= .1
+            self.unity = 'nm'
+
+    def angle(self, other1, other2, degree=False):
+        """Calcluates the angle between 3 atoms. Returns radians by default.
+
+        Parameters
+        ----------
+        other1 : Atom
+            second atom
+        other2 : Atom
+            third atom
+        degree : bool
+            whether to return the angle in degrees rather than radians. Default
+            is False.
+
+        Examples
+        --------
+        >>> atom1.angle(atom2, atom3)
+        >>> 1.57079632679
+        >>> atom1.angle(atom2, atom3, degree=True)
+        >>> 90.0
+
+        Notes
+        -----
+        Note that the angle being calculated is the one where the Atom instance
+        is in the middle. Following the example above: *atom2 - atom1 - atom3*.
+
+        Returns
+        -------
+        angle : float
+            the value of the angle
+        """
+
+        # Note: atom1 must be between 2 and 3
+        angle = _p.angle(other1.x, self.x, other2.x)
+        if degree is True:
+            return angle*180.0/pi
         else:
-            print(line)
-            raise ValueError('Error: Cannot convert line to atom')
-        return self
+            return angle
+
+    def dihedral(self, other1, other2, other3, degree=False):
+        """Calculates the dihedral angle between four atoms. Returns radians
+        by default.
+
+        Parameters
+        ----------
+        other1 : Atom
+            second atom
+        other2 : Atom
+            third atom
+        other3 : Atom
+            fourth atom
+        degree : bool
+            whether to return the angle in degrees rather than radians. Default
+            is False.
+
+        Examples
+        --------
+        >>> atom1.dihedral(atom2, atom3, atom4)
+        >>> 1.57079632679
+        >>> atom1.dihedral(atom2, atom3, atom4, degree=True)
+        >>> 90.0
+
+        Returns
+        -------
+        angle : float
+            the value of the dihedral angle
+        """
+        ang = _p.dihedral(self.x, other1.x, other2.x, other3.x)
+        if degree is True:
+            return ang*180.0/pi
+        else:
+            return ang
+
+    def set_resname(self, resname):
+        """Change the residue name.
+        """
+        self.resname = resname
+
+    def set_chain_id(self, chain_id):
+        """Change the chain identifier.
+        """
+        self.chain_id = chain_id

@@ -91,6 +91,8 @@ def cpp_parse_file(fn,  itp=False, ffpath=None, cpp_defs=[],
 # ==============================================================================
 # CLASSES
 # ==============================================================================
+# FIXME/QUESTION: is "old" version still needed? If not, we could simplify the
+# code by removing all if statements and arguments related to this
 class TopolBase:
     """Base class for topology objects.
     """
@@ -536,7 +538,33 @@ class TopolBase:
     def write(self, outfile, stateBonded='AB', stateTypes='AB', stateQ='AB',
               scale_mass=False, dummy_qA='on', dummy_qB='on', target_qB=None,
               full_morphe=True, verbose=False):
-        """Write the topology file.
+        """Writes the Topology to file.
+
+        Parameters
+        ----------
+        outfile : str
+            filename of topology file
+        stateBonded : A|B|AB, optional
+            write bonded terms for state A, B, or both. Default is both (AB).
+        stateTypes: A|B|AB, optional
+            write atomtypes for state A, B, or both. Default is both (AB).
+        stateQ : A|B|AB, optional
+            write charges for state A, B, or both. Default is both (AB).
+        scale_mass : bool, optional
+            whether to scale the masses of dummy atoms. Default is False.
+        dummy_qA : on|off
+            whether to have charges on dummy atoms in state A ('on') or
+            not ('off'). Default is 'on'.
+        dummy_qB : on|off
+            whether to have charges on dummy atoms in state B ('on') or
+            not ('off'). Default is 'on'.
+        target_qB : float?
+            target charge for hybrid B states? Default is None.
+        full_morphe : bool, optional
+            ???
+        verbose : bool, optional
+            whether to print out information about each atom written. Default
+            is False.
         """
         # open file for writing
         fp = open(outfile, 'w')
@@ -1050,22 +1078,74 @@ class Topology(TopolBase):
     filename : str
         topology file
     is_itp : bool, optional
-        whether the topology provided is an itp file. If not provided,
-        this is automatically determined by the file extension (itp vs top).
+        whether the topology provided is an ``itp`` file. If not provided,
+        this is automatically determined by the file extension (``.itp`` vs
+        ``.top``).
     ff : str, optional
         force field to use. If not provided, it is determined based on the
-        forcefield.itp include statement in the top file. If you are providing
-        an itp file without a reference to the force field, and assign_types is
+        forcefield.itp include statement in the ``top`` file. If you are providing
+        an ``itp`` file without a reference to the force field, and assign_types is
         set to True, then you also need to provide a force field name.
     assign_types : bool, optional
         whether to assign atom types for the atoms in the Topology.
+    version : str?
+        what is version? is it still needed?
 
     Attributes
     ----------
+    filename : str
+        name of the input topology file
+    forcefield : str
+        forcefield included in the topology file, if present
+    is_itp : bool
+        whether the Topology is an ``itp`` file rather than ``top``
+    include_itps : list
+        list of itp files included in the topology file, if present
+    nrexcl : int
+        number of bonds between atoms from which to exclude interactions.
+        See Gromacs manual.
     atoms : list
+        list of atoms
     residues : list
+        list of residues
     bonds : list
+        list of bonds
+    have_constraints : bool
+        whether constraints are present
     constrains : list
+        list of constraints
+    pairs : list
+        list of pairs
+    cmap : list
+        list of cmap
+    angles : list
+        list of angles
+    dihedrals : list
+        list of dihedrals
+    has_vsites2 : bool
+        whether vsites2 are present
+    has_vsites3 : bool
+        whether vsites3 are present
+    has_vsites4 : bool
+        whether vsites4 are present
+    virtual_sites2 : list
+        list of vsites2
+    virtual_sites3 : list
+        list of vsites3
+    virtual_sites4 : list
+        list of vsites4
+    has_posre : bool
+        whether position restraints are present
+    posre : list
+        list of  position restraints
+    molecules : list
+        list of molecules
+    system : str
+        name of system
+    qA : float
+        net charge of state A
+    qB : float
+        net charge of state B
     """
 
     def __init__(self, filename, is_itp=None, ff=None,

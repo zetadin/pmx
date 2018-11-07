@@ -38,10 +38,6 @@ calculations in Gromacs."""
 
 from __future__ import absolute_import, print_function, division
 
-__version__ = '2.0dev'
-
-PMX_VERSION = __version__
-
 from .atom import Atom
 from .molecule import Molecule
 from .chain import Chain
@@ -51,3 +47,7 @@ from .estimators import BAR, Crooks, Jarz
 from .analysis import *
 from .alchemy import *
 from . import gmx
+
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
