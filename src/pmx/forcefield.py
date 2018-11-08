@@ -94,7 +94,7 @@ def cpp_parse_file(fn,  itp=False, ffpath=None, cpp_defs=[],
 # FIXME/QUESTION: is "old" version still needed? If not, we could simplify the
 # code by removing all if statements and arguments related to this
 class TopolBase:
-    """Base class for topology objects.
+    """Base class for topology objects. It reads/writes topology files.
     """
 
     def __init__(self, filename, version='old'):
@@ -104,6 +104,7 @@ class TopolBase:
             self.is_itp = True
         else:
             self.is_itp = False
+        self.atomtypes = []
         self.atoms = []
         self.residues = []
         self.name = ''
@@ -145,6 +146,7 @@ class TopolBase:
         lines = kickOutComments(lines, '#')
         self.read_moleculetype(lines)
         if self.name:  # atoms, bonds, ... section
+            self.read_atomtypes(lines)
             self.read_atoms(lines)
             self.read_bonds(lines)
             self.read_constraints(lines)
@@ -255,6 +257,34 @@ class TopolBase:
             self.footer = self.footer[:idx]
         except:
             pass
+
+    def read_atomtypes(self, lines):
+        lst = readSection(lines, '[ atomtypes ]', '[')
+        for line in lst:
+            atomtype = dict()
+            elements = line.split()
+            # take into account there can be 2 formats for atomtypes
+            if len(elements) == 7:
+                atomtype['name'] = str(elements[0])
+                atomtype['bond_type'] = str(elements[1])
+                atomtype['mass'] = float(elements[2])
+                atomtype['charge'] = float(elements[3])
+                atomtype['ptype'] = str(elements[4])
+                atomtype['sigma'] = float(elements[5])
+                atomtype['epsilon'] = float(elements[6])
+                self.atomtypes.append(atomtype)
+            elif len(elements) == 8:
+                atomtype['name'] = str(elements[0])
+                atomtype['bond_type'] = str(elements[1])
+                atomtype['anum'] = int(elements[2])
+                atomtype['mass'] = float(elements[3])
+                atomtype['charge'] = float(elements[4])
+                atomtype['ptype'] = str(elements[5])
+                atomtype['sigma'] = float(elements[6])
+                atomtype['epsilon'] = float(elements[7])
+                self.atomtypes.append(atomtype)
+            else:
+                raise ValueError('format of atomtypes section not recognised')
 
     def read_atoms(self, lines):
         lst = readSection(lines, '[ atoms ]', '[')
@@ -572,9 +602,13 @@ class TopolBase:
         # provided explicitly
         if target_qB is None:
             target_qB = self.get_hybrid_qB()
-        # write all top sections
+        # write header if it is a top file
         if not self.is_itp:
             self.write_header(fp)
+        # write the atomtypes section if present
+        if self.atomtypes:
+            self.write_atomtypes(fp)
+        # write the molecule section
         if self.atoms:
             self.write_moleculetype(fp)
             self.write_atoms(fp, charges=stateQ, atomtypes=stateTypes,
@@ -587,7 +621,9 @@ class TopolBase:
             self.write_pairs(fp)
             self.write_angles(fp, state=stateBonded)
             self.write_dihedrals(fp, state=stateBonded)
-            self.write_cmap(fp)
+            # write cmap only if needed/present
+            if self.cmap:
+                self.write_cmap(fp)
             if self.has_vsites2:
                 self.write_vsites2(fp)
             if self.has_vsites3:
@@ -611,12 +647,34 @@ class TopolBase:
             for line in self.footer:
                 print(line, file=fp)
         except:
-            print("No footer in itp\n")
+            print("INFO: No footer present in itp\n")
 
     def write_moleculetype(self, fp):
-        print('[ moleculetype ]', file=fp)
+        print('\n[ moleculetype ]', file=fp)
         print('; Name        nrexcl', file=fp)
         print('%s  %d' % (self.name, self.nrexcl), file=fp)
+
+    def write_atomtypes(self, fp):
+        # choose header
+        if len(self.atomtypes[0]) == 7:
+            print('[ atomtypes ]\n;  name  bond_type          mass        '
+                  'charge  ptype   sigma      epsilon', file=fp)
+        elif len(self.atomtypes[0]) == 8:
+            print('[ atomtypes ]\n;     name bond_type anum      mass    '
+                  'charge  ptype       sigma               epsilon', file=fp)
+
+        # write data
+        for at in self.atomtypes:
+            if len(at) == 7:
+                # we leave some space at the start because we may have dummy
+                # types with long names (e.g. DUM_*)
+                print('{name:>10}{bond_type:>10}{mass:>10.4f}{charge:>10.4f}'
+                      '{ptype:>5}{sigma:>20.5e}{epsilon:>20.5e}'.format(**at),
+                      file=fp)
+            elif len(at) == 8:
+                print('{name:>10}{bond_type:>10}{anum:>5}{mass:>10.4f}{charge:>10.4f}'
+                      '{ptype:>5}{sigma:>20.5e}{epsilon:>20.5e}'.format(**at),
+                      file=fp)
 
     def write_atoms(self, fp, charges='AB', atomtypes='AB', dummy_qA='on',
                     dummy_qB='on', scale_mass=True, target_qB=[],
@@ -1250,8 +1308,10 @@ class GAFFTopology(TopolBase):
         self.atomtypes = self.__read_atomtypes(filename)
 
     def __read_atomtypes(self, filename):
-        l = open(filename).readlines()
-        lst = readSection(l, '[ atomtypes ]', '[')
+        lines = open(filename).readlines()
+        lines = kickOutComments(lines, ';')
+        lines = kickOutComments(lines, '#')
+        lst = readSection(lines, '[ atomtypes ]', '[')
         lst = parseList('ssffsff', lst)
         for line in lst:
             self.atomtypes[line[0]] = line[1:]
