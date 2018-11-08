@@ -104,6 +104,7 @@ class TopolBase:
             self.is_itp = True
         else:
             self.is_itp = False
+        self.header = []
         self.atomtypes = []
         self.atoms = []
         self.residues = []
@@ -125,6 +126,7 @@ class TopolBase:
         self.has_posre = False
         self.posre = []
         self.molecules = []
+        self.footer = []
         self.system = ''
         self.qA = 0.
         self.qB = 0.
@@ -237,14 +239,12 @@ class TopolBase:
             self.name, self.nrexcl = l[0].split()[0], int(l[0].split()[1])
 
     def read_header(self, lines):
-        ret = []
         for line in lines:
             if not line.strip().startswith('[') and \
                    not line.strip().startswith('#ifdef POSRES'):
-                ret.append(line.rstrip())
+                self.header.append(line.rstrip())
             else:
                 break
-        self.header = ret
 
     def read_footer(self, lines):
         for line in lines:
@@ -647,7 +647,7 @@ class TopolBase:
             for line in self.footer:
                 print(line, file=fp)
         except:
-            print("INFO: No footer present in itp\n")
+            print("INFO: No POSRE footer present in topology\n")
 
     def write_moleculetype(self, fp):
         print('\n[ moleculetype ]', file=fp)
