@@ -1299,29 +1299,6 @@ class Topology(TopolBase):
                 self.dihedrals[i].append(param[1:])
 
 
-class GAFFTopology(TopolBase):
-    """GAFF Topology class.
-    """
-
-    def __init__(self, filename):
-        TopolBase.__init__(self, filename)
-        self.atomtypes = self.__read_atomtypes(filename)
-
-    def __read_atomtypes(self, filename):
-        lines = open(filename).readlines()
-        lines = kickOutComments(lines, ';')
-        lines = kickOutComments(lines, '#')
-        lst = readSection(lines, '[ atomtypes ]', '[')
-        lst = parseList('ssffsff', lst)
-        for line in lst:
-            self.atomtypes[line[0]] = line[1:]
-
-    def set_name(self, name):
-        self.name = name
-        for atom in self.atoms:
-            atom.name = name
-
-
 class MDPError(Exception):
     """MDP Error class.
     """
