@@ -813,7 +813,7 @@ class TopolBase:
 
     def write_bonds(self, fp, state='AB'):
 
-        print('\n [ bonds ]', file=fp)
+        print('\n[ bonds ]', file=fp)
         print(';  ai    aj funct            c0            c1            c2            c3', file=fp)
         for b in self.bonds:
             if len(b) == 3:
@@ -838,14 +838,14 @@ class TopolBase:
 
     def write_pairs(self, fp):
         # CHECK HOW THIS GOES WITH B-STATES
-        print('\n [ pairs ]', file=fp)
+        print('\n[ pairs ]', file=fp)
         print(';  ai    aj funct            c0            c1            c2            c3', file=fp)
         for p in self.pairs:
             print('%6d %6d %6d' % (p[0].id, p[1].id, p[2]), file=fp)
 
     def write_constraints(self, fp):
         # CHECK HOW THIS GOES WITH B-STATES
-        print('\n [ constraints ]', file=fp)
+        print('\n[ constraints ]', file=fp)
         print(';  ai    aj funct            c0            c1            c2            c3', file=fp)
         for p in self.constraints:
             if len(p) == 3:
@@ -854,7 +854,7 @@ class TopolBase:
                 print('%6d %6d %6d %8s' % (p[0].id, p[1].id, p[2], p[3]), file=fp)
 
     def write_angles(self, fp, state='AB'):
-        print('\n [ angles ]', file=fp)
+        print('\n[ angles ]', file=fp)
         print(';  ai    aj    ak funct            c0            c1            c2            c3', file=fp)
         for ang in self.angles:
             if len(ang) == 4:
@@ -922,7 +922,7 @@ class TopolBase:
                         raise ValueError("Don't know how to print angletype %d" % ang[3])
 
     def write_cmap(self, fp):
-        print('\n [ cmap ]', file=fp)
+        print('\n[ cmap ]', file=fp)
         print(';  ai    aj    ak    al    am funct', file=fp)
         for d in self.cmap:
             print("%6d %6d %6d %6d %6d %4d" % (d[0].id, d[1].id,
@@ -930,7 +930,7 @@ class TopolBase:
                                                d[4].id, d[5]), file=fp)
 
     def write_dihedrals(self, fp, state='AB'):
-        print('\n [ dihedrals ]', file=fp)
+        print('\n[ dihedrals ]', file=fp)
         print(';  ai    aj    ak    al funct            c0            c1            c2            c3            c4            c5', file=fp)
         for d in self.dihedrals:
             if len(d) == 5:
@@ -995,7 +995,7 @@ class TopolBase:
                            A, B), file=fp)
 
     def write_vsites2(self, fp):
-        print('\n [ virtual_sites2 ]', file=fp)
+        print('\n[ virtual_sites2 ]', file=fp)
         print(';  ai    aj    ak  funct            c0            c1', file=fp)
         for vs in self.virtual_sites2:
             if len(vs) == 4:
@@ -1010,7 +1010,7 @@ class TopolBase:
                 sys.exit(1)
 
     def write_vsites3(self, fp):
-        print('\n [ virtual_sites3 ]', file=fp)
+        print('\n[ virtual_sites3 ]', file=fp)
         print(';  ai    aj    ak    al funct            c0            c1', file=fp)
         for vs in self.virtual_sites3:
             if len(vs) == 5:
@@ -1026,7 +1026,7 @@ class TopolBase:
                 sys.exit(1)
 
     def write_vsites4(self, fp):
-        print('\n [ virtual_sites4 ]', file=fp)
+        print('\n[ virtual_sites4 ]', file=fp)
         print(';  ai    aj    ak    al    am  funct            c0            c1          c2', file=fp)
         for vs in self.virtual_sites4:
             if len(vs) == 6:
@@ -1054,11 +1054,11 @@ class TopolBase:
                 sys.exit(1)
 
     def write_system(self, fp):
-        print('[ system ]', file=fp)
+        print('\n[ system ]', file=fp)
         print('{0}'.format(self.system), file=fp)
 
     def write_molecules(self, fp):
-        print('[ molecules ]', file=fp)
+        print('\n[ molecules ]', file=fp)
         for mol, num in self.molecules:
             print("%s %d" % (mol, num), file=fp)
 
@@ -1139,13 +1139,13 @@ class Topology(TopolBase):
         whether the topology provided is an ``itp`` file. If not provided,
         this is automatically determined by the file extension (``.itp`` vs
         ``.top``).
+    assign_types : bool, optional
+        whether to assign types for the atoms in the Topology. Default is True.
     ff : str, optional
         force field to use. If not provided, it is determined based on the
         forcefield.itp include statement in the ``top`` file. If you are providing
         an ``itp`` file without a reference to the force field, and assign_types is
         set to True, then you also need to provide a force field name.
-    assign_types : bool, optional
-        whether to assign atom types for the atoms in the Topology.
     version : str?
         what is version? is it still needed?
 
@@ -1221,17 +1221,17 @@ class Topology(TopolBase):
         if ff is not None:
             self.forcefield = ff
 
-        if self.forcefield == '':
-            raise ValueError('The topology file provided does not contain an '
-                             'include statement pointing towards a forcefield'
-                             '\nfile. This is likely because you are providing'
-                             ' a itp rather than a top file. Thus, you need to'
-                             '\nprovide the forcefield to use via the ff '
-                             'parameter.')
-        # get full path to ff
-        self.ffpath = get_ff_path(self.forcefield)
-
         if assign_types:
+            if self.forcefield == '':
+                raise ValueError('The topology file provided does not contain an '
+                                 'include statement pointing towards a forcefield'
+                                 '\nfile. This is likely because you are providing'
+                                 ' a itp rather than a top file. Thus, you need to'
+                                 '\nprovide the forcefield to use via the ff '
+                                 'parameter.')
+            # get full path to ff
+            self.ffpath = get_ff_path(self.forcefield)
+            # read ff files and assign types
             fulltop = cpp_parse_file(self.filename, itp=self.is_itp,
                                      ffpath=self.ffpath)
             fulltop = kickOutComments(fulltop, '#')
