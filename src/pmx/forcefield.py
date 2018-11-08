@@ -40,7 +40,7 @@ import os
 from collections import OrderedDict
 from numpy import shape
 from . import _pmx as _p
-from .parser import kickOutComments, readSection, parseList
+from .parser import kickOutComments, readSection
 from .atom import Atom
 from .molecule import Molecule
 from .ffparser import BondedParser, NBParser, RTPParser
@@ -758,7 +758,7 @@ class TopolBase:
                     if verbose is True:
                         TR('No corrections applied to ensure integer charges')
 
-        print('\n [ atoms ]', file=fp)
+        print('\n[ atoms ]', file=fp)
         print(';   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB', file=fp)
         al = self.atoms
         for atom in al:
