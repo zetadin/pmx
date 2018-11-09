@@ -1191,12 +1191,6 @@ class TopolBase:
         return qB
 
 
-class ITPFile(TopolBase):
-
-    def __init__(self, filename):
-        TopolBase.__init__(self, filename)
-
-
 class Topology(TopolBase):
     """Topology class.
 
