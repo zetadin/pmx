@@ -247,6 +247,10 @@ class TopolBase:
     def read_header(self, lines):
         '''Reads the include statemets at the top of the topology file.
         '''
+        # TODO/FIXME: this header reader does not work when the topology starts
+        # with a defaults section. All include itp statemets are ignored
+        # a fix would be having more specialised reader/writers for include
+        # statements
         for line in lines:
             if not line.strip().startswith('[') and \
                    not line.strip().startswith('#ifdef POSRES'):
@@ -575,7 +579,7 @@ class TopolBase:
     # ===============
     def write(self, outfile, stateBonded='AB', stateTypes='AB', stateQ='AB',
               scale_mass=False, dummy_qA='on', dummy_qB='on', target_qB=None,
-              full_morphe=True, verbose=False):
+              full_morphe=True, write_atypes=True, verbose=False):
         """Writes the Topology to file.
 
         Parameters
@@ -600,6 +604,10 @@ class TopolBase:
             target charge for hybrid B states? Default is None.
         full_morphe : bool, optional
             ???
+        write_atypes : bool, optional
+            whether to write the atomtypes section. Default is True. If you are
+            including atomtypes in another Topology and do not want to write
+            this section in this file, set this to False.
         verbose : bool, optional
             whether to print out information about each atom written. Default
             is False.
@@ -617,14 +625,16 @@ class TopolBase:
         if self.defaults and not self.forcefield and not self.is_itp:
             self.write_defaults(fp)
 
-        # write header if it is present
-        # this automatically exclude the forcefield line if writing an itp
-        if self.header:
-            self.write_header(fp)
+        # write the ff include statement only for top files
+        if self.is_itp is False:
+            self.write_header(fp, write_ff=True)
 
         # write the atomtypes section if present
-        if self.atomtypes:
+        if self.atomtypes and write_atypes is True:
             self.write_atomtypes(fp)
+
+        # write the rest of the header (the include statements)
+        self.write_header(fp, write_ff=False)
 
         # write the molecule section
         if self.atoms:
@@ -656,22 +666,32 @@ class TopolBase:
             self.write_molecules(fp)
         fp.close()
 
-    def write_header(self, fp):
+    def write_header(self, fp, write_ff=True):
         '''Writes the include statemets at the top of the topology file.
-        If Topology is an itp file, the forcefield include statemet is
-        not written.
+
+        Parameters
+        ----------
+        write_ff : bool
+            whether to write the line that includes the forcefield parameters
+            or the rest of the header.
         '''
-        # if itp file: do not write forcefield include statement
-        if self.is_itp:
+        # This 'odd' split of the writer is because one wants to write the
+        # ff include statement before the atomtypes section, and the rest of
+        # the inlcude statements (e.g. ligand.itp included) after the
+        # atomtypes
+
+        # write the ff line only
+        if write_ff is True:
+            print('', file=fp)
+            for line in self.header:
+                if 'forcefield' in line:
+                    print(line, file=fp)
+        # write header excluding the ff line
+        elif not self.is_itp:
             print('', file=fp)
             for line in self.header:
                 if 'forcefield' not in line:
                     print(line, file=fp)
-        # if top file: write the whole header
-        elif not self.is_itp:
-            print('', file=fp)
-            for line in self.header:
-                print(line, file=fp)
 
     def write_footer(self, fp):
         print('', file=fp)
