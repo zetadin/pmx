@@ -104,6 +104,7 @@ class TopolBase:
             self.is_itp = True
         else:
             self.is_itp = False
+        self.defaults = ''
         self.header = []
         self.atomtypes = []
         self.atoms = []
@@ -140,8 +141,8 @@ class TopolBase:
     def read(self):
         lines = open(self.filename).readlines()
         lines = kickOutComments(lines, ';')
-        if not self.is_itp:
-            self.read_header(lines)
+        self.read_defaults(lines)
+        self.read_header(lines)
         self.read_footer(lines)
         posre_sections = self.get_posre_section(lines)
         self.read_include_itps(lines)
@@ -226,6 +227,11 @@ class TopolBase:
         lst = readSection(lines, '[ system ]', '[')
         self.system = lst[0].strip()
 
+    def read_defaults(self, lines):
+        lst = readSection(lines, '[ defaults ]', '[')
+        if lst:
+            self.defaults = lst[0].strip()
+
     def read_molecules(self, lines):
         lst = readSection(lines, '[ molecules ]', '[')
         self.molecules = []
@@ -239,6 +245,8 @@ class TopolBase:
             self.name, self.nrexcl = l[0].split()[0], int(l[0].split()[1])
 
     def read_header(self, lines):
+        '''Reads the include statemets at the top of the topology file.
+        '''
         for line in lines:
             if not line.strip().startswith('[') and \
                    not line.strip().startswith('#ifdef POSRES'):
@@ -598,16 +606,26 @@ class TopolBase:
         """
         # open file for writing
         fp = open(outfile, 'w')
+
         # determine the target charges for hybrid residues if they are not
         # provided explicitly
         if target_qB is None:
             target_qB = self.get_hybrid_qB()
-        # write header if it is a top file
-        if not self.is_itp:
+
+        # write defaults if they are present while a forcefield is not defined,
+        # and if we are writing a top rather than an itp file
+        if self.defaults and not self.forcefield and not self.is_itp:
+            self.write_defaults(fp)
+
+        # write header if it is present
+        # this automatically exclude the forcefield line if writing an itp
+        if self.header:
             self.write_header(fp)
+
         # write the atomtypes section if present
         if self.atomtypes:
             self.write_atomtypes(fp)
+
         # write the molecule section
         if self.atoms:
             self.write_moleculetype(fp)
@@ -639,10 +657,24 @@ class TopolBase:
         fp.close()
 
     def write_header(self, fp):
-        for line in self.header:
-            print(line, file=fp)
+        '''Writes the include statemets at the top of the topology file.
+        If Topology is an itp file, the forcefield include statemet is
+        not written.
+        '''
+        # if itp file: do not write forcefield include statement
+        if self.is_itp:
+            print('', file=fp)
+            for line in self.header:
+                if 'forcefield' not in line:
+                    print(line, file=fp)
+        # if top file: write the whole header
+        elif not self.is_itp:
+            print('', file=fp)
+            for line in self.header:
+                print(line, file=fp)
 
     def write_footer(self, fp):
+        print('', file=fp)
         try:
             for line in self.footer:
                 print(line, file=fp)
@@ -657,10 +689,10 @@ class TopolBase:
     def write_atomtypes(self, fp):
         # choose header
         if len(self.atomtypes[0]) == 7:
-            print('[ atomtypes ]\n;  name  bond_type          mass        '
+            print('\n[ atomtypes ]\n;  name  bond_type          mass        '
                   'charge  ptype   sigma      epsilon', file=fp)
         elif len(self.atomtypes[0]) == 8:
-            print('[ atomtypes ]\n;     name bond_type anum      mass    '
+            print('\n[ atomtypes ]\n;     name bond_type anum      mass    '
                   'charge  ptype       sigma               epsilon', file=fp)
 
         # write data
@@ -1056,6 +1088,11 @@ class TopolBase:
     def write_system(self, fp):
         print('\n[ system ]', file=fp)
         print('{0}'.format(self.system), file=fp)
+
+    def write_defaults(self, fp):
+        print('\n[ defaults ]', file=fp)
+        print('; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ', file=fp)
+        print('{0}'.format(self.defaults), file=fp)
 
     def write_molecules(self, fp):
         print('\n[ molecules ]', file=fp)
