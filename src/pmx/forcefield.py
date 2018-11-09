@@ -582,16 +582,28 @@ class TopolBase:
               full_morphe=True, write_atypes=True, verbose=False):
         """Writes the Topology to file.
 
+        The parameters ``stateBonded``, ``stateTypes``, and ``stateQ`` control
+        what to write in the B-state columns of the topology. This is needed
+        for free energy calculations. However, if you are writing a
+        standard topology file that do not contain information on B-states,
+        choose the option 'A' so that only the A-state data will be written.
+
         Parameters
         ----------
         outfile : str
             filename of topology file
-        stateBonded : A|B|AB, optional
-            write bonded terms for state A, B, or both. Default is both (AB).
-        stateTypes: A|B|AB, optional
-            write atomtypes for state A, B, or both. Default is both (AB).
-        stateQ : A|B|AB, optional
-            write charges for state A, B, or both. Default is both (AB).
+        stateBonded : A|AA|BB|AB, optional
+            write bonded terms with states A only, AA, BB, or AB.
+            Default is AB. If you want to write a 'standard' topology with no
+            B-state columns, select 'A'.
+        stateTypes: A|AA|BB|AB, optional
+            write atomtypes with states A only, AA, BB, or AB.
+            Default is AB. If you want to write a 'standard' topology with no
+            B-state columns, select 'A'.
+        stateQ : A|AA|BB|AB, optional
+            write charges with statse A only, AA, BB, or AB.
+            Default is AB. If you want to write a 'standard' topology with no
+            B-state columns, select 'A'.
         scale_mass : bool, optional
             whether to scale the masses of dummy atoms. Default is False.
         dummy_qA : on|off
