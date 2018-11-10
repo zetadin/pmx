@@ -129,6 +129,7 @@ class TopolBase:
         self.molecules = []
         self.footer = []
         self.system = ''
+        self.ii = {}  # dict for intermolecular interactions
         self.qA = 0.
         self.qB = 0.
         self.include_itps = []
@@ -160,6 +161,7 @@ class TopolBase:
             self.read_vsites2(lines)
             self.read_vsites3(lines)
             self.read_vsites4(lines)
+            self.read_intermolecular_interactions(lines)
             if self.has_posre:
                 self.read_posre(posre_sections)
             self.__make_residues()
@@ -403,6 +405,8 @@ class TopolBase:
     def read_dihedrals(self, lines):
         starts = []
         for i, line in enumerate(lines):
+            if 'intermolecular_interactions' in line:
+                break
             if line.strip().startswith('[ dihedrals ]'):
                 starts.append(i)
         for s in starts:
@@ -491,6 +495,112 @@ class TopolBase:
                                             self.atoms[idx[2]-1],
                                             self.atoms[idx[3]-1],
                                             func, rest])
+
+    def read_intermolecular_interactions(self, lines):
+        iilines = readSection(lines, begin='[ intermolecular_interactions ]',
+                              end='gotoendoffile')
+        self.ii = {}
+
+        # Note that here we are not storing Atom objects, but just the indices
+        # as they come in the topology file. this is because things get tricky
+        # when having multiple moleculetypes in the same topology, some of
+        # which are defined in itp files included via include statement.
+        # It is easier to just copy the indices as they are.
+
+        # -----
+        # Bonds
+        # -----
+        lst = readSection(iilines, '[ bonds ]', '[')
+        if lst:
+            self.ii['bonds'] = []
+            for line in lst:
+                entries = line.split()
+                if len(entries) == 3:
+                    el = [int(x) for x in line.split()]
+                    self.ii['bonds'].append([int(el[0]), int(el[1]), int(el[2])])
+
+                elif len(entries) == 5:
+                    el = [int(x) for x in entries[:3]]
+                    lA = float(entries[3])
+                    kA = float(entries[4])
+                    self.ii['bonds'].append([int(el[0]), int(el[1]), int(el[2]), [lA, kA]])
+
+                elif len(entries) == 7:
+                    el = [int(x) for x in entries[:3]]
+                    lA = float(entries[3])
+                    kA = float(entries[4])
+                    lB = float(entries[5])
+                    kB = float(entries[6])
+                    self.ii['bonds'].append([int(el[0]), int(el[1]), int(el[2]),
+                                            [lA, kA, lB, kB]])
+
+        # ------
+        # Angles
+        # ------
+        lst = readSection(iilines, '[ angles ]', '[')
+        if lst:
+            self.ii['angles'] = []
+            for line in lst:
+                entries = line.split()
+                if len(entries) == 4:
+                    idx = [int(x) for x in line.split()]
+                    self.ii['angles'].append([int(idx[0]), int(idx[1]), int(idx[2]), int(idx[3])])
+
+                elif len(entries) == 6:
+                    idx = [int(x) for x in entries[:4]]
+                    l = float(entries[4])
+                    k = float(entries[5])
+                    self.ii['angles'].append([int(idx[0]), int(idx[1]), int(idx[2]), int(idx[3]),
+                                             [l, k]])
+
+                elif len(entries) == 8 and entries[3] == '1':
+                    idx = [int(x) for x in entries[:4]]
+                    lA = float(entries[4])
+                    kA = float(entries[5])
+                    lB = float(entries[6])
+                    kB = float(entries[7])
+                    self.ii['angles'].append([int(idx[0]), int(idx[1]), int(idx[2]), int(idx[3]),
+                                             [lA, kA, lB, kB]])
+
+                elif len(entries) == 8 and entries[3] == '5':
+                    idx = [int(x) for x in entries[:4]]
+                    lA1 = float(entries[4])
+                    kA1 = float(entries[5])
+                    lA2 = float(entries[6])
+                    kA2 = float(entries[7])
+                    self.ii['angles'].append([int(idx[0]), int(idx[1]), int(idx[2]), int(idx[3]),
+                                             [lA1, kA1, lA2, kA2]])
+
+                elif len(entries) == 12:
+                    idx = [int(x) for x in entries[:4]]
+                    lA1 = float(entries[4])
+                    kA1 = float(entries[5])
+                    lA2 = float(entries[6])
+                    kA2 = float(entries[7])
+                    lB1 = float(entries[8])
+                    kB1 = float(entries[9])
+                    lB2 = float(entries[10])
+                    kB2 = float(entries[11])
+                    self.ii['angles'].append([int(idx[0]), int(idx[1]), int(idx[2]), int(idx[3]),
+                                             [lA1, kA1, lA2, kA2, lB1, kB1, lB2, kB2]])
+
+        # ---------
+        # Dihedrals
+        # ---------
+        lst = readSection(iilines, '[ dihedrals ]', '[')
+        if lst:
+            self.ii['dihedrals'] = []
+            for line in lst:
+                entr = line.split()
+                idx = [int(x) for x in entr[:4]]
+                func = int(entr[4])
+                try:
+                    rest = ' '.join(entr[5:])
+                except:
+                    rest = ''
+                self.ii['dihedrals'].append([int(idx[0]), int(idx[1]),
+                                             int(idx[2]), int(idx[3]),
+                                             func, rest])
 
     def read_vsites4(self, lines):
         starts = []
@@ -648,7 +758,7 @@ class TopolBase:
         # write the rest of the header (the include statements)
         self.write_header(fp, write_ff=False)
 
-        # write the molecule section
+        # write the molecule section, if there are atoms
         if self.atoms:
             self.write_moleculetype(fp)
             self.write_atoms(fp, charges=stateQ, atomtypes=stateTypes,
@@ -676,6 +786,9 @@ class TopolBase:
         if not self.is_itp:
             self.write_system(fp)
             self.write_molecules(fp)
+        # write intermolecular interactions if present
+        if self.ii:
+            self.write_intermolecular_interactions(fp)
         fp.close()
 
     def write_header(self, fp, write_ff=True):
@@ -1130,6 +1243,45 @@ class TopolBase:
         print('\n[ molecules ]', file=fp)
         for mol, num in self.molecules:
             print("%s %d" % (mol, num), file=fp)
+
+    def write_intermolecular_interactions(self, fp):
+        print('\n[ intermolecular_interactions ]', file=fp)
+        # -----
+        # bonds
+        # -----
+        if 'bonds' in self.ii.keys():
+            print('\n[ bonds ]', file=fp)
+            for b in self.ii['bonds']:
+                print('%6d %6d %6d' % (b[0], b[1], b[2]), file=fp, end='')
+                if len(b) > 3:
+                    for x in b[3]:
+                        print(' %14.6f' % x, file=fp, end='')
+                print('', file=fp)
+
+        # ------
+        # angles
+        # ------
+        if 'angles' in self.ii.keys():
+            print('\n[ angles ]', file=fp)
+            for ang in self.ii['angles']:
+                print('%6d %6d %6d %6d' % (ang[0], ang[1], ang[2], ang[3]), file=fp, end='')
+                if len(ang) > 4:
+                    for x in ang[4]:
+                        print(' %14.6f' % x, file=fp, end='')
+                print('', file=fp)
+
+        # ---------
+        # dihedrals
+        # ---------
+        if 'dihedrals' in self.ii.keys():
+            print('\n[ dihedrals ]', file=fp)
+            for dih in self.ii['dihedrals']:
+                print('%6d %6d %6d %6d %6d' % (dih[0], dih[1], dih[2], dih[3], dih[4]), file=fp, end='')
+                if len(dih) > 5:
+                    rest = dih[5].split()
+                    for x in rest:
+                        print(' %14.6f' % float(x), file=fp, end='')
+                print('', file=fp)
 
     # ===============
     # other functions
