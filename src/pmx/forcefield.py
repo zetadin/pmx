@@ -1513,6 +1513,30 @@ class Topology(TopolBase):
                 del self.dihedrals[i][-1]
                 self.dihedrals[i].append(param[1:])
 
+    def make_posre(self, heavy=True, k=1000):
+        '''Generate position restraints for the atoms in Topology.
+
+        Parameters
+        ----------
+        heavy : bool, optional
+            whether to restrain only heavy atoms (True) or also hydrogens
+            (False). Default is True
+        k : float, optional
+            force constant of position restraints. Default is 1000 kJ/nm^2.
+        '''
+        # reset posre
+        self.posre = []
+        # fill list
+        for a in self.atoms:
+            a.make_long_name()
+            a.get_symbol()
+            if heavy is True:
+                if a.symbol != 'H':
+                    self.posre.append([a, 1, '{0:14.6f} {0:14.6f} {0:14.6f}'.format(k)])
+            else:
+                self.posre.append([a, 1, '{0:14.6f} {0:14.6f} {0:14.6f}'.format(k)])
+
+        self.has_posre = True
 
 class MDPError(Exception):
     """MDP Error class.
