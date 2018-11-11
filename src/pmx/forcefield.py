@@ -594,10 +594,10 @@ class TopolBase:
                 entr = line.split()
                 idx = [int(x) for x in entr[:4]]
                 func = int(entr[4])
-                try:
-                    rest = ' '.join(entr[5:])
-                except:
-                    rest = ''
+                if len(entr) > 5:
+                    rest = entr[5:]
+                else:
+                    rest = []
                 self.ii['dihedrals'].append([int(idx[0]), int(idx[1]),
                                              int(idx[2]), int(idx[3]),
                                              func, rest])
@@ -1278,7 +1278,7 @@ class TopolBase:
             for dih in self.ii['dihedrals']:
                 print('%6d %6d %6d %6d %6d' % (dih[0], dih[1], dih[2], dih[3], dih[4]), file=fp, end='')
                 if len(dih) > 5:
-                    rest = dih[5].split()
+                    rest = dih[5]
                     for x in rest:
                         print(' %14.6f' % float(x), file=fp, end='')
                 print('', file=fp)
