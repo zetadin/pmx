@@ -689,7 +689,8 @@ class TopolBase:
     # ===============
     def write(self, outfile, stateBonded='AB', stateTypes='AB', stateQ='AB',
               scale_mass=False, dummy_qA='on', dummy_qB='on', target_qB=None,
-              full_morphe=True, write_atypes=True, verbose=False):
+              full_morphe=True, write_atypes=True, posre_ifdef=True, posre_include=False,
+              verbose=False):
         """Writes the Topology to file.
 
         The parameters ``stateBonded``, ``stateTypes``, and ``stateQ`` control
@@ -730,6 +731,13 @@ class TopolBase:
             whether to write the atomtypes section. Default is True. If you are
             including atomtypes in another Topology and do not want to write
             this section in this file, set this to False.
+        posre_ifdef : bool, optional
+            whether to use an "ifdef POSRES" statement for the position
+            restraints. Default is True.
+        posre_include : bool, optional
+            whether to place the position restraints in a separate itp file
+            that is included in the topology via an "#include" statement.
+            Default is False.
         verbose : bool, optional
             whether to print out information about each atom written. Default
             is False.
@@ -781,7 +789,7 @@ class TopolBase:
             if self.has_vsites4:
                 self.write_vsites4(fp)
             if self.has_posre:
-                self.write_posre(fp)
+                self.write_posre(fp, ifdef=posre_ifdef, use_include=posre_include)
         self.write_footer(fp)
         if not self.is_itp:
             self.write_system(fp)
@@ -1219,16 +1227,58 @@ class TopolBase:
                 print(vs)
                 sys.exit(1)
 
-    def write_posre(self, fp):
-        print('\n [ position_restraints ]', file=fp)
-        print(';  ai    funct            c0            c1          c2', file=fp)
-        for pr in self.posre:
-            if len(pr) == 3:
-                print("%6d %4d %s" % (pr[0].id, pr[1], pr[2]), file=fp)
+    def write_posre(self, fp, ifdef=True, use_include=False):
+        '''Write position restraints section.
+
+        Parameters
+        ----------
+        ifdef : bool, optional
+            whether to use an "ifdef POSRES" statement. Default is True.
+        use_include : bool, optional
+            whether to place the position restraints in a separate itp file
+            that is included in the topology via an "#include" statement.
+            Default is False.
+        '''
+
+        if ifdef is True:
+            print('\n#ifdef POSRES', file=fp)
+
+        # write posres to different file that will be included
+        if use_include is True:
+            f = os.path.basename(fp.name)
+            path = os.path.dirname(fp.name)
+            posre_fname = 'posre_%s.itp' % f.split('.')[0]
+            print('#include "%s"' % posre_fname, file=fp)
+
+            if path:
+                fp2 = open(path+'/'+posre_fname, 'w')
             else:
-                sys.stderr.write('EEK! Something went wrong while writing position_restraints!!!!\n')
-                print(pr)
-                sys.exit(1)
+                fp2 = open(posre_fname, 'w')
+
+            print('\n[ position_restraints ]', file=fp2)
+            print('; atom  type      fx      fy      fz', file=fp2)
+            for pr in self.posre:
+                if len(pr) == 3:
+                    print("%6d %4d %s" % (pr[0].id, pr[1], pr[2]), file=fp2)
+                else:
+                    sys.stderr.write('EEK! Something went wrong while writing position_restraints!!!!\n')
+                    print(pr)
+                    sys.exit(1)
+
+        # write posres directly in topology file
+        elif use_include is False:
+            print('\n[ position_restraints ]', file=fp)
+            print('; atom  type      fx      fy      fz', file=fp)
+            for pr in self.posre:
+                if len(pr) == 3:
+                    print("%6d %4d %s" % (pr[0].id, pr[1], pr[2]), file=fp)
+                else:
+                    sys.stderr.write('EEK! Something went wrong while writing position_restraints!!!!\n')
+                    print(pr)
+                    sys.exit(1)
+
+        if ifdef is True:
+            print('#endif', file=fp)
 
     def write_system(self, fp):
         print('\n[ system ]', file=fp)
