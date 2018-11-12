@@ -101,11 +101,21 @@ class Model(Atomselection):
         filename of input structure
     pdbline : bool(?)
         what is pdbline?
-    renumber_atoms : bool
+    renumber_atoms : bool, optional
         renumber all atoms from 1. Default is True.
-    renumber_residues : bool
+    renumber_residues : bool, optional
         renumber all residues from 1. In this way, each residue will have a
         unique ID, also across chains. Default is True.
+    rename_atoms : bool, optional
+        rename atoms so to conform to Gromacs format. Default is False.
+    scale_coords : A|nm, optional
+        whether to enforce the units of the coordinates to be in A or in nm.
+        By default, PDB coordinates are assumed to be in Angstrom (A) and
+        GRO coordinates in nanometers (nm). If you read a PDB file but would
+        like operate on nm coordinates, then select "nm". Viceversa, if you
+        read a GRO file but would like to work on A coordinates, select "A".
+        Note that if you read a PDB file in A coordinates and select "A",
+        nothing happens (same for GRO and "nm" selection).
     bPDBTER : bool(?)
         whether to recognize TER lines and other chain breaks, e.g.
         discontinuous residue indices(?). Default is True.
@@ -113,11 +123,6 @@ class Model(Atomselection):
         whether to assign new chain IDs? If True, new chain IDs starting
         with 'pmx' will be assigned(?). Only relevant if bPDBTER is True.
         Default is True.
-    for_gmx : bool
-        rename atoms and scale coordinates. Set this to True
-        if the Model is then written to file and used as input for Gromacs
-        (pdb2gmx). Default is False.
-
 
     Attributes
     ----------
@@ -140,8 +145,9 @@ class Model(Atomselection):
         a mix of molecules are in the system.
     """
     def __init__(self, filename=None, pdbline=None, renumber_atoms=True,
-                 renumber_residues=True, bPDBTER=True, bNoNewID=True,
-                 for_gmx=False, **kwargs):
+                 renumber_residues=True, rename_atoms=False, scale_coords=None,
+                 bPDBTER=True, bNoNewID=True,
+                 **kwargs):
 
         Atomselection.__init__(self)
         self.title = 'PMX MODEL'
@@ -184,9 +190,15 @@ class Model(Atomselection):
             self.renumber_atoms()
         if renumber_residues is True:
             self.renumber_residues()
-        if for_gmx is True:
+        if rename_atoms is True:
             self.rename_atoms_to_gmx()
-            self.nm2a()
+        if scale_coords is not None:
+            if scale_coords == 'A':
+                self.nm2a()
+            elif scale_coords == 'nm':
+                self.a2nm()
+            else:
+                raise ValueError('unknown unit %s for coordinates' % scale_coords)
 
         self.assign_moltype()
 

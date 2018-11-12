@@ -116,7 +116,7 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None,
     if refB is not None:
         if verbose is True:
             print("log_> Set Bstate geometry according to the provided structure")
-        mB = Model(refB, bPDBTER=True, for_gmx=True)
+        mB = Model(refB, bPDBTER=True, rename_atoms=True, scale_coords='A')
         residueB = mB.residues[residue.id-1]
         bb_super(residue, residueB)
         for atom in hybrid_res.atoms:

@@ -487,12 +487,13 @@ def main(args):
     ref_infile = args.ref_infile
 
     # initialise Model
-    m = Model(infile, renumber_residues=renumber, bPDBTER=True, for_gmx=True)
+    m = Model(infile, renumber_residues=renumber, bPDBTER=True,
+              rename_atoms=True, scale_coords='A')
 
     # if reference structure provided, initialise that Model too
     if ref_infile is not None:
         ref_m = Model(ref_infile, renumber_residues=False,
-                      bPDBTER=True, for_gmx=True)
+                      bPDBTER=True, rename_atoms=True, scale_coords='A')
 
     # if script is provided, do the mutations in that file
     # ----------------------------------------------------
