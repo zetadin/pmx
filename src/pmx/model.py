@@ -504,11 +504,12 @@ class Model(Atomselection):
         residues -= library._ions
 
         # determine type
-        if residues.issubset(library._protein_residues):
+        # if 'residues' is not empty AND it's a subset of 'library._protein_residues'
+        if bool(residues) and residues <= library._protein_residues:
             self.moltype = 'protein'
-        elif residues.issubset(library._dna_residues):
+        elif bool(residues) and residues <= library._dna_residues:
             self.moltype = 'dna'
-        elif residues.issubset(library._rna_residues):
+        elif bool(residues) and residues <= library._rna_residues:
             self.moltype = 'rna'
         else:
             self.moltype = 'unknown'
