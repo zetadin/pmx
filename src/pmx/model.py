@@ -561,16 +561,23 @@ class Model(Atomselection):
         m = atom.molecule
         m.remove_atom(atom)
 
-    def remove_residue(self, residue):
+    def remove_residue(self, residue, renumber_atoms=True, renumber_residues=True):
         """Removes a Molecule/residue instance.
 
         Parameters
         ----------
         residue : Molecule
             Molecule instance to remove
+        renumber_atoms : bool, optional
+            whether to renumber the atoms of the Model after removing the
+            residue. Default is True.
+        renumber_residues : bool, optional
+            whether to renumber the residues of the Model after removing the
+            residue. Default is True.
         """
         ch = residue.chain
-        ch.remove_residue(residue)
+        ch.remove_residue(residue, renumber_atoms=renumber_atoms,
+                          renumber_residues=renumber_residues)
 
     def remove_chain(self, key):
         """Removes a Chain instance given the chain ID.

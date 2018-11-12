@@ -252,16 +252,19 @@ class Chain(Atomselection):
             self.renumber_residues()
         self.make_residue_tree()
 
-    def remove_residue(self, residue, bKeepResNum=False):
+    def remove_residue(self, residue, renumber_atoms=True, renumber_residues=True):
         """Removes a residue.
 
         Parameters
         ----------
         residue : Molecule
             Molecule instance to remove
-        bKeepResNum : bool, optional
-            whether to keep the original residue IDs. Default is False (i.e.
-            renumber all residues from 1).
+        renumber_atoms : bool, optional
+            whether to renumber the atoms of the Model after removing the
+            residue. Default is True.
+        renumber_residues : bool, optional
+            whether to renumber the residues of the Model after removing the
+            residue. Default is True.
         """
         idx = self.residues.index(residue)
         try:
@@ -280,8 +283,9 @@ class Chain(Atomselection):
             for atom in r.atoms:
                 self.atoms.append(atom)
         if midx != -1:
-            self.model.renumber_atoms()
-            if bKeepResNum is False:
+            if renumber_atoms is True:
+                self.model.renumber_atoms()
+            if renumber_residues is True:
                 self.model.renumber_residues()
         self.make_residue_tree()
 
