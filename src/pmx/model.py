@@ -829,3 +829,20 @@ def merge_models(*args):
     model.make_residues()
     model.assign_moltype()
     return model
+
+
+def assign_masses_to_model(model, topology):
+    '''Assigns masses to the Model atoms given the ones present in the Topology.
+
+    Parameters
+    ----------
+    model : Model
+        Model object of the molecule.
+    topology : Topology
+        Topology object of the same molecule.
+    '''
+    for ma, ta in zip(model.atoms, topology.atoms):
+        if ma.name != ta.name:
+            raise ValueError('mismatch of atom names between Model and '
+                             'Topology objects provided')
+        ma.m = ta.m
