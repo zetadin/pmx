@@ -787,3 +787,45 @@ class Model(Atomselection):
 
     def chain(self, iden):
         return self.chdic[iden]
+
+
+# ==============================================================================
+#                                  Functions
+# ==============================================================================
+def merge_models(*args):
+    '''Merges the atoms from all Model objects in the list provided. Atoms will
+    be merged based on the order of models in the list.
+
+    Parameters
+    ----------
+    *args :
+        variable length argument containing Model objects.
+
+    Returns
+    -------
+    m : Model
+        new Model object containing all the Models in the list.
+
+    Examples
+    --------
+    >>> newmodel = merge_models(model1, model2, model3)
+    >>> newmodel = merge_models(protein, ligand, cofactor, ions)
+    '''
+    model = Model()
+
+    if not all(m.unity == args[0].unity for m in args):
+        raise ValueError('the Model objects provided do not have the same '
+                         'units - convert units to that they are compatible')
+
+    for m in args:
+        # operate on a deep copy of the model, otherwise changes in the atoms
+        # of the merged model will be reflected in the parent models too
+        m_ = copy.deepcopy(m)
+        for a in m_.atoms:
+            model.atoms.append(a)
+
+    model.unity = model.atoms[0].unity
+    model.make_chains()
+    model.make_residues()
+    model.assign_moltype()
+    return model
