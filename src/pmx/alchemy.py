@@ -19,7 +19,7 @@ from .mutdb import read_mtp_entry
 from .forcefield import Topology, _check_case, _atoms_morphe
 from .utils import get_mtp_file
 
-__all__ = ['mutate', 'gen_hybrid_top', 'write_split_top']
+__all__ = ['mutate', 'gen_hybrid_top', 'write_split_top', 'AbsRestraints']
 
 
 # ==============
@@ -1384,12 +1384,12 @@ def _add_extra_DNA_RNA_impropers(topol, rlist, func_type, stateA, stateB):
 # Classes
 # =======
 class AbsRestraints:
-    '''Identifies a set of restraints as defined by Boresch [ref] between the
-    protein/host and ligand/guest molecule.
+    '''Identifies a set of restraints as defined by Boresch between the
+    protein/host and ligand/guest molecule. [5]_ ::
 
-        (Pro)    c---b           B   (Lig)
-                      \         / \\
-                       a-------A   C
+                (Pro)  p3 -- p2          l2   (Lig)
+                              \         /  \\
+                               p1 --- l1    l3
 
     The process of choosing atoms involved in the restraints is
     stochastic. Thus, every time you call this function, you might get a
@@ -1403,8 +1403,8 @@ class AbsRestraints:
 
     If you know which atoms to use for the restraints, you can provide their
     atom indices as they are in the input Model objects with the arguments
-    ``pro_ids`` and ``lig_ids``. The expected order of atoms is [A, B, C] as
-    in the scheme above for the ligand, and [a, b, c] for the protein.
+    ``pro_ids`` and ``lig_ids``. The expected order of atoms is ``l1, l2, l3`` as
+    in the scheme above for the ligand, and ``p1, p2, p3`` for the protein.
 
     Parameters
     ----------
@@ -1433,6 +1433,29 @@ class AbsRestraints:
         temperature in Kelvin. Default is 298.15 K.
     seed : bool, optional
         random seed.
+
+    Attributes
+    ----------
+    lig_atoms : list
+        list of three ligand/guest Atoms selected.
+    pro_atoms : list
+        list of three protein/host Atoms selected.
+    dist : float
+        distance ``l1-p1`` in nm.
+    angle1 : float
+        angle ``l2-l1-p1`` in degrees.
+    angle2 : float
+        angle ``l1-p1-p2`` in degrees.
+    dihedral1 : float
+        dihedral ``l3-l2-l1-p1`` in degrees.
+    dihedral2 : float
+        dihedral ``l2-l1-p1-p2`` in degrees.
+    dihedral3 : float
+        dihedral ``l1-p1-p2-p3`` in degrees.
+    dg : float
+        free energy of restraining the ligand while decoupled. This is calculate
+        with equation 32 in Boresch et al. [5]_
+
     '''
     def __init__(self, protein=None, ligand=None, complex=None, ligname=None,
                  pro_ids=None, lig_ids=None,
