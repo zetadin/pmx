@@ -1264,6 +1264,7 @@ class TopolBase:
                     sys.stderr.write('EEK! Something went wrong while writing position_restraints!!!!\n')
                     print(pr)
                     sys.exit(1)
+            fp2.close()
 
         # write posres directly in topology file
         elif use_include is False:
