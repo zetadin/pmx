@@ -63,6 +63,12 @@ def mutate(m, mut_resid, mut_resname, ff, mut_chain=None,
     elif inplace is False:
         m2 = deepcopy(m)
 
+    # convert Model to Angstrom units: this code works on A units
+    if m2.unity == 'nm':
+        m2.nm2a()
+        if verbose:
+            print('Model units have been converted from nm to A.')
+
     # get the residue based on the index
     # fetch_residue also checks the selection is valid and unique
     residue = m2.fetch_residue(idx=mut_resid, chain=mut_chain)
