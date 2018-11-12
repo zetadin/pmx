@@ -2033,3 +2033,38 @@ def energy(m):
     tot_energy = (bond_ene + angle_ene + dihedral_ene +
                   improper_ene + nb_ene + lj14_ene + coul14_ene)
     return tot_energy
+
+
+# ==============================================================================
+#                                  Functions
+# ==============================================================================
+def merge_atomtypes(*args):
+    '''Given a list containing atomtypes lists, return an atomtype list
+    containing a unique set of atomtypes (no duplicates).
+
+    Parameters
+    ----------
+    *args :
+        variable length argument containing atomtypes attributes from
+        ``Topology`` objects.
+
+    Returns
+    -------
+    atypes : list
+        merged atomtypes attribute. This is a list of dict, containing a
+        unique set of atomtypes.
+
+    Examples
+    --------
+    >>> top3.atomtypes = merge_atomtypes(top1.atomtypes, top2.atomtypes)
+    '''
+    # read all atomtypes present in all files
+    all_atomtypes = []
+    for atomtypes in args:
+        all_atomtypes.extend(atomtypes)
+
+    # keep unique set of atomtypes
+    unique_atomtypes = [dict(i) for i in set(tuple(x.items())
+                        for x in all_atomtypes)]
+
+    return unique_atomtypes
