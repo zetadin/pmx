@@ -1396,9 +1396,9 @@ class AbsRestraints:
     different set of restraints. If you would like to have a deterministic
     behaviour provide a ``seed``.
 
-    If you already have a structure file of the protein-ligand complex and want
-    to choose restraints based on the indices, you can do so by providing a
-    model of the ``complex`` as well as the residue name of the ligand
+    If you have a structure of the protein-ligand complex and want
+    to choose restraints based on this, you can do so by providing a
+    Model of the ``complex`` as well as the residue name of the ligand
     (``ligname``).
 
     If you know which atoms to use for the restraints, you can provide their
