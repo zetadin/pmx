@@ -136,12 +136,18 @@ def integrate_dgdl(fn, ndata=-1, lambda0=0, invert_values=False):
     # optional files integrity check before calling this integration func
 
     lines = [l for l in lines if l[0] not in '#@&']
-    r = map(lambda x: float(x.split()[1]), lines)
+    try:
+        r = map(lambda x: float(x.split()[1]), lines)
+    except:
+        r = "incomplete_file"
+        ndata = 1
 
     if ndata != -1 and len(r) != ndata:
         try:
-            print(' !! Skipping %s ( read %d data points, should be %d )'
-                  % (fn, len(r), ndata))
+            if "incomplete_file" in r:
+                print(' !! Skipping %s (incomplete file, probably simulation crashed)\n' % fn)
+            else:
+                print(' !! Skipping %s ( read %d data points, should be %d )' % (fn, len(r), ndata))
         except:
             print(' !! Skipping %s ' % (fn))
         return None, None
