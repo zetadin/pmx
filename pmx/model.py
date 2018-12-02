@@ -356,7 +356,7 @@ class Model(Atomselection):
                     try:
                         if a.resnr != prevResID+1:
 		            bNewChain = True
-                        if (prevAtomName == 'OC2') or (prevAtomName == 'OXT'):
+                        if (prevAtomName == 'OC2') or (prevAtomName == 'OXT') or (prevAtomName == 'OT2'):
                             bNewChain = True
                         if (prevAtomName == 'HH33') and ((prevResName=='NME') or (prevResName=='NAC') or (prevResName=='CT3')): # NME cap
                             bNewChain = True
