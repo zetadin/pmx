@@ -159,6 +159,128 @@ class Jarz:
 
         return err_blocks
 
+class JarzGauss:
+    '''Jarzynski estimator using Gaussian approximation (Hummer, J.Chem.Phys., 2001)
+
+    Description...
+
+    Parameters
+    ----------
+    wf : array_like
+        array of forward work values.
+    wr : array_like
+        array of reverse work values.
+    T : float or int
+    nboots : int
+        number of bootstrap samples to use for error estimation.
+
+    Examples
+    --------
+
+
+    Attributes
+    ----------
+
+    '''
+
+    def __init__(self, w, T, nboots=0, nblocks=1,bReverse=False):
+        self.w = np.array(w)
+        self.T = float(T)
+        self.nboots = nboots
+        self.nblocks = nblocks
+
+        # Calculate all Jarz properties available
+        self.dg = self.calc_dg(w=self.w, T=self.T, bReverse=bReverse)
+
+        if nboots > 0:
+            self.err_boot = self.calc_err_boot(w=self.wf, T=self.T, nboots=nboots, bReverse=bReverse)
+
+        if nblocks > 1:
+            self.err_blocks_for = self.calc_err_blocks(w=self.wf,T=self.T,nblocks=nblocks,bReverse=bReverse)
+            self.err_blocks_rev = self.calc_err_blocks(w=self.wr,T=self.T,nblocks=nblocks,bReverse=bReverse)
+
+    @staticmethod
+    def calc_dg(w, T, bReverse=False):
+        '''to be filled
+        '''
+        beta = 1./(kb*T)
+        n = float(len(w))
+        dg = np.mean(w) - beta*np.var(w,ddof=1)*0.5
+        if bReverse==True:
+            dg *= -1.0
+        return dg
+
+    @staticmethod
+    def calc_err_boot(w, T, nboots, bReverse):
+        '''Calculates the standard error via bootstrap. The work values are
+        resampled randomly with replacement multiple (nboots) times,
+        and the Gaussian approximation for Jarzinski free energy 
+        is recalculated for each bootstrap samples.
+        The standard error of the estimate is returned as the standard d
+        eviation of the bootstrapped free energies.
+
+        Parameters
+        ----------
+        w : array_like
+            work values.
+        T : float
+            temperature.
+        nboots: int
+            number of bootstrap samples to use for the error estimate.
+
+        Returns
+        -------
+        err : float
+            standard error of the mean.
+        '''
+        dg_boots = []
+        n = len(w)
+        for k in range(nboots):
+            sys.stdout.write('\r  Bootstrap (Std Err): iteration %s/%s'
+                             % (k+1, nboots))
+            sys.stdout.flush()
+
+            boot = np.random.choice(w, size=n, replace=True)
+            dg_boot = Jarz.calc_dg(boot, T, bReverse)
+            dg_boots.append(dg_boot)
+        sys.stdout.write('\n')
+        err = np.std(dg_boots)
+        return err
+
+    @staticmethod
+    def calc_err_blocks(w, T, nblocks, bReverse):
+        '''Calculates the standard error based on a number of blocks the
+        work values are divided into. It is useful when you run independent
+        equilibrium simulations, so that you can then use their respective
+        work values to compute the standard error based on the repeats.
+
+        Parameters
+        ----------
+        w : array_like
+            array of work values.
+        T : float
+            temperature.
+        c : [0,1]
+            ???
+        nblocks: int
+            number of blocks to divide the data into. This can be for
+            instance the number of independent equilibrium simulations
+            you ran.
+        '''
+
+        dg_blocks = []
+        # loosely split the arrays
+        w_split = np.array_split(w, nblocks)
+
+        # calculate all dg
+        for w_block in w_split:
+            dg_block = Jarz.calc_dg(w_block, T, bReverse)
+            dg_blocks.append(dg_block)
+
+        # get std err
+        err_blocks = scipy.stats.sem(dg_blocks, ddof=1)
+
+        return err_blocks
 
 class Crooks:
     '''Crooks Gaussian Intersection (CGI) estimator. The forward and reverse work
