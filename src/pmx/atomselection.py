@@ -286,6 +286,28 @@ class Atomselection:
         return list(map(lambda a: a.x, self.atoms))
 
     def fetch_atoms(self, key, how='byname', wildcard=False, inv=False):
+        '''Find atoms given their name, element, or id.
+
+        Parameters
+        ----------
+        key : str|int
+            key used to find the atoms.
+        how : str, optional
+            the way atoms are identified. Options are "byname", "byelem", or
+            "byid". Default is "byname".
+        wildcard : bool, optional
+            whether to loosely match the atom name. In this case, if the key
+            provided is within an atom name, the atom will be selected. E.g. the
+            key='H1' will select atoms named, for instance, "H12", "H13", and
+            "HH1".
+        inv : bool, optional
+            whether to invert the selection. Default is False.
+
+        Return
+        ------
+        atoms: list
+            list of Atom objects found.
+        '''
         result = []
         if not hasattr(key, "append"):
             key = [key]

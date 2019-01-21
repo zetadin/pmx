@@ -40,7 +40,7 @@ import os
 from collections import OrderedDict
 from numpy import shape
 from . import _pmx as _p
-from .parser import kickOutComments, readSection, parseList
+from .parser import kickOutComments, readSection
 from .atom import Atom
 from .molecule import Molecule
 from .ffparser import BondedParser, NBParser, RTPParser
@@ -94,7 +94,7 @@ def cpp_parse_file(fn,  itp=False, ffpath=None, cpp_defs=[],
 # FIXME/QUESTION: is "old" version still needed? If not, we could simplify the
 # code by removing all if statements and arguments related to this
 class TopolBase:
-    """Base class for topology objects.
+    """Base class for topology objects. It reads/writes topology files.
     """
 
     def __init__(self, filename, version='old'):
@@ -104,6 +104,9 @@ class TopolBase:
             self.is_itp = True
         else:
             self.is_itp = False
+        self.defaults = ''
+        self.header = []
+        self.atomtypes = []
         self.atoms = []
         self.residues = []
         self.name = ''
@@ -124,7 +127,9 @@ class TopolBase:
         self.has_posre = False
         self.posre = []
         self.molecules = []
+        self.footer = []
         self.system = ''
+        self.ii = {}  # dict for intermolecular interactions
         self.qA = 0.
         self.qB = 0.
         self.include_itps = []
@@ -137,14 +142,15 @@ class TopolBase:
     def read(self):
         lines = open(self.filename).readlines()
         lines = kickOutComments(lines, ';')
-        if not self.is_itp:
-            self.read_header(lines)
+        self.read_defaults(lines)
+        self.read_header(lines)
         self.read_footer(lines)
         posre_sections = self.get_posre_section(lines)
         self.read_include_itps(lines)
         lines = kickOutComments(lines, '#')
         self.read_moleculetype(lines)
         if self.name:  # atoms, bonds, ... section
+            self.read_atomtypes(lines)
             self.read_atoms(lines)
             self.read_bonds(lines)
             self.read_constraints(lines)
@@ -155,6 +161,7 @@ class TopolBase:
             self.read_vsites2(lines)
             self.read_vsites3(lines)
             self.read_vsites4(lines)
+            self.read_intermolecular_interactions(lines)
             if self.has_posre:
                 self.read_posre(posre_sections)
             self.__make_residues()
@@ -222,6 +229,11 @@ class TopolBase:
         lst = readSection(lines, '[ system ]', '[')
         self.system = lst[0].strip()
 
+    def read_defaults(self, lines):
+        lst = readSection(lines, '[ defaults ]', '[')
+        if lst:
+            self.defaults = lst[0].strip()
+
     def read_molecules(self, lines):
         lst = readSection(lines, '[ molecules ]', '[')
         self.molecules = []
@@ -235,14 +247,18 @@ class TopolBase:
             self.name, self.nrexcl = l[0].split()[0], int(l[0].split()[1])
 
     def read_header(self, lines):
-        ret = []
+        '''Reads the include statemets at the top of the topology file.
+        '''
+        # TODO/FIXME: this header reader does not work when the topology starts
+        # with a defaults section. All include itp statemets are ignored
+        # a fix would be having more specialised reader/writers for include
+        # statements
         for line in lines:
             if not line.strip().startswith('[') and \
                    not line.strip().startswith('#ifdef POSRES'):
-                ret.append(line.rstrip())
+                self.header.append(line.rstrip())
             else:
                 break
-        self.header = ret
 
     def read_footer(self, lines):
         for line in lines:
@@ -255,6 +271,34 @@ class TopolBase:
             self.footer = self.footer[:idx]
         except:
             pass
+
+    def read_atomtypes(self, lines):
+        lst = readSection(lines, '[ atomtypes ]', '[')
+        for line in lst:
+            atomtype = dict()
+            elements = line.split()
+            # take into account there can be 2 formats for atomtypes
+            if len(elements) == 7:
+                atomtype['name'] = str(elements[0])
+                atomtype['bond_type'] = str(elements[1])
+                atomtype['mass'] = float(elements[2])
+                atomtype['charge'] = float(elements[3])
+                atomtype['ptype'] = str(elements[4])
+                atomtype['sigma'] = float(elements[5])
+                atomtype['epsilon'] = float(elements[6])
+                self.atomtypes.append(atomtype)
+            elif len(elements) == 8:
+                atomtype['name'] = str(elements[0])
+                atomtype['bond_type'] = str(elements[1])
+                atomtype['anum'] = int(elements[2])
+                atomtype['mass'] = float(elements[3])
+                atomtype['charge'] = float(elements[4])
+                atomtype['ptype'] = str(elements[5])
+                atomtype['sigma'] = float(elements[6])
+                atomtype['epsilon'] = float(elements[7])
+                self.atomtypes.append(atomtype)
+            else:
+                raise ValueError('format of atomtypes section not recognised')
 
     def read_atoms(self, lines):
         lst = readSection(lines, '[ atoms ]', '[')
@@ -361,6 +405,8 @@ class TopolBase:
     def read_dihedrals(self, lines):
         starts = []
         for i, line in enumerate(lines):
+            if 'intermolecular_interactions' in line:
+                break
             if line.strip().startswith('[ dihedrals ]'):
                 starts.append(i)
         for s in starts:
@@ -450,6 +496,112 @@ class TopolBase:
                                             self.atoms[idx[3]-1],
                                             func, rest])
 
+    def read_intermolecular_interactions(self, lines):
+        iilines = readSection(lines, begin='[ intermolecular_interactions ]',
+                              end='gotoendoffile')
+        self.ii = {}
+
+        # Note that here we are not storing Atom objects, but just the indices
+        # as they come in the topology file. this is because things get tricky
+        # when having multiple moleculetypes in the same topology, some of
+        # which are defined in itp files included via include statement.
+        # It is easier to just copy the indices as they are.
+
+        # -----
+        # Bonds
+        # -----
+        lst = readSection(iilines, '[ bonds ]', '[')
+        if lst:
+            self.ii['bonds'] = []
+            for line in lst:
+                entries = line.split()
+                if len(entries) == 3:
+                    el = [int(x) for x in line.split()]
+                    self.ii['bonds'].append([int(el[0]), int(el[1]), int(el[2])])
+
+                elif len(entries) == 5:
+                    el = [int(x) for x in entries[:3]]
+                    lA = float(entries[3])
+                    kA = float(entries[4])
+                    self.ii['bonds'].append([int(el[0]), int(el[1]), int(el[2]), [lA, kA]])
+
+                elif len(entries) == 7:
+                    el = [int(x) for x in entries[:3]]
+                    lA = float(entries[3])
+                    kA = float(entries[4])
+                    lB = float(entries[5])
+                    kB = float(entries[6])
+                    self.ii['bonds'].append([int(el[0]), int(el[1]), int(el[2]),
+                                            [lA, kA, lB, kB]])
+
+        # ------
+        # Angles
+        # ------
+        lst = readSection(iilines, '[ angles ]', '[')
+        if lst:
+            self.ii['angles'] = []
+            for line in lst:
+                entries = line.split()
+                if len(entries) == 4:
+                    idx = [int(x) for x in line.split()]
+                    self.ii['angles'].append([int(idx[0]), int(idx[1]), int(idx[2]), int(idx[3])])
+
+                elif len(entries) == 6:
+                    idx = [int(x) for x in entries[:4]]
+                    l = float(entries[4])
+                    k = float(entries[5])
+                    self.ii['angles'].append([int(idx[0]), int(idx[1]), int(idx[2]), int(idx[3]),
+                                             [l, k]])
+
+                elif len(entries) == 8 and entries[3] == '1':
+                    idx = [int(x) for x in entries[:4]]
+                    lA = float(entries[4])
+                    kA = float(entries[5])
+                    lB = float(entries[6])
+                    kB = float(entries[7])
+                    self.ii['angles'].append([int(idx[0]), int(idx[1]), int(idx[2]), int(idx[3]),
+                                             [lA, kA, lB, kB]])
+
+                elif len(entries) == 8 and entries[3] == '5':
+                    idx = [int(x) for x in entries[:4]]
+                    lA1 = float(entries[4])
+                    kA1 = float(entries[5])
+                    lA2 = float(entries[6])
+                    kA2 = float(entries[7])
+                    self.ii['angles'].append([int(idx[0]), int(idx[1]), int(idx[2]), int(idx[3]),
+                                             [lA1, kA1, lA2, kA2]])
+
+                elif len(entries) == 12:
+                    idx = [int(x) for x in entries[:4]]
+                    lA1 = float(entries[4])
+                    kA1 = float(entries[5])
+                    lA2 = float(entries[6])
+                    kA2 = float(entries[7])
+                    lB1 = float(entries[8])
+                    kB1 = float(entries[9])
+                    lB2 = float(entries[10])
+                    kB2 = float(entries[11])
+                    self.ii['angles'].append([int(idx[0]), int(idx[1]), int(idx[2]), int(idx[3]),
+                                             [lA1, kA1, lA2, kA2, lB1, kB1, lB2, kB2]])
+
+        # ---------
+        # Dihedrals
+        # ---------
+        lst = readSection(iilines, '[ dihedrals ]', '[')
+        if lst:
+            self.ii['dihedrals'] = []
+            for line in lst:
+                entr = line.split()
+                idx = [int(x) for x in entr[:4]]
+                func = int(entr[4])
+                if len(entr) > 5:
+                    rest = entr[5:]
+                else:
+                    rest = []
+                self.ii['dihedrals'].append([int(idx[0]), int(idx[1]),
+                                             int(idx[2]), int(idx[3]),
+                                             func, rest])
+
     def read_vsites4(self, lines):
         starts = []
         for i, line in enumerate(lines):
@@ -537,19 +689,32 @@ class TopolBase:
     # ===============
     def write(self, outfile, stateBonded='AB', stateTypes='AB', stateQ='AB',
               scale_mass=False, dummy_qA='on', dummy_qB='on', target_qB=None,
-              full_morphe=True, verbose=False):
+              full_morphe=True, write_atypes=True, posre_ifdef=True, posre_include=False,
+              verbose=False):
         """Writes the Topology to file.
+
+        The parameters ``stateBonded``, ``stateTypes``, and ``stateQ`` control
+        what to write in the B-state columns of the topology. This is needed
+        for free energy calculations. However, if you are writing a
+        standard topology file that do not contain information on B-states,
+        choose the option 'A' so that only the A-state data will be written.
 
         Parameters
         ----------
         outfile : str
             filename of topology file
-        stateBonded : A|B|AB, optional
-            write bonded terms for state A, B, or both. Default is both (AB).
-        stateTypes: A|B|AB, optional
-            write atomtypes for state A, B, or both. Default is both (AB).
-        stateQ : A|B|AB, optional
-            write charges for state A, B, or both. Default is both (AB).
+        stateBonded : A|AA|BB|AB, optional
+            write bonded terms with states A only, AA, BB, or AB.
+            Default is AB. If you want to write a 'standard' topology with no
+            B-state columns, select 'A'.
+        stateTypes: A|AA|BB|AB, optional
+            write atomtypes with states A only, AA, BB, or AB.
+            Default is AB. If you want to write a 'standard' topology with no
+            B-state columns, select 'A'.
+        stateQ : A|AA|BB|AB, optional
+            write charges with statse A only, AA, BB, or AB.
+            Default is AB. If you want to write a 'standard' topology with no
+            B-state columns, select 'A'.
         scale_mass : bool, optional
             whether to scale the masses of dummy atoms. Default is False.
         dummy_qA : on|off
@@ -562,19 +727,46 @@ class TopolBase:
             target charge for hybrid B states? Default is None.
         full_morphe : bool, optional
             ???
+        write_atypes : bool, optional
+            whether to write the atomtypes section. Default is True. If you are
+            including atomtypes in another Topology and do not want to write
+            this section in this file, set this to False.
+        posre_ifdef : bool, optional
+            whether to use an "ifdef POSRES" statement for the position
+            restraints. Default is True.
+        posre_include : bool, optional
+            whether to place the position restraints in a separate itp file
+            that is included in the topology via an "#include" statement.
+            Default is False.
         verbose : bool, optional
             whether to print out information about each atom written. Default
             is False.
         """
         # open file for writing
         fp = open(outfile, 'w')
+
         # determine the target charges for hybrid residues if they are not
         # provided explicitly
         if target_qB is None:
             target_qB = self.get_hybrid_qB()
-        # write all top sections
-        if not self.is_itp:
-            self.write_header(fp)
+
+        # write defaults if they are present while a forcefield is not defined,
+        # and if we are writing a top rather than an itp file
+        if self.defaults and not self.forcefield and not self.is_itp:
+            self.write_defaults(fp)
+
+        # write the ff include statement only for top files
+        if self.is_itp is False:
+            self.write_header(fp, write_ff=True)
+
+        # write the atomtypes section if present
+        if self.atomtypes and write_atypes is True:
+            self.write_atomtypes(fp)
+
+        # write the rest of the header (the include statements)
+        self.write_header(fp, write_ff=False)
+
+        # write the molecule section, if there are atoms
         if self.atoms:
             self.write_moleculetype(fp)
             self.write_atoms(fp, charges=stateQ, atomtypes=stateTypes,
@@ -587,7 +779,9 @@ class TopolBase:
             self.write_pairs(fp)
             self.write_angles(fp, state=stateBonded)
             self.write_dihedrals(fp, state=stateBonded)
-            self.write_cmap(fp)
+            # write cmap only if needed/present
+            if self.cmap:
+                self.write_cmap(fp)
             if self.has_vsites2:
                 self.write_vsites2(fp)
             if self.has_vsites3:
@@ -595,28 +789,77 @@ class TopolBase:
             if self.has_vsites4:
                 self.write_vsites4(fp)
             if self.has_posre:
-                self.write_posre(fp)
+                self.write_posre(fp, ifdef=posre_ifdef, use_include=posre_include)
         self.write_footer(fp)
         if not self.is_itp:
             self.write_system(fp)
             self.write_molecules(fp)
+        # write intermolecular interactions if present
+        if self.ii:
+            self.write_intermolecular_interactions(fp)
         fp.close()
 
-    def write_header(self, fp):
-        for line in self.header:
-            print(line, file=fp)
+    def write_header(self, fp, write_ff=True):
+        '''Writes the include statemets at the top of the topology file.
+
+        Parameters
+        ----------
+        write_ff : bool
+            whether to write the line that includes the forcefield parameters
+            or the rest of the header.
+        '''
+        # This 'odd' split of the writer is because one wants to write the
+        # ff include statement before the atomtypes section, and the rest of
+        # the inlcude statements (e.g. ligand.itp included) after the
+        # atomtypes
+
+        # write the ff line only
+        if write_ff is True:
+            print('', file=fp)
+            for line in self.header:
+                if 'forcefield' in line:
+                    print(line, file=fp)
+        # write header excluding the ff line
+        elif not self.is_itp:
+            print('', file=fp)
+            for line in self.header:
+                if 'forcefield' not in line:
+                    print(line, file=fp)
 
     def write_footer(self, fp):
+        print('', file=fp)
         try:
             for line in self.footer:
                 print(line, file=fp)
         except:
-            print("No footer in itp\n")
+            print("INFO: No POSRE footer present in topology\n")
 
     def write_moleculetype(self, fp):
-        print('[ moleculetype ]', file=fp)
+        print('\n[ moleculetype ]', file=fp)
         print('; Name        nrexcl', file=fp)
         print('%s  %d' % (self.name, self.nrexcl), file=fp)
+
+    def write_atomtypes(self, fp):
+        # choose header
+        if len(self.atomtypes[0]) == 7:
+            print('\n[ atomtypes ]\n;  name  bond_type          mass        '
+                  'charge  ptype   sigma      epsilon', file=fp)
+        elif len(self.atomtypes[0]) == 8:
+            print('\n[ atomtypes ]\n;     name bond_type anum      mass    '
+                  'charge  ptype       sigma               epsilon', file=fp)
+
+        # write data
+        for at in self.atomtypes:
+            if len(at) == 7:
+                # we leave some space at the start because we may have dummy
+                # types with long names (e.g. DUM_*)
+                print('{name:>10}{bond_type:>10}{mass:>10.4f}{charge:>10.4f}'
+                      '{ptype:>5}{sigma:>20.5e}{epsilon:>20.5e}'.format(**at),
+                      file=fp)
+            elif len(at) == 8:
+                print('{name:>10}{bond_type:>10}{anum:>5}{mass:>10.4f}{charge:>10.4f}'
+                      '{ptype:>5}{sigma:>20.5e}{epsilon:>20.5e}'.format(**at),
+                      file=fp)
 
     def write_atoms(self, fp, charges='AB', atomtypes='AB', dummy_qA='on',
                     dummy_qB='on', scale_mass=True, target_qB=[],
@@ -700,7 +943,7 @@ class TopolBase:
                     if verbose is True:
                         TR('No corrections applied to ensure integer charges')
 
-        print('\n [ atoms ]', file=fp)
+        print('\n[ atoms ]', file=fp)
         print(';   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB', file=fp)
         al = self.atoms
         for atom in al:
@@ -755,7 +998,7 @@ class TopolBase:
 
     def write_bonds(self, fp, state='AB'):
 
-        print('\n [ bonds ]', file=fp)
+        print('\n[ bonds ]', file=fp)
         print(';  ai    aj funct            c0            c1            c2            c3', file=fp)
         for b in self.bonds:
             if len(b) == 3:
@@ -780,14 +1023,14 @@ class TopolBase:
 
     def write_pairs(self, fp):
         # CHECK HOW THIS GOES WITH B-STATES
-        print('\n [ pairs ]', file=fp)
+        print('\n[ pairs ]', file=fp)
         print(';  ai    aj funct            c0            c1            c2            c3', file=fp)
         for p in self.pairs:
             print('%6d %6d %6d' % (p[0].id, p[1].id, p[2]), file=fp)
 
     def write_constraints(self, fp):
         # CHECK HOW THIS GOES WITH B-STATES
-        print('\n [ constraints ]', file=fp)
+        print('\n[ constraints ]', file=fp)
         print(';  ai    aj funct            c0            c1            c2            c3', file=fp)
         for p in self.constraints:
             if len(p) == 3:
@@ -796,7 +1039,7 @@ class TopolBase:
                 print('%6d %6d %6d %8s' % (p[0].id, p[1].id, p[2], p[3]), file=fp)
 
     def write_angles(self, fp, state='AB'):
-        print('\n [ angles ]', file=fp)
+        print('\n[ angles ]', file=fp)
         print(';  ai    aj    ak funct            c0            c1            c2            c3', file=fp)
         for ang in self.angles:
             if len(ang) == 4:
@@ -864,7 +1107,7 @@ class TopolBase:
                         raise ValueError("Don't know how to print angletype %d" % ang[3])
 
     def write_cmap(self, fp):
-        print('\n [ cmap ]', file=fp)
+        print('\n[ cmap ]', file=fp)
         print(';  ai    aj    ak    al    am funct', file=fp)
         for d in self.cmap:
             print("%6d %6d %6d %6d %6d %4d" % (d[0].id, d[1].id,
@@ -872,7 +1115,7 @@ class TopolBase:
                                                d[4].id, d[5]), file=fp)
 
     def write_dihedrals(self, fp, state='AB'):
-        print('\n [ dihedrals ]', file=fp)
+        print('\n[ dihedrals ]', file=fp)
         print(';  ai    aj    ak    al funct            c0            c1            c2            c3            c4            c5', file=fp)
         for d in self.dihedrals:
             if len(d) == 5:
@@ -937,7 +1180,7 @@ class TopolBase:
                            A, B), file=fp)
 
     def write_vsites2(self, fp):
-        print('\n [ virtual_sites2 ]', file=fp)
+        print('\n[ virtual_sites2 ]', file=fp)
         print(';  ai    aj    ak  funct            c0            c1', file=fp)
         for vs in self.virtual_sites2:
             if len(vs) == 4:
@@ -952,7 +1195,7 @@ class TopolBase:
                 sys.exit(1)
 
     def write_vsites3(self, fp):
-        print('\n [ virtual_sites3 ]', file=fp)
+        print('\n[ virtual_sites3 ]', file=fp)
         print(';  ai    aj    ak    al funct            c0            c1', file=fp)
         for vs in self.virtual_sites3:
             if len(vs) == 5:
@@ -968,7 +1211,7 @@ class TopolBase:
                 sys.exit(1)
 
     def write_vsites4(self, fp):
-        print('\n [ virtual_sites4 ]', file=fp)
+        print('\n[ virtual_sites4 ]', file=fp)
         print(';  ai    aj    ak    al    am  funct            c0            c1          c2', file=fp)
         for vs in self.virtual_sites4:
             if len(vs) == 6:
@@ -984,25 +1227,112 @@ class TopolBase:
                 print(vs)
                 sys.exit(1)
 
-    def write_posre(self, fp):
-        print('\n [ position_restraints ]', file=fp)
-        print(';  ai    funct            c0            c1          c2', file=fp)
-        for pr in self.posre:
-            if len(pr) == 3:
-                print("%6d %4d %s" % (pr[0].id, pr[1], pr[2]), file=fp)
+    def write_posre(self, fp, ifdef=True, use_include=False):
+        '''Write position restraints section.
+
+        Parameters
+        ----------
+        ifdef : bool, optional
+            whether to use an "ifdef POSRES" statement. Default is True.
+        use_include : bool, optional
+            whether to place the position restraints in a separate itp file
+            that is included in the topology via an "#include" statement.
+            Default is False.
+        '''
+
+        if ifdef is True:
+            print('\n#ifdef POSRES', file=fp)
+
+        # write posres to different file that will be included
+        if use_include is True:
+            f = os.path.basename(fp.name)
+            path = os.path.dirname(fp.name)
+            posre_fname = 'posre_%s.itp' % f.split('.')[0]
+            print('#include "%s"' % posre_fname, file=fp)
+
+            if path:
+                fp2 = open(path+'/'+posre_fname, 'w')
             else:
-                sys.stderr.write('EEK! Something went wrong while writing position_restraints!!!!\n')
-                print(pr)
-                sys.exit(1)
+                fp2 = open(posre_fname, 'w')
+
+            print('\n[ position_restraints ]', file=fp2)
+            print('; atom  type      fx      fy      fz', file=fp2)
+            for pr in self.posre:
+                if len(pr) == 3:
+                    print("%6d %4d %s" % (pr[0].id, pr[1], pr[2]), file=fp2)
+                else:
+                    sys.stderr.write('EEK! Something went wrong while writing position_restraints!!!!\n')
+                    print(pr)
+                    sys.exit(1)
+            fp2.close()
+
+        # write posres directly in topology file
+        elif use_include is False:
+            print('\n[ position_restraints ]', file=fp)
+            print('; atom  type      fx      fy      fz', file=fp)
+            for pr in self.posre:
+                if len(pr) == 3:
+                    print("%6d %4d %s" % (pr[0].id, pr[1], pr[2]), file=fp)
+                else:
+                    sys.stderr.write('EEK! Something went wrong while writing position_restraints!!!!\n')
+                    print(pr)
+                    sys.exit(1)
+
+        if ifdef is True:
+            print('#endif', file=fp)
 
     def write_system(self, fp):
-        print('[ system ]', file=fp)
+        print('\n[ system ]', file=fp)
         print('{0}'.format(self.system), file=fp)
 
+    def write_defaults(self, fp):
+        print('\n[ defaults ]', file=fp)
+        print('; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ', file=fp)
+        print('{0}'.format(self.defaults), file=fp)
+
     def write_molecules(self, fp):
-        print('[ molecules ]', file=fp)
+        print('\n[ molecules ]', file=fp)
         for mol, num in self.molecules:
             print("%s %d" % (mol, num), file=fp)
+
+    def write_intermolecular_interactions(self, fp):
+        print('\n[ intermolecular_interactions ]', file=fp)
+        # -----
+        # bonds
+        # -----
+        if 'bonds' in self.ii.keys():
+            print('\n[ bonds ]', file=fp)
+            for b in self.ii['bonds']:
+                print('%6d %6d %6d' % (b[0], b[1], b[2]), file=fp, end='')
+                if len(b) > 3:
+                    for x in b[3]:
+                        print(' %14.6f' % x, file=fp, end='')
+                print('', file=fp)
+
+        # ------
+        # angles
+        # ------
+        if 'angles' in self.ii.keys():
+            print('\n[ angles ]', file=fp)
+            for ang in self.ii['angles']:
+                print('%6d %6d %6d %6d' % (ang[0], ang[1], ang[2], ang[3]), file=fp, end='')
+                if len(ang) > 4:
+                    for x in ang[4]:
+                        print(' %14.6f' % x, file=fp, end='')
+                print('', file=fp)
+
+        # ---------
+        # dihedrals
+        # ---------
+        if 'dihedrals' in self.ii.keys():
+            print('\n[ dihedrals ]', file=fp)
+            for dih in self.ii['dihedrals']:
+                print('%6d %6d %6d %6d %6d' % (dih[0], dih[1], dih[2], dih[3], dih[4]), file=fp, end='')
+                if len(dih) > 5:
+                    rest = dih[5]
+                    for x in rest:
+                        print(' %14.6f' % float(x), file=fp, end='')
+                print('', file=fp)
 
     # ===============
     # other functions
@@ -1064,12 +1394,6 @@ class TopolBase:
         return qB
 
 
-class ITPFile(TopolBase):
-
-    def __init__(self, filename):
-        TopolBase.__init__(self, filename)
-
-
 class Topology(TopolBase):
     """Topology class.
 
@@ -1081,13 +1405,13 @@ class Topology(TopolBase):
         whether the topology provided is an ``itp`` file. If not provided,
         this is automatically determined by the file extension (``.itp`` vs
         ``.top``).
+    assign_types : bool, optional
+        whether to assign types for the atoms in the Topology. Default is True.
     ff : str, optional
         force field to use. If not provided, it is determined based on the
         forcefield.itp include statement in the ``top`` file. If you are providing
         an ``itp`` file without a reference to the force field, and assign_types is
         set to True, then you also need to provide a force field name.
-    assign_types : bool, optional
-        whether to assign atom types for the atoms in the Topology.
     version : str?
         what is version? is it still needed?
 
@@ -1163,17 +1487,17 @@ class Topology(TopolBase):
         if ff is not None:
             self.forcefield = ff
 
-        if self.forcefield == '':
-            raise ValueError('The topology file provided does not contain an '
-                             'include statement pointing towards a forcefield'
-                             '\nfile. This is likely because you are providing'
-                             ' a itp rather than a top file. Thus, you need to'
-                             '\nprovide the forcefield to use via the ff '
-                             'parameter.')
-        # get full path to ff
-        self.ffpath = get_ff_path(self.forcefield)
-
         if assign_types:
+            if self.forcefield == '':
+                raise ValueError('The topology file provided does not contain an '
+                                 'include statement pointing towards a forcefield'
+                                 '\nfile. This is likely because you are providing'
+                                 ' a itp rather than a top file. Thus, you need to'
+                                 '\nprovide the forcefield to use via the ff '
+                                 'parameter.')
+            # get full path to ff
+            self.ffpath = get_ff_path(self.forcefield)
+            # read ff files and assign types
             fulltop = cpp_parse_file(self.filename, itp=self.is_itp,
                                      ffpath=self.ffpath)
             fulltop = kickOutComments(fulltop, '#')
@@ -1240,27 +1564,30 @@ class Topology(TopolBase):
                 del self.dihedrals[i][-1]
                 self.dihedrals[i].append(param[1:])
 
+    def make_posre(self, heavy=True, k=1000):
+        '''Generate position restraints for the atoms in Topology.
 
-class GAFFTopology(TopolBase):
-    """GAFF Topology class.
-    """
+        Parameters
+        ----------
+        heavy : bool, optional
+            whether to restrain only heavy atoms (True) or also hydrogens
+            (False). Default is True
+        k : float, optional
+            force constant of position restraints. Default is 1000 kJ/nm^2.
+        '''
+        # reset posre
+        self.posre = []
+        # fill list
+        for a in self.atoms:
+            a.make_long_name()
+            a.get_symbol()
+            if heavy is True:
+                if a.symbol != 'H':
+                    self.posre.append([a, 1, '{0:14.6f} {0:14.6f} {0:14.6f}'.format(k)])
+            else:
+                self.posre.append([a, 1, '{0:14.6f} {0:14.6f} {0:14.6f}'.format(k)])
 
-    def __init__(self, filename):
-        TopolBase.__init__(self, filename)
-        self.atomtypes = self.__read_atomtypes(filename)
-
-    def __read_atomtypes(self, filename):
-        l = open(filename).readlines()
-        lst = readSection(l, '[ atomtypes ]', '[')
-        lst = parseList('ssffsff', lst)
-        for line in lst:
-            self.atomtypes[line[0]] = line[1:]
-
-    def set_name(self, name):
-        self.name = name
-        for atom in self.atoms:
-            atom.name = name
-
+        self.has_posre = True
 
 class MDPError(Exception):
     """MDP Error class.
@@ -1706,3 +2033,38 @@ def energy(m):
     tot_energy = (bond_ene + angle_ene + dihedral_ene +
                   improper_ene + nb_ene + lj14_ene + coul14_ene)
     return tot_energy
+
+
+# ==============================================================================
+#                                  Functions
+# ==============================================================================
+def merge_atomtypes(*args):
+    '''Given a list containing atomtypes lists, return an atomtype list
+    containing a unique set of atomtypes (no duplicates).
+
+    Parameters
+    ----------
+    *args :
+        variable length argument containing atomtypes attributes from
+        ``Topology`` objects.
+
+    Returns
+    -------
+    atypes : list
+        merged atomtypes attribute. This is a list of dict, containing a
+        unique set of atomtypes.
+
+    Examples
+    --------
+    >>> top3.atomtypes = merge_atomtypes(top1.atomtypes, top2.atomtypes)
+    '''
+    # read all atomtypes present in all files
+    all_atomtypes = []
+    for atomtypes in args:
+        all_atomtypes.extend(atomtypes)
+
+    # keep unique set of atomtypes
+    unique_atomtypes = [dict(i) for i in set(tuple(x.items())
+                        for x in all_atomtypes)]
+
+    return unique_atomtypes

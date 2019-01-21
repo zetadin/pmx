@@ -9,7 +9,9 @@ from builtins import map
 import os
 import sys
 from copy import deepcopy
+import numpy as np
 from . import library
+from .atom import Atom
 from .model import Model
 from .utils import mtpError, UnknownResidueError, MissingTopolParamError
 from .geometry import Rotation, nuc_super, bb_super
@@ -17,7 +19,7 @@ from .mutdb import read_mtp_entry
 from .forcefield import Topology, _check_case, _atoms_morphe
 from .utils import get_mtp_file
 
-__all__ = ['mutate', 'gen_hybrid_top', 'write_split_top']
+__all__ = ['mutate', 'gen_hybrid_top', 'write_split_top', 'AbsRestraints']
 
 
 # ==============
@@ -62,6 +64,12 @@ def mutate(m, mut_resid, mut_resname, ff, mut_chain=None,
         m2 = m
     elif inplace is False:
         m2 = deepcopy(m)
+
+    # convert Model to Angstrom units: this code works on A units
+    if m2.unity == 'nm':
+        m2.nm2a()
+        if verbose:
+            print('Model units have been converted from nm to A.')
 
     # get the residue based on the index
     # fetch_residue also checks the selection is valid and unique
@@ -116,7 +124,7 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, refB=None,
     if refB is not None:
         if verbose is True:
             print("log_> Set Bstate geometry according to the provided structure")
-        mB = Model(refB, bPDBTER=True, for_gmx=True)
+        mB = Model(refB, bPDBTER=True, rename_atoms=True, scale_coords='A')
         residueB = mB.residues[residue.id-1]
         bb_super(residue, residueB)
         for atom in hybrid_res.atoms:
@@ -1370,6 +1378,405 @@ def _add_extra_DNA_RNA_impropers(topol, rlist, func_type, stateA, stateB):
     for imp in extra_impropers:
         imp.extend([func_type, [func_type]+stateA, [func_type]+stateB])
     topol.dihedrals += extra_impropers
+
+
+# =======
+# Classes
+# =======
+class AbsRestraints:
+    '''Identifies a set of restraints as defined by Boresch between the
+    protein/host and ligand/guest molecule. [5]_ ::
+
+                (Pro)  p3 -- p2          l2   (Lig)
+                              \         /  \\
+                               p1 --- l1    l3
+
+    The process of choosing atoms involved in the restraints is
+    stochastic. Thus, every time you call this function, you might get a
+    different set of restraints. If you would like to have a deterministic
+    behaviour provide a ``seed``.
+
+    If you have a structure of the protein-ligand complex and want
+    to choose restraints based on this, you can do so by providing a
+    Model of the ``complex`` as well as the residue name of the ligand
+    (``ligname``).
+
+    If you know which atoms to use for the restraints, you can provide their
+    atom indices as they are in the input Model objects with the arguments
+    ``pro_ids`` and ``lig_ids``. The expected order of atoms is ``l1, l2, l3`` as
+    in the scheme above for the ligand, and ``p1, p2, p3`` for the protein.
+
+    Parameters
+    ----------
+    protein : Model, optional
+        model of the protein/host molecule.
+    ligand : Model, optional
+        model of the ligand/guest molecule.
+    complex: Model, optional
+        model of the protein-ligand or host-guest complex.
+    ligname : str, optional
+        name of ligand/host residue. This is required if a complex is provided.
+    pro_ids : list, optional
+        list with three indeces.
+    lig_ids : list, optional
+        list with three indeces.
+    kbond : float, optional
+        force constant to use for the distance restraint.
+        Default is 4184 kJ/(mol * nm^2).
+    kangle : float, optional
+        force constant to use for the angle restraints.
+        Default is 41.84 kJ/(mol * rad^2).
+    kdihedral : float, optional
+        force constant to use for the dihedral restraints.
+        Default is 41.84 kJ/(mol * rad^2).
+    T : float, optional
+        temperature in Kelvin. Default is 298.15 K.
+    seed : bool, optional
+        random seed.
+
+    Attributes
+    ----------
+    lig_atoms : list
+        list of three ligand/guest Atoms selected.
+    pro_atoms : list
+        list of three protein/host Atoms selected.
+    dist : float
+        distance ``l1-p1`` in nm.
+    angle1 : float
+        angle ``l2-l1-p1`` in degrees.
+    angle2 : float
+        angle ``l1-p1-p2`` in degrees.
+    dihedral1 : float
+        dihedral ``l3-l2-l1-p1`` in degrees.
+    dihedral2 : float
+        dihedral ``l2-l1-p1-p2`` in degrees.
+    dihedral3 : float
+        dihedral ``l1-p1-p2-p3`` in degrees.
+    dg : float
+        free energy of restraining the ligand while decoupled. This is calculate
+        with equation 32 in Boresch et al. [5]_
+
+    '''
+    def __init__(self, protein=None, ligand=None, complex=None, ligname=None,
+                 pro_ids=None, lig_ids=None,
+                 kbond=4184, kangle=41.84, kdihedral=41.84,
+                 T=298.15, seed=None):
+
+        # check which scenario we have: either protein/ligand models are
+        # provided separately, or a complex is provided along with the
+        # residue name for the ligand.
+        self.complex = deepcopy(complex)
+        if self.complex is not None:
+            if protein is not None or ligand is not None:
+                raise ValueError('both arguments "complex" and "protein" or '
+                                 '"ligand" have been provided. You should provide '
+                                 'either separate protein and ligand Models '
+                                 'or a single Model of the complex, but not '
+                                 'both')
+            if ligname is None:
+                raise ValueError('when providing a protein-ligand complex '
+                                 'you also need to provide the residue name '
+                                 'of the ligand')
+            self.ligname = ligname
+            self.protein, self.ligand = self._split_complex_model()
+        if self.complex is None:
+            self.protein = deepcopy(protein)
+            self.ligand = deepcopy(ligand)
+
+        # other input parameters
+        self.pro_ids = pro_ids
+        self.lig_ids = lig_ids
+        self.kbond = float(kbond)
+        self.kangle = float(kangle)
+        self.kdihedral = float(kdihedral)
+        self.T = float(T)
+        self.seed = seed
+        # restraints data
+        self.lig_atoms = []
+        self.pro_atoms = []
+        self.dist = None
+        self.angle1 = None
+        self.angle2 = None
+        self.dihedral1 = None
+        self.dihedral2 = None
+        self.dihedral3 = None
+
+        # check protein and ligand model are using the same units
+        assert self.ligand.unity == self.protein.unity
+        if self.ligand.unity == 'A':
+            self.f = 10.0
+        elif self.ligand.unity == 'nm':
+            self.f = 1.0
+
+        # pick atoms and define restraints
+        self.select_restraints()
+
+    def select_restraints(self):
+        '''Automated restraints selection. For the ligand/guest, three heavy
+        atoms close to its center of mass are selected. For the protein,
+        the backbone N-CA-C atoms closest to the selected ligand atoms are
+        picked. If the protein/host is another small molecule, then three
+        atoms close to the ligand atoms are selected.
+        '''
+        # ===================
+        # Choose Ligand Atoms
+        # ===================
+
+        # pick 3 atoms near the centre of mass
+        if self.lig_ids is None:
+            # find centre of mass
+            com = Atom()
+            com.x = self.ligand.com(vector_only=True)
+            # calc distances from com, but exclude H atoms from selection
+            distances = [(a, a-com) for a in self.ligand.atoms if a.symbol != 'H']
+            # first atom picked is the one closest to centre of mass
+            l1 = min(distances, key=lambda x: x[1])[0]
+            # make a list of atoms within 3A of atom 1, excluding hydrogens
+            atoms = [a for a in self.ligand.atoms if l1.id != a.id and l1-a < 0.3*self.f and a.symbol != 'H']
+            # then pick two of them at random
+            if self.seed is not None:
+                np.random.seed(self.seed)
+            l2, l3 = np.random.choice(atoms, size=2)
+        else:
+            if len(self.lig_ids) != 3:
+                raise ValueError()
+            l1 = self.ligand.fetch_atoms(key=self.lig_ids[0], how='byid')[0]
+            l2 = self.ligand.fetch_atoms(key=self.lig_ids[1], how='byid')[0]
+            l3 = self.ligand.fetch_atoms(key=self.lig_ids[2], how='byid')[0]
+
+        self.lig_atoms = [l1, l2, l3]
+
+        # ====================
+        # Choose Protein Atoms
+        # ====================
+        if self.pro_ids is None:
+            # check there are atoms close to the ligand (within 1 nm)
+            atoms = [a for a in self.protein.atoms if a.symbol != 'H' and l1-a < 1.0*self.f]
+            assert len(atoms) > 2
+            # if host is a protein, choose backbone atoms
+            # -------------------------------------------
+            if self.protein.moltype == 'protein':
+                N_atoms = [(a, l1-a) for a in atoms if a.name == 'N']
+                # get closest N atom
+                p1 = min(N_atoms, key=lambda x: x[1])[0]
+                # get CA and C of the same residue
+                mol = p1.molecule
+                p2 = mol.fetch_atoms(key='CA', how='byname')[0]
+                p3 = mol.fetch_atoms(key='C', how='byname')[0]
+
+            # if host is not a protein, choose closest atom, plus 2 other random
+            # ------------------------------------------------------------------
+            else:
+                atoms = [(a, l1-a) for a in self.protein.atoms if a.symbol != 'H']
+                # first atom is the one closest to l1
+                p1 = min(atoms, key=lambda x: x[1])[0]
+                # make a list of atoms within 3A of atom 1, excluding hydrogens
+                atoms = [a for a in self.protein.atoms if p1.id != a.id and p1-a < 0.3*self.f and a.symbol != 'H']
+                # then pick two of them at random
+                if self.seed is not None:
+                    np.random.seed(self.seed)
+                p2, p3 = np.random.choice(atoms, size=2)
+        else:
+            if len(self.pro_ids) != 3:
+                raise ValueError()
+            p1 = self.protein.fetch_atoms(key=self.pro_ids[0], how='byid')[0]
+            p2 = self.protein.fetch_atoms(key=self.pro_ids[1], how='byid')[0]
+            p3 = self.protein.fetch_atoms(key=self.pro_ids[2], how='byid')[0]
+
+        self.pro_atoms = [p1, p2, p3]
+
+        # --------------------------
+        # Calculate distances/angles
+        # --------------------------
+        self.dist = (l1-p1)/self.f  # make sure it is in nm
+        self.angle1 = l1.angle(l2, p1, degree=True)
+        self.angle2 = p1.angle(l1, p2, degree=True)
+        self.dihedral1 = l3.dihedral(l2, l1, p1, degree=True)
+        self.dihedral2 = l2.dihedral(l1, p1, p2, degree=True)
+        self.dihedral3 = l1.dihedral(p1, p2, p3, degree=True)
+
+        # calc restraints dg
+        self.calc_dg()
+
+    def calc_dg(self, release=False):
+        '''Calculates the free energy contribution of the
+        restraints given the distance, angles, and dihedrals and their
+        force constants as defined in the instance.
+
+        Parameters
+        ----------
+        release : bool, optional
+            whether to calculate the free energy of adding (False) or releasing
+            (True) the restraints.
+        '''
+        V0 = 1.66  # standard volume in nm^3
+        R = 8.314472*0.001  # Gas constant (kJ/mol/K)
+        RT = R * self.T
+        prefactor = (8.0*np.power(np.pi, 2.0) * V0 / (np.power(self.dist, 2.0) *
+                     np.sin(self.angle1*np.pi/180.0) * np.sin(self.angle2*np.pi/180.0)))
+        fconstants = (np.sqrt(self.kbond*self.kangle*self.kangle*self.kdihedral*self.kdihedral*self.kdihedral) /
+                      np.power(2.0*np.pi*RT, 3.0))
+
+        if release is True:
+            self.dg = -RT * np.log(prefactor * fconstants)
+        elif release is False:
+            self.dg = RT * np.log(prefactor * fconstants)
+
+    def make_ii(self, switch_on=True, ligand_first=True):
+        '''Returns the data needed to add an intermolecular interactions
+        section in a topology file to be used as restraints.
+
+        Parameters
+        ----------
+        switch_on : bool, optional
+            whether you want to switch the restraints on (restraints present in
+            state B) or off (restraints present in state A). Default is
+            True (switching on).
+        ligand_first : bool, optional
+            whether in the input gro/pdb file of the protein-ligand complex
+            you are preparing the ligand atoms will come before (True) or after
+            (False) the protein atoms. This is needed in order to adjust the
+            atoms indices correctly. If you provided a Model of the complex
+            (self.is_complex is True), this argument is disregarded as indices
+            as provided will be used.
+
+        Returns
+        -------
+        ii : dict
+            dictionary with "bonds", "angles", and "dihedrals" keys with
+            intermolecular_interactions information that can
+            be passed to a Topology object.
+        '''
+
+        ii = {}
+        ii['bonds'] = []
+        ii['angles'] = []
+        ii['dihedrals'] = []
+
+        # ----------------
+        # Sort out indices
+        # ----------------
+        l1 = self.lig_atoms[0].id
+        l2 = self.lig_atoms[1].id
+        l3 = self.lig_atoms[2].id
+        p1 = self.pro_atoms[0].id
+        p2 = self.pro_atoms[1].id
+        p3 = self.pro_atoms[2].id
+        if self.complex is None:
+            if ligand_first is True:
+                nshift = len(self.ligand.atoms)
+                p1 += nshift
+                p2 += nshift
+                p3 += nshift
+            elif ligand_first is False:
+                nshift = len(self.protein.atoms)
+                l1 += nshift
+                l2 += nshift
+                l3 += nshift
+
+        # -----
+        # Bonds
+        # -----
+        if switch_on is True:
+            kA = 0.0
+            kB = self.kbond
+        elif switch_on is False:
+            kA = self.kbond
+            kB = 0.0
+
+        ii['bonds'].append([l1, p1, 6, [self.dist, kA, self.dist, kB]])
+
+        # ------
+        # Angles
+        # ------
+        if switch_on is True:
+            kA = 0.0
+            kB = self.kangle
+        else:
+            kA = self.kangle
+            kB = 0.0
+
+        ii['angles'].append([l2, l1, p1, 1, [self.angle1, kA, self.angle1, kB]])
+        ii['angles'].append([l1, p1, p2, 1, [self.angle2, kA, self.angle2, kB]])
+
+        # ---------
+        # Dihedrals
+        # ---------
+        if switch_on is True:
+            kA = 0.0
+            kB = self.kdihedral
+        else:
+            kA = self.kdihedral
+            kB = 0.0
+
+        ii['dihedrals'].append([l3, l2, l1, p1, 2, [self.dihedral1, kA, self.dihedral1, kB]])
+        ii['dihedrals'].append([l2, l1, p1, p2, 2, [self.dihedral2, kA, self.dihedral2, kB]])
+        ii['dihedrals'].append([l1, p1, p2, p3, 2, [self.dihedral3, kA, self.dihedral3, kB]])
+
+        return ii
+
+    def write_summary(self, fname='restraints.info'):
+        '''Write restraints information, including free energy of restraining,
+        to file.
+
+        Parameters
+        ----------
+        fname : str, optional
+            name of output file. Default is "restraints.info".
+        '''
+
+        summary = """================== Restraints ==================
+atoms (lig)   = {0:>6} {1:>6} {2:>6}
+atoms (pro)   = {3:>6} {4:>6} {5:>6}
+""".format(self.lig_atoms[0].id, self.lig_atoms[1].id, self.lig_atoms[2].id,
+           self.pro_atoms[0].id, self.pro_atoms[1].id, self.pro_atoms[2].id)
+
+        summary += """------------------------------------------------
+T             = {T:>14.2f} K
+kbond         = {kbond:>14.2f} kJ/(mol * nm^2)
+kangles       = {kangle:>14.2f} kJ/(mol * rad^2)
+kdihedrals    = {kdihedral:>14.2f} kJ/(mol * rad^2)
+r0            = {dist:>14.6f} nm
+thA           = {angle1:>14.6f} deg
+thB           = {angle2:>14.6f} deg
+phiA          = {dihedral1:>14.6f} deg
+phiB          = {dihedral2:>14.6f} deg
+phiC          = {dihedral3:>14.6f} deg
+================================================
+dG Restraints = {dg:>14.2f} kJ/mol""".format(**self.__dict__)
+
+        summary += "\n              = {0:>14.2f} kcal/mol\n".format(self.dg/4.184)
+
+        with open(fname, 'w') as f:
+            f.write(summary)
+
+    def _split_complex_model(self):
+        complex = deepcopy(self.complex)
+        # find ligand
+        ligands = complex.fetch_residues(key=self.ligname)
+        # do a couple of checks
+        if len(ligands) == 0:
+            raise ValueError('no ligand with residue name %s found in Model '
+                             'from file %s' % (self.ligname, self.complex.filename))
+        elif len(ligands) > 1:
+            raise ValueError('multiple ligands with residue name %s found in Model '
+                             'from file %s' % (self.ligname, self.complex.filename))
+
+        # make new Model for ligand
+        ligand_mol = ligands[0]
+        ligand = Model()
+        for a in ligand_mol.atoms:
+            ligand.atoms.append(a)
+        ligand.unity = ligand_mol.atoms[0].unity
+
+        # make protein by removing ligand residue
+        complex.remove_residue(ligands[0], renumber_atoms=False, renumber_residues=False)
+
+        # assign moltypes
+        ligand.assign_moltype()
+        complex.assign_moltype()
+
+        return complex, ligand
 
 
 # ==============

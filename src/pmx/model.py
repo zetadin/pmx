@@ -101,11 +101,21 @@ class Model(Atomselection):
         filename of input structure
     pdbline : bool(?)
         what is pdbline?
-    renumber_atoms : bool
+    renumber_atoms : bool, optional
         renumber all atoms from 1. Default is True.
-    renumber_residues : bool
+    renumber_residues : bool, optional
         renumber all residues from 1. In this way, each residue will have a
         unique ID, also across chains. Default is True.
+    rename_atoms : bool, optional
+        rename atoms so to conform to Gromacs format. Default is False.
+    scale_coords : A|nm, optional
+        whether to enforce the units of the coordinates to be in A or in nm.
+        By default, PDB coordinates are assumed to be in Angstrom (A) and
+        GRO coordinates in nanometers (nm). If you read a PDB file but would
+        like operate on nm coordinates, then select "nm". Viceversa, if you
+        read a GRO file but would like to work on A coordinates, select "A".
+        Note that if you read a PDB file in A coordinates and select "A",
+        nothing happens (same for GRO and "nm" selection).
     bPDBTER : bool(?)
         whether to recognize TER lines and other chain breaks, e.g.
         discontinuous residue indices(?). Default is True.
@@ -113,11 +123,6 @@ class Model(Atomselection):
         whether to assign new chain IDs? If True, new chain IDs starting
         with 'pmx' will be assigned(?). Only relevant if bPDBTER is True.
         Default is True.
-    for_gmx : bool
-        rename atoms and scale coordinates. Set this to True
-        if the Model is then written to file and used as input for Gromacs
-        (pdb2gmx). Default is False.
-
 
     Attributes
     ----------
@@ -140,8 +145,9 @@ class Model(Atomselection):
         a mix of molecules are in the system.
     """
     def __init__(self, filename=None, pdbline=None, renumber_atoms=True,
-                 renumber_residues=True, bPDBTER=True, bNoNewID=True,
-                 for_gmx=False, **kwargs):
+                 renumber_residues=True, rename_atoms=False, scale_coords=None,
+                 bPDBTER=True, bNoNewID=True,
+                 **kwargs):
 
         Atomselection.__init__(self)
         self.title = 'PMX MODEL'
@@ -184,9 +190,15 @@ class Model(Atomselection):
             self.renumber_atoms()
         if renumber_residues is True:
             self.renumber_residues()
-        if for_gmx is True:
+        if rename_atoms is True:
             self.rename_atoms_to_gmx()
-            self.nm2a()
+        if scale_coords is not None:
+            if scale_coords == 'A':
+                self.nm2a()
+            elif scale_coords == 'nm':
+                self.a2nm()
+            else:
+                raise ValueError('unknown unit %s for coordinates' % scale_coords)
 
         self.assign_moltype()
 
@@ -492,11 +504,12 @@ class Model(Atomselection):
         residues -= library._ions
 
         # determine type
-        if residues.issubset(library._protein_residues):
+        # if 'residues' is not empty AND it's a subset of 'library._protein_residues'
+        if bool(residues) and residues <= library._protein_residues:
             self.moltype = 'protein'
-        elif residues.issubset(library._dna_residues):
+        elif bool(residues) and residues <= library._dna_residues:
             self.moltype = 'dna'
-        elif residues.issubset(library._rna_residues):
+        elif bool(residues) and residues <= library._rna_residues:
             self.moltype = 'rna'
         else:
             self.moltype = 'unknown'
@@ -548,16 +561,23 @@ class Model(Atomselection):
         m = atom.molecule
         m.remove_atom(atom)
 
-    def remove_residue(self, residue):
+    def remove_residue(self, residue, renumber_atoms=True, renumber_residues=True):
         """Removes a Molecule/residue instance.
 
         Parameters
         ----------
         residue : Molecule
             Molecule instance to remove
+        renumber_atoms : bool, optional
+            whether to renumber the atoms of the Model after removing the
+            residue. Default is True.
+        renumber_residues : bool, optional
+            whether to renumber the residues of the Model after removing the
+            residue. Default is True.
         """
         ch = residue.chain
-        ch.remove_residue(residue)
+        ch.remove_residue(residue, renumber_atoms=renumber_atoms,
+                          renumber_residues=renumber_residues)
 
     def remove_chain(self, key):
         """Removes a Chain instance given the chain ID.
@@ -767,3 +787,62 @@ class Model(Atomselection):
 
     def chain(self, iden):
         return self.chdic[iden]
+
+
+# ==============================================================================
+#                                  Functions
+# ==============================================================================
+def merge_models(*args):
+    '''Merges the atoms from all Model objects in the list provided. Atoms will
+    be merged based on the order of models in the list.
+
+    Parameters
+    ----------
+    *args :
+        variable length argument containing Model objects.
+
+    Returns
+    -------
+    m : Model
+        new Model object containing all the Models in the list.
+
+    Examples
+    --------
+    >>> newmodel = merge_models(model1, model2, model3)
+    >>> newmodel = merge_models(protein, ligand, cofactor, ions)
+    '''
+    model = Model()
+
+    if not all(m.unity == args[0].unity for m in args):
+        raise ValueError('the Model objects provided do not have the same '
+                         'units - convert units to that they are compatible')
+
+    for m in args:
+        # operate on a deep copy of the model, otherwise changes in the atoms
+        # of the merged model will be reflected in the parent models too
+        m_ = copy.deepcopy(m)
+        for a in m_.atoms:
+            model.atoms.append(a)
+
+    model.unity = model.atoms[0].unity
+    model.make_chains()
+    model.make_residues()
+    model.assign_moltype()
+    return model
+
+
+def assign_masses_to_model(model, topology):
+    '''Assigns masses to the Model atoms given the ones present in the Topology.
+
+    Parameters
+    ----------
+    model : Model
+        Model object of the molecule.
+    topology : Topology
+        Topology object of the same molecule.
+    '''
+    for ma, ta in zip(model.atoms, topology.atoms):
+        if ma.name != ta.name:
+            raise ValueError('mismatch of atom names between Model and '
+                             'Topology objects provided')
+        ma.m = ta.m
