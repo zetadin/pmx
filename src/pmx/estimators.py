@@ -5,7 +5,7 @@ from scipy.optimize import fmin
 import scipy.stats
 from .utils import data2gauss
 
-__all__ = ['Jarz', 'Crooks', 'BAR']
+__all__ = ['Jarz', 'JarzGauss', 'Crooks', 'BAR']
 
 # Constants
 kb = 0.00831447215   # kJ/(K*mol)
@@ -248,6 +248,7 @@ class JarzGauss:
     T : float or int
     nboots : int
         number of bootstrap samples to use for error estimation.
+    bReverse : True or False
 
     Examples
     --------
@@ -263,16 +264,17 @@ class JarzGauss:
         self.T = float(T)
         self.nboots = nboots
         self.nblocks = nblocks
+        self.bReverse = bReverse
 
         # Calculate all Jarz properties available
         self.dg = self.calc_dg(w=self.w, T=self.T, bReverse=bReverse)
+        self.err = self.calc_err(w=self.w, T=self.T, bReverse=self.bReverse)
 
         if nboots > 0:
-            self.err_boot = self.calc_err_boot(w=self.wf, T=self.T, nboots=nboots, bReverse=bReverse)
+            self.err_boot = self.calc_err_boot(w=self.w, T=self.T, nboots=nboots, bReverse=bReverse)
 
         if nblocks > 1:
-            self.err_blocks_for = self.calc_err_blocks(w=self.wf,T=self.T,nblocks=nblocks,bReverse=bReverse)
-            self.err_blocks_rev = self.calc_err_blocks(w=self.wr,T=self.T,nblocks=nblocks,bReverse=bReverse)
+            self.err_blocks = self.calc_err_blocks(w=self.w,T=self.T,nblocks=nblocks,bReverse=bReverse)
 
     @staticmethod
     def calc_dg(w, T, bReverse=False):
@@ -286,7 +288,34 @@ class JarzGauss:
         return dg
 
     @staticmethod
-    def calc_err_boot(w, T, nboots, bReverse):
+    def calc_err(w, T, bReverse=False):
+        '''Calculates the standard error via an analytic expression. 
+        The expression is derived by Hummer, 2001, JChemPhys.
+        Gaussian approximation is assumed.
+
+        Parameters
+        ----------
+        w : array_like
+            work values.
+        T : float
+            temperature.
+
+        Returns
+        -------
+        err : float
+            standard deviation of the estimator.
+        '''
+
+        beta = 1./(kb*T)
+        w_var = np.var( w,ddof=1 )
+        n = float(len(w))
+        dg_var = w_var/n + np.power(beta*w_var,2)/(2.0*(n-1.0))
+        dg_stderr = np.sqrt(dg_var)
+
+        return dg_stderr
+
+    @staticmethod
+    def calc_err_boot(w, T, nboots, bReverse=False):
         '''Calculates the standard error via bootstrap. The work values are
         resampled randomly with replacement multiple (nboots) times,
         and the Gaussian approximation for Jarzinski free energy 
@@ -323,7 +352,7 @@ class JarzGauss:
         return err
 
     @staticmethod
-    def calc_err_blocks(w, T, nblocks, bReverse):
+    def calc_err_blocks(w, T, nblocks, bReverse=False):
         '''Calculates the standard error based on a number of blocks the
         work values are divided into. It is useful when you run independent
         equilibrium simulations, so that you can then use their respective
@@ -335,8 +364,6 @@ class JarzGauss:
             array of work values.
         T : float
             temperature.
-        c : [0,1]
-            ???
         nblocks: int
             number of blocks to divide the data into. This can be for
             instance the number of independent equilibrium simulations
