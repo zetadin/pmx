@@ -268,7 +268,7 @@ class JarzGauss:
 
         # Calculate all Jarz properties available
         self.dg = self.calc_dg(w=self.w, T=self.T, bReverse=bReverse)
-        self.err = self.calc_err(w=self.w, T=self.T, bReverse=self.bReverse)
+        self.err = self.calc_err(w=self.w, T=self.T, bReverse=bReverse)
 
         if nboots > 0:
             self.err_boot = self.calc_err_boot(w=self.w, T=self.T, nboots=nboots, bReverse=bReverse)
@@ -281,7 +281,9 @@ class JarzGauss:
         '''to be filled
         '''
         beta = 1./(kb*T)
-        n = float(len(w))
+        if bReverse==True:
+            w = -1.0 * w
+
         dg = np.mean(w) - beta*np.var(w,ddof=1)*0.5
         if bReverse==True:
             dg *= -1.0
@@ -289,7 +291,7 @@ class JarzGauss:
 
     @staticmethod
     def calc_err(w, T, bReverse=False):
-        '''Calculates the standard error via an analytic expression. 
+        '''Calculates the standard error via an analytic expression.
         The expression is derived by Hummer, 2001, JChemPhys.
         Gaussian approximation is assumed.
 
@@ -318,7 +320,7 @@ class JarzGauss:
     def calc_err_boot(w, T, nboots, bReverse=False):
         '''Calculates the standard error via bootstrap. The work values are
         resampled randomly with replacement multiple (nboots) times,
-        and the Gaussian approximation for Jarzinski free energy 
+        and the Gaussian approximation for Jarzinski free energy
         is recalculated for each bootstrap samples.
         The standard error of the estimate is returned as the standard d
         eviation of the bootstrapped free energies.
