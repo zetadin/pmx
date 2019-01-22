@@ -345,7 +345,7 @@ class JarzGauss:
             sys.stdout.flush()
 
             boot = np.random.choice(w, size=n, replace=True)
-            dg_boot = Jarz.calc_dg(boot, T, bReverse)
+            dg_boot = JarzGauss.calc_dg(boot, T, bReverse)
             dg_boots.append(dg_boot)
         sys.stdout.write('\n')
         err = np.std(dg_boots)
@@ -376,7 +376,7 @@ class JarzGauss:
 
         # calculate all dg
         for w_block in w_split:
-            dg_block = Jarz.calc_dg(w_block, T, bReverse)
+            dg_block = JarzGauss.calc_dg(w_block, T, bReverse)
             dg_blocks.append(dg_block)
 
         # get std err
