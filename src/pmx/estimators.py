@@ -235,7 +235,7 @@ class Jarz:
         return err_blocks
 
 class JarzGauss:
-    '''Jarzynski estimator using Gaussian approximation (Hummer, J.Chem.Phys., 2001)
+    '''Jarzynski estimator using a Gaussian approximation. [6]_
 
     Description...
 
