@@ -7,6 +7,7 @@ tools.
 from __future__ import absolute_import, division, print_function
 from .utils import which
 from subprocess import call
+from .library import mdps
 
 
 def get_gmx():
@@ -260,3 +261,36 @@ def mdrun(s, deffnm='md', verbose=False, other_flags=''):
 
     call('{gmx} mdrun -s {s} -deffnm {deffnm} {other_flags}'.format(gmx=gmx, s=s, deffnm=deffnm, other_flags=other_flags),
          shell=True)
+
+
+def write_mdp(mdp, fout='mdpfile.mdp', nsteps=10000, cutoff=1.0, T=300):
+    """Writes a few standard mdp files.
+
+    With the argument ``mdp`` you can choose from a few standard predefined
+    mdp file:
+        - enmin :energy minimisation;
+        - npt : simulation in NPT ensemble;
+        - npt-restr : simulation in NPT ensemble with -DPOSRES defined;
+
+    Parameters
+    ----------
+    mdp : str
+        what type of mdp file to load and write.
+        Options available are: 'enmin', 'npt-restr', 'npt'.
+    fout : str
+        filename of the mdp file to be written.
+    nsteps : int
+        number of steps.
+    cutoff : float
+        short-range cutoff (nm) for vdw and coulomb interactions.
+    T : float
+        temperature in Kelvin.
+
+    Returns
+    -------
+    None
+    """
+
+    lines = mdps[mdp]
+    with open(fout, 'w') as f:
+        f.write(lines.format(nsteps=nsteps, cutoff=cutoff, T=T))
