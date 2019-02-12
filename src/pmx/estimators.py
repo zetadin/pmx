@@ -298,10 +298,10 @@ class JarzGauss:
 
         # Calculate all Jarz properties available
         self.dg_for = self.calc_dg(w=self.wf, T=self.T, bReverse=False)
-        self.err_for = self.calc_err(w=self.w, T=self.T, bReverse=False)
+        self.err_for = self.calc_err(w=self.wf, T=self.T, bReverse=False)
 
         self.dg_rev = self.calc_dg(w=self.wr, T=self.T, bReverse=True)
-        self.err_rev = self.calc_err(w=self.w, T=self.T, bReverse=True)
+        self.err_rev = self.calc_err(w=self.wr, T=self.T, bReverse=True)
 
         if nboots > 0:
             self.err_boot_for = self.calc_err_boot(w=self.wf, T=self.T,
