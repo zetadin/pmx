@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from pmx.estimators import BAR, Jarz, Crooks
+from pmx.estimators import BAR, Jarz, Crooks, JarzGauss
 import pickle
 from numpy.testing import assert_almost_equal
 from numpy.random import seed
@@ -46,3 +46,19 @@ def test_Crooks(gf):
     assert_almost_equal(cgi.err_blocks, 1.4890168005551732, decimal=7)
     assert_almost_equal(cgi.err_boot1, 0.6492475842858807, decimal=7)
     assert_almost_equal(cgi.err_boot2, 0.8283881591989153, decimal=7)
+
+
+def test_JarzGauss(gf):
+    wf = pickle.load(open(gf("dgdl/wf.pkl"), "rb"))
+    wr = pickle.load(open(gf("dgdl/wr.pkl"), "rb"))
+
+    seed(42)
+    est = JarzGauss(wf=wf, wr=wr, T=298, nblocks=3, nboots=10)
+    assert_almost_equal(est.dg_for, -0.833206609449392, decimal=7)
+    assert_almost_equal(est.dg_rev, 1.9406193189728818, decimal=7)
+    assert_almost_equal(est.err_for, 1.4874362551150622, decimal=7)
+    assert_almost_equal(est.err_rev, 1.3502363437778697, decimal=7)
+    assert_almost_equal(est.err_blocks_for, 1.141666262072706, decimal=7)
+    assert_almost_equal(est.err_blocks_rev, 0.9351332210549749, decimal=7)
+    assert_almost_equal(est.err_boot_for, 1.9596620284612316, decimal=7)
+    assert_almost_equal(est.err_boot_rev, 0.9154324171316169, decimal=7)
