@@ -2,13 +2,15 @@
 
 from __future__ import print_function, division
 import argparse
+import os
+import shutil
 from pmx.model import Model, merge_models, assign_masses_to_model
 from pmx.alchemy import AbsRestraints
 from pmx.forcefield import Topology, merge_atomtypes
 from pmx import gmx
 from copy import deepcopy
-import os
-import shutil
+from time import sleep
+
 
 # TODO: allow providing indices for restraint
 # TODO: build systems with pmx.gmx
@@ -139,16 +141,21 @@ def main(args):
     # gmx setup: editconf, solvate, genion, mdp files etc
     # ---------------------------------------------------
     if args.build is True:
+        goodtogo = _check_topology_has_all_ff_info(protop)
+        if goodtogo is False:
+            print('Skipping system building ...')
+            sleep(3)
+
         # ----------------
         # single-box setup
         # ----------------
-        if args.singlebox is True:
+        if args.singlebox is True and goodtogo is True:
             pass
 
         # ----------------------------------
         # standard setup with separate boxes
         # ----------------------------------
-        elif args.singlebox is False:
+        elif args.singlebox is False and goodtogo is True:
 
             # Setup complex
             # -------------
@@ -200,10 +207,45 @@ def main(args):
             gmx.genion(s='genion.tpr', p='ligand.top', o='genion.gro', conc=0.15, neutral=True)
 
             os.chdir('../')
-            print('\n\n          ********** Setup Completed **********\n\n')
 
 
+    print('\n\n          ********** Setup Completed **********\n\n')
 
+
+def _check_topology_has_all_ff_info(top):
+    good = True
+
+    if top.forcefield == '':
+        good = False
+        print('\nthe input topology file {} does not seem to '
+              'contain information on the forcefield '
+              'parameters to use.\nThese are usually defined via the following '
+              'statement at the top of the topology file:\n'
+              '#include "amber99sb-ildn.ff/forcefield.itp"\n'
+              'Without this information it is not possible '
+              'to setup the system in Gromacs.\n'.format(top.filename))
+
+    if 'ions.itp' not in " ".join(top.footer):
+        good = False
+        print('\nthe input topology file {} does not seem to '
+              'contain information on the ion '
+              'parameters to use.\nThese are usualy defined '
+              'just above [ system ], e.g.:\n'
+              '#include "amber99sb-ildn.ff/ions.itp"\n'
+              'Without this information it is not possible '
+              'to setup the system in Gromacs.\n'.format(top.filename))
+
+    if 'tip' not in " ".join(top.footer) and 'spc' not in " ".join(top.footer):
+        good = False
+        print('\nthe input topology file {} does not seem to '
+              'contain information on the water '
+              'parameters to use.\nThese are usualy defined '
+              'just above [ system ], e.g.:\n'
+              '#include "amber99sb-ildn.ff/tip3p.itp"\n'
+              'Without this information it is not possible '
+              'to setup the system in Gromacs.\n'.format(top.filename))
+
+    return good
 
 
 if __name__ == '__main__':
