@@ -1,11 +1,14 @@
-#!/usr/bin/env python
+#! /usr/bin/env python
 
 from __future__ import print_function, division
 import argparse
 from pmx.model import Model, merge_models, assign_masses_to_model
 from pmx.alchemy import AbsRestraints
 from pmx.forcefield import Topology, merge_atomtypes
+from pmx import gmx
 from copy import deepcopy
+import os
+import shutil
 
 # TODO: allow providing indices for restraint
 # TODO: build systems with pmx.gmx
@@ -51,7 +54,7 @@ describe...
                         dest='build',
                         help='Whether to build the system (editconf, solvate, '
                         'genion) with a standard setup once the input files '
-                        '(top, gro, mdp) are ready.',
+                        '(top, gro) are ready.',
                         default=False,
                         action='store_true')
     parser.add_argument('--singlebox',
@@ -116,10 +119,14 @@ def main(args):
     # ------------------------------------------
     restraints = AbsRestraints(pro, lig, seed=args.seed)
 
-    # add restraints to top
-    comtop.ii = restraints.make_ii()
     # write restraints info
     restraints.write_summary()
+
+    if args.build is False:
+        # write restraints section only if we are not setting up the system
+        # solvate/genion do not work well with topologies that contain
+        # this restraints section
+        comtop.ii = restraints.make_ii()
 
     # -------------------------------
     # save coordinates/topology files
@@ -128,13 +135,75 @@ def main(args):
     ligtop.write('ligand.itp', stateBonded='A', write_atypes=False, posre_include=True)
     comtop.write('complex.top', stateBonded='A')
 
-    # ------------------------------------
-    # gmx setup: editconf, solvate, genion
-    # ------------------------------------
+    # ---------------------------------------------------
+    # gmx setup: editconf, solvate, genion, mdp files etc
+    # ---------------------------------------------------
     if args.build is True:
-        pass
+        # ----------------
+        # single-box setup
+        # ----------------
+        if args.singlebox is True:
+            pass
 
-    # setup standard folder structure, write mdp files, write example bash on how to run calcs
+        # ----------------------------------
+        # standard setup with separate boxes
+        # ----------------------------------
+        elif args.singlebox is False:
+
+            # Setup complex
+            # -------------
+            os.mkdir('complex')
+            os.chdir('complex')
+
+            shutil.copy('../complex.gro', '.')
+            shutil.copy('../complex.top', '.')
+            shutil.copy('../ligand.itp', '.')
+
+            gmx.editconf(f='complex.gro', o='editconf.gro', bt='cubic', d=1.2)
+            gmx.solvate(cp='editconf.gro', cs='spc216.gro', p='complex.top', o='solvate.gro')
+            gmx.write_mdp(mdp='enmin', fout='genion.mdp')
+            gmx.grompp(f='genion.mdp', c='solvate.gro', p='complex.top', o='genion.tpr', maxwarn=1)
+            gmx.genion(s='genion.tpr', p='complex.top', o='genion.gro', conc=0.15, neutral=True)
+
+            # add restraints to topology
+            comtop = Topology('complex.top', assign_types=False)
+            comtop.ii = restraints.make_ii()
+            comtop.write('complex.top', stateBonded='A')
+
+            os.chdir('../')
+
+            # Setup ligand
+            # ------------
+            os.mkdir('ligand')
+            os.chdir('ligand')
+
+            lig.write('ligand.gro')
+            # setup topology
+            # use the same protein ff for the water/ions in ligand sims
+            ligtop.is_itp = False  # now we want to write it as top file
+            ligtop.forcefield = protop.forcefield
+            ligtop.footer = ['#include "{ff}.ff/tip3p.itp"'.format(ff=ligtop.forcefield),
+                             '#ifdef POSRES_WATER',
+                             '[ position_restraints ]',
+                             '1    1       1000       1000       1000',
+                             '#endif',
+                             '#include "{ff}.ff/ions.itp"'.format(ff=ligtop.forcefield)]
+
+            ligtop.write('ligand.top', stateBonded='A', write_atypes=True,
+                         posre_include=True)
+
+            # run gromacs setup
+            gmx.editconf(f='ligand.gro', o='editconf.gro', bt='cubic', d=1.2)
+            gmx.solvate(cp='editconf.gro', cs='spc216.gro', p='ligand.top', o='solvate.gro')
+            gmx.write_mdp(mdp='enmin', fout='genion.mdp')
+            gmx.grompp(f='genion.mdp', c='solvate.gro', p='ligand.top', o='genion.tpr', maxwarn=1)
+            gmx.genion(s='genion.tpr', p='ligand.top', o='genion.gro', conc=0.15, neutral=True)
+
+            os.chdir('../')
+            print('\n\n          ********** Setup Completed **********\n\n')
+
+
+
 
 
 if __name__ == '__main__':
