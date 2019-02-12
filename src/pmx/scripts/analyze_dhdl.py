@@ -54,7 +54,8 @@ def parse_options():
             'Available methods for free energy estimation: '
             'Crooks Gaussian Intersection (CGI); '
             'Benett Acceptance Ratio (BAR); '
-            'Jarzinski equality (JARZ).')
+            'Jarzinski equality (JARZ); '
+            'Jarzinski with a Gaussian approximatiuon (JARZ_Gauss).')
 
     exclu1 = parser.add_mutually_exclusive_group()
     # the following exclusion groups are for fA/iA and fB/iB:
@@ -561,34 +562,35 @@ def main(args):
             _tee(out, '  JARZ: Std Err Reverse (blocks) = {e:8.{p}f} {u}'.format(e=jarz.err_blocks_rev*unit_fact,
                                                                                  p=prec, u=units), quiet=quiet)
 
+        # -------------------------------------
+        # Jarzynski with Gaussian approximation
+        # -------------------------------------
         if quiet is True:
             print('Running Jarzynski Gaussian approximation analysis...')
-        jarzGauss_f = JarzGauss(w=res_ab, T=T, nboots=nboots, nblocks=nblocks, bReverse=False)
-        jarzGauss_r = JarzGauss(w=res_ba, T=T, nboots=nboots, nblocks=nblocks, bReverse=True)
+        jarzGauss = JarzGauss(wf=res_ab, wr=res_ba, T=T, nboots=nboots, nblocks=nblocks)
         if args.pickle:
-            pickle.dump(jarzGauss_f, open("jarzGauss_forward_results.pkl", "wb"))
-            pickle.dump(jarzGauss_r, open("jarzGauss_reverse_results.pkl", "wb"))
+            pickle.dump(jarzGauss, open("jarz_gauss_results.pkl", "wb"))
 
-        _tee(out, '  JARZ_Gauss: dG Forward = {dg:8.{p}f} {u}'.format(dg=jarzGauss_f.dg*unit_fact,
+        _tee(out, '  JARZ_Gauss: dG Forward = {dg:8.{p}f} {u}'.format(dg=jarzGauss.dg_for*unit_fact,
                                                                 p=prec, u=units), quiet=quiet)
-        _tee(out, '  JARZ_Gauss: dG Reverse = {dg:8.{p}f} {u}'.format(dg=jarzGauss_r.dg*unit_fact,
+        _tee(out, '  JARZ_Gauss: dG Reverse = {dg:8.{p}f} {u}'.format(dg=jarzGauss.dg_rev*unit_fact,
                                                                 p=prec, u=units), quiet=quiet)
-        _tee(out, '  JARZ_Gauss: dG Mean    = {dg:8.{p}f} {u}'.format(dg=(jarzGauss_f.dg+jarzGauss_r.dg)/2.0*unit_fact,
+        _tee(out, '  JARZ_Gauss: dG Mean    = {dg:8.{p}f} {u}'.format(dg=(jarzGauss.dg_for+jarzGauss.dg_rev)/2.0*unit_fact,
                                                                 p=prec, u=units), quiet=quiet)
-        _tee(out, '  JARZ_Gauss: Std Err (analytical) Forward = {dg:8.{p}f} {u}'.format(dg=jarzGauss_f.err*unit_fact,
+        _tee(out, '  JARZ_Gauss: Std Err (analytical) Forward = {dg:8.{p}f} {u}'.format(dg=jarzGauss.err_for*unit_fact,
                                                                 p=prec, u=units), quiet=quiet)
-        _tee(out, '  JARZ_Gauss: Std Err (analytical) Reverse = {dg:8.{p}f} {u}'.format(dg=jarzGauss_r.err*unit_fact,
+        _tee(out, '  JARZ_Gauss: Std Err (analytical) Reverse = {dg:8.{p}f} {u}'.format(dg=jarzGauss.err_rev*unit_fact,
                                                                 p=prec, u=units), quiet=quiet)
         if nboots > 0:
-            _tee(out, '  JARZ_Gauss: Std Err Forward (bootstrap) = {e:8.{p}f} {u}'.format(e=jarzGauss_f.err_boot*unit_fact,
+            _tee(out, '  JARZ_Gauss: Std Err Forward (bootstrap) = {e:8.{p}f} {u}'.format(e=jarzGauss.err_boot_for*unit_fact,
                                                                                     p=prec, u=units), quiet=quiet)
-            _tee(out, '  JARZ_Gauss: Std Err Reverse (bootstrap) = {e:8.{p}f} {u}'.format(e=jarzGauss_r.err_boot*unit_fact,
+            _tee(out, '  JARZ_Gauss: Std Err Reverse (bootstrap) = {e:8.{p}f} {u}'.format(e=jarzGauss.err_boot_rev*unit_fact,
                                                                                     p=prec, u=units), quiet=quiet)
 
         if nblocks > 1:
-            _tee(out, '  JARZ_Gauss: Std Err Forward (blocks) = {e:8.{p}f} {u}'.format(e=jarzGauss_f.err_blocks*unit_fact,
+            _tee(out, '  JARZ_Gauss: Std Err Forward (blocks) = {e:8.{p}f} {u}'.format(e=jarzGauss.err_blocks_for*unit_fact,
                                                                                  p=prec, u=units), quiet=quiet)
-            _tee(out, '  JARZ_Gauss: Std Err Reverse (blocks) = {e:8.{p}f} {u}'.format(e=jarzGauss_r.err_blocks*unit_fact,
+            _tee(out, '  JARZ_Gauss: Std Err Reverse (blocks) = {e:8.{p}f} {u}'.format(e=jarzGauss.err_blocks_rev*unit_fact,
                                                                                  p=prec, u=units), quiet=quiet)
 
     _tee(out, ' ========================================================', quiet=quiet)
