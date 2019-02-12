@@ -135,14 +135,9 @@ class Jarz:
         mexp = mexp/n
         m = m/n
         m2 = m2/n
-        var = (m2-m*m)*(n/(n-1))
 
         # Jarzynski estimator
         dg = -kb * T * np.log(mexp)
-
-        # Fluctuation-Dissipation estimator
-        # FIXME: unused atm, make available
-        dg2 = m - beta*var/2.0
 
         return c * dg
 
