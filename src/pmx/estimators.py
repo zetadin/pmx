@@ -114,14 +114,8 @@ class Jarz:
 
         Returns
         -------
-        float
-            location of the intersection.
-        bool
-            whether the intersection could be calculated. If the intersection
-            was calculated as expected a True value is returned.
-            If the Gaussians are too close to each other, the intersection
-            cannot be calculated and a False value is returned; in this case,
-            the first float value retured is the average of the Gaussian means.
+        dg : float
+            estimate of the free energy difference.
         '''
 
         if bReverse is False:
@@ -215,7 +209,7 @@ class Jarz:
             you ran.
 
         Returns
-        ----------
+        -------
         sderr : float
             the standard error of the estimate.
         '''
@@ -238,7 +232,12 @@ class Jarz:
 class JarzGauss:
     '''Jarzynski estimator using a Gaussian approximation. [6]_
 
-    Description...
+    Both the forward and reverse estimates.
+
+    The standard error is calculated using the analytical expression derived
+    by Hummer (2001). [6]_ When ``nboots``>0, the error is also calculated
+    by bootstrap. When  ``nblocks``>1, it is calculated by
+    separating the work values into blocks.
 
     Parameters
     ----------
@@ -246,18 +245,48 @@ class JarzGauss:
         array of forward work values.
     wr : array_like
         array of reverse work values.
-    T : float or int
-    nboots : int
-        number of bootstrap samples to use for error estimation.
-    bReverse : True or False
+    T : float, optional
+        temperature in Kelvin. Default is 298.15 K.
+    nboots : int, optional
+        how many bootstrap samples to draw for estimating the standard error.
+        Default is zero (do not estimate the error).
+    nblocks : int, optional
+        how many blocks to divide the input work values into for the estimation
+        of the standard error. Default is one (do not estimate the error).
 
     Examples
     --------
-
+    >>> estimate = JarzGauss(wf, wr, T=300, nboots=1000, nblocks=10)
+    >>> dg_forward = estimate.dg_for
+    >>> dg_reverse = estimate.dg_rev
+    >>> dg_forward_err1 = estimate.err_for
+    >>> dg_forward_err2 = estimate.err_boot_for
+    >>> dg_forward_err3 = estimate.err_blocks_for
 
     Attributes
     ----------
-
+    dg_for : float
+        the forward free energy estimate.
+    dg_rev : float
+        the reverse free energy estimate.
+    err_for : float
+        analytical estimate of the standard error of the forward free energy
+        estimate.
+    err_rev : float
+        analytical estimate of the standard error of the reverse free energy
+        estimate.
+    err_boot_for : float
+        standard error of the forward free energy estimate calculated
+        via bootstrap.
+    err_boot_rev : float
+        standard error of the reverse free energy estimate calculated
+        via bootstrap.
+    err_blocks_for : float
+        standard error of the forward free energy estimate calculated by
+        separating the input work values into groups/blocks.
+    err_blocks_rev : float
+        standard error of the reverse free energy estimate calculated by
+        separating the input work values into groups/blocks.
     '''
 
     def __init__(self, wf, wr, T=298.15, nboots=0, nblocks=1):
@@ -294,22 +323,38 @@ class JarzGauss:
 
     @staticmethod
     def calc_dg(w, T, bReverse=False):
-        '''to be filled
+        '''Calculates the free energy difference using the Jarzynski estimator
+        with a Gaussian approximation. [6]_
+
+        Parameters
+        ----------
+        w : array_like
+            array of work values.
+        T : float
+            temperature in Kelvin.
+        bReverse : bool, optional
+            whether the work values provided are for the reverse transition.
+            Default if False. If they are for the reverse transition, set it to
+            True.
+
+        Returns
+        -------
+        dg : float
+            estimate of the free energy difference.
         '''
         beta = 1./(kb*T)
-        if bReverse is True:
-            w = -1.0 * w
+        if bReverse is False:
+            c = 1.0
+        elif bReverse is True:
+            c = -1.0
 
-        dg = np.mean(w) - (beta * np.var(w, ddof=1)) * 0.5
-        if bReverse is True:
-            dg *= -1.0
-        return dg
+        dg = np.mean(c*w) - (beta * np.var(c*w, ddof=1)) * 0.5
+        return c * dg
 
     @staticmethod
     def calc_err(w, T, bReverse=False):
         '''Calculates the standard error via an analytic expression.
-        The expression is derived by Hummer, 2001, JChemPhys.
-        Gaussian approximation is assumed.
+        The expression is derived by Hummer, 2001, JChemPhys. [6]_
 
         Parameters
         ----------
@@ -317,6 +362,10 @@ class JarzGauss:
             work values.
         T : float
             temperature.
+        bReverse : bool, optional
+            whether the work values provided are for the reverse transition.
+            Default if False. If they are for the reverse transition, set it to
+            True.
 
         Returns
         -------
@@ -349,6 +398,10 @@ class JarzGauss:
             temperature.
         nboots: int
             number of bootstrap samples to use for the error estimate.
+        bReverse : bool, optional
+            whether the work values provided are for the reverse transition.
+            Default if False. If they are for the reverse transition, set it to
+            True.
 
         Returns
         -------
@@ -386,6 +439,15 @@ class JarzGauss:
             number of blocks to divide the data into. This can be for
             instance the number of independent equilibrium simulations
             you ran.
+        bReverse : bool, optional
+            whether the work values provided are for the reverse transition.
+            Default if False. If they are for the reverse transition, set it to
+            True.
+
+        Returns
+        -------
+        sderr : float
+            the standard error of the estimate.
         '''
 
         dg_blocks = []
@@ -401,6 +463,7 @@ class JarzGauss:
         err_blocks = scipy.stats.sem(dg_blocks, ddof=1)
 
         return err_blocks
+
 
 class Crooks:
     '''Crooks Gaussian Intersection (CGI) estimator. [2]_
