@@ -756,7 +756,7 @@ class TopolBase:
             self.write_defaults(fp)
 
         # write the ff include statement only for top files
-        if self.is_itp is False:
+        if self.is_itp is False and self.forcefield:
             self.write_ffline(fp)
 
         # write the atomtypes section if present
