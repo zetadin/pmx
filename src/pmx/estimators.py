@@ -74,30 +74,30 @@ class Jarz:
         self.nblocks = nblocks
 
         # Calculate all Jarz properties available
-        self.dg_for = self.calc_dg(w=self.wf, T=self.T, forward=True)
-        self.dg_rev = self.calc_dg(w=self.wr, T=self.T, forward=False)
+        self.dg_for = self.calc_dg(w=self.wf, T=self.T, bReverse=False)
+        self.dg_rev = self.calc_dg(w=self.wr, T=self.T, bReverse=True)
         self.dg_mean = (self.dg_for + self.dg_rev) * 0.5
 
         if nboots > 0:
             self.err_boot_for = self.calc_err_boot(w=self.wf, T=self.T,
                                                    nboots=self.nboots,
-                                                   forward=True)
+                                                   bReverse=False)
             self.err_boot_rev = self.calc_err_boot(w=self.wr, T=self.T,
                                                    nboots=self.nboots,
-                                                   forward=False)
+                                                   bReverse=True)
 
         if nblocks > 1:
             self.err_blocks_for = self.calc_err_blocks(w=self.wf,
                                                        T=self.T,
                                                        nblocks=self.nblocks,
-                                                       forward=True)
+                                                       bReverse=False)
             self.err_blocks_rev = self.calc_err_blocks(w=self.wr,
                                                        T=self.T,
                                                        nblocks=self.nblocks,
-                                                       forward=False)
+                                                       bReverse=True)
 
     @staticmethod
-    def calc_dg(w, T, forward=True):
+    def calc_dg(w, T, bReverse=False):
         '''Calculates the free energy difference using Jarzynski's equality.
         [1]_
 
@@ -107,10 +107,10 @@ class Jarz:
             array of work values.
         T : float
             temperature in Kelvin.
-        forward : bool, optional
-            whether the work values provided are for the forward transition.
-            Default if True. If they are for the reverse transition, set it to
-            False.
+        bReverse : bool, optional
+            whether the work values provided are for the reverse transition.
+            Default if False. If they are for the reverse transition, set it to
+            True.
 
         Returns
         -------
@@ -124,9 +124,9 @@ class Jarz:
             the first float value retured is the average of the Gaussian means.
         '''
 
-        if forward is True:
+        if bReverse is False:
             c = 1.0
-        elif forward is False:
+        elif bReverse is True:
             c = -1.0
 
         beta = 1./(kb*T)
@@ -153,7 +153,7 @@ class Jarz:
         return c * dg
 
     @staticmethod
-    def calc_err_boot(w, T, nboots, forward=True):
+    def calc_err_boot(w, T, nboots, bReverse=False):
         '''Calculates the standard error via bootstrap. The work values are
         resampled randomly with replacement multiple (nboots) times,
         and the Jarzinski free energy recalculated for each bootstrap samples.
@@ -166,10 +166,10 @@ class Jarz:
             work values.
         T : float
             temperature.
-        forward : bool, optional
-            whether the work values provided are for the forward transition.
-            Default if True. If they are for the reverse transition, set it to
-            False.
+        bReverse : bool, optional
+            whether the work values provided are for the reverse transition.
+            Default if False. If they are for the reverse transition, set it to
+            True.
         nboots: int
             number of bootstrap samples to use for the error estimate.
 
@@ -186,14 +186,14 @@ class Jarz:
             sys.stdout.flush()
 
             boot = np.random.choice(w, size=n, replace=True)
-            dg_boot = Jarz.calc_dg(w=boot, T=T, forward=forward)
+            dg_boot = Jarz.calc_dg(w=boot, T=T, bReverse=bReverse)
             dg_boots.append(dg_boot)
         sys.stdout.write('\n')
         err = np.std(dg_boots)
         return err
 
     @staticmethod
-    def calc_err_blocks(w, T, nblocks, forward=True):
+    def calc_err_blocks(w, T, nblocks, bReverse=False):
         '''Calculates the standard error based on a number of blocks the
         work values are divided into. It is useful when you run independent
         equilibrium simulations, so that you can then use their respective
@@ -205,10 +205,10 @@ class Jarz:
             array of work values.
         T : float
             temperature.
-        forward : bool, optional
-            whether the work values provided are for the forward transition.
-            Default if True. If they are for the reverse transition, set it to
-            False.
+        bReverse : bool, optional
+            whether the work values provided are for the reverse transition.
+            Default if False. If they are for the reverse transition, set it to
+            True.
         nblocks: int
             number of blocks to divide the data into. This can be for
             instance the number of independent equilibrium simulations
@@ -226,13 +226,14 @@ class Jarz:
 
         # calculate all dg
         for w_block in w_split:
-            dg_block = Jarz.calc_dg(w=w_block, T=T, forward=forward)
+            dg_block = Jarz.calc_dg(w=w_block, T=T, bReverse=bReverse)
             dg_blocks.append(dg_block)
 
         # get std err
         err_blocks = scipy.stats.sem(dg_blocks, ddof=1)
 
         return err_blocks
+
 
 class JarzGauss:
     '''Jarzynski estimator using a Gaussian approximation. [6]_
@@ -259,33 +260,48 @@ class JarzGauss:
 
     '''
 
-    def __init__(self, w, T, nboots=0, nblocks=1,bReverse=False):
-        self.w = np.array(w)
+    def __init__(self, wf, wr, T=298.15, nboots=0, nblocks=1):
+        self.wf = np.array(wf)
+        self.wr = np.array(wr)
         self.T = float(T)
         self.nboots = nboots
         self.nblocks = nblocks
-        self.bReverse = bReverse
 
         # Calculate all Jarz properties available
-        self.dg = self.calc_dg(w=self.w, T=self.T, bReverse=bReverse)
-        self.err = self.calc_err(w=self.w, T=self.T, bReverse=bReverse)
+        self.dg_for = self.calc_dg(w=self.wf, T=self.T, bReverse=False)
+        self.err_for = self.calc_err(w=self.w, T=self.T, bReverse=False)
+
+        self.dg_rev = self.calc_dg(w=self.wr, T=self.T, bReverse=True)
+        self.err_rev = self.calc_err(w=self.w, T=self.T, bReverse=True)
 
         if nboots > 0:
-            self.err_boot = self.calc_err_boot(w=self.w, T=self.T, nboots=nboots, bReverse=bReverse)
+            self.err_boot_for = self.calc_err_boot(w=self.wf, T=self.T,
+                                                   nboots=self.nboots,
+                                                   bReverse=False)
+            self.err_boot_rev = self.calc_err_boot(w=self.wr, T=self.T,
+                                                   nboots=self.nboots,
+                                                   bReverse=True)
 
         if nblocks > 1:
-            self.err_blocks = self.calc_err_blocks(w=self.w,T=self.T,nblocks=nblocks,bReverse=bReverse)
+            self.err_blocks_for = self.calc_err_blocks(w=self.wf,
+                                                       T=self.T,
+                                                       nblocks=self.nblocks,
+                                                       bReverse=False)
+            self.err_blocks_rev = self.calc_err_blocks(w=self.wr,
+                                                       T=self.T,
+                                                       nblocks=self.nblocks,
+                                                       bReverse=True)
 
     @staticmethod
     def calc_dg(w, T, bReverse=False):
         '''to be filled
         '''
         beta = 1./(kb*T)
-        if bReverse==True:
+        if bReverse is True:
             w = -1.0 * w
 
-        dg = np.mean(w) - beta*np.var(w,ddof=1)*0.5
-        if bReverse==True:
+        dg = np.mean(w) - (beta * np.var(w, ddof=1)) * 0.5
+        if bReverse is True:
             dg *= -1.0
         return dg
 
@@ -309,9 +325,9 @@ class JarzGauss:
         '''
 
         beta = 1./(kb*T)
-        w_var = np.var( w,ddof=1 )
+        w_var = np.var(w, ddof=1)
         n = float(len(w))
-        dg_var = w_var/n + np.power(beta*w_var,2)/(2.0*(n-1.0))
+        dg_var = w_var/n + np.power(beta*w_var, 2) / (2.0 * (n-1.0))
         dg_stderr = np.sqrt(dg_var)
 
         return dg_stderr
