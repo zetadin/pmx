@@ -757,13 +757,14 @@ class TopolBase:
 
         # write the ff include statement only for top files
         if self.is_itp is False:
-            self.write_header(fp, write_ff=True)
+            self.write_ffline(fp)
 
         # write the atomtypes section if present
         if self.atomtypes and write_atypes is True:
             self.write_atomtypes(fp)
 
-        # write the rest of the header (the include statements)
+        # write the rest of the header (the include statements) without the
+        # line that imports the forcefield
         self.write_header(fp, write_ff=False)
 
         # write the molecule section, if there are atoms
@@ -799,32 +800,34 @@ class TopolBase:
             self.write_intermolecular_interactions(fp)
         fp.close()
 
+    def write_ffline(self, fp):
+        '''Writes the line at the beginning of topology file that imports
+        a forcefield file.'''
+
+        print('', file=fp)
+        print('#include "{ff}.ff/forcefield.itp"'.format(ff=self.forcefield),
+              file=fp)
+
     def write_header(self, fp, write_ff=True):
         '''Writes the include statemets at the top of the topology file.
 
         Parameters
         ----------
         write_ff : bool
-            whether to write the line that includes the forcefield parameters
-            or the rest of the header.
+            whether to write also the line that includes the forcefield
+            parameters or not.
         '''
         # This 'odd' split of the writer is because one wants to write the
         # ff include statement before the atomtypes section, and the rest of
         # the inlcude statements (e.g. ligand.itp included) after the
         # atomtypes
 
-        # write the ff line only
-        if write_ff is True:
-            print('', file=fp)
-            for line in self.header:
-                if 'forcefield' in line:
-                    print(line, file=fp)
-        # write header excluding the ff line
-        elif not self.is_itp:
-            print('', file=fp)
-            for line in self.header:
-                if 'forcefield' not in line:
-                    print(line, file=fp)
+        print('', file=fp)
+        for line in self.header:
+            if 'forcefield' in line and write_ff is False:
+                continue
+            else:
+                print(line, file=fp)
 
     def write_footer(self, fp):
         print('', file=fp)
