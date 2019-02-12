@@ -5464,3 +5464,224 @@ _mol2_bondtypes = [
     ('S.3', 'C.3', '1') ,
     ('C.ar', 'O.3', '1') ,
     ]
+
+# ==============================================================================
+#                           Standard MDP Files
+# ==============================================================================
+mdps = {}
+mdps['enmin'] = ''';====================================================
+; Energy minimization
+;====================================================
+
+; RUN CONTROL & MINIMIZATION
+;----------------------------------------------------
+define                 = -DFLEXIBLE
+integrator             = steep
+nsteps                 = {nsteps}
+emtol                  = 10
+emstep                 = 0.01
+nstcomm                = 100
+
+; OUTPUT CONTROL
+;----------------------------------------------------
+nstxout                = 0          ; don't save coordinates to .trr
+nstvout                = 0          ; don't save velocities to .trr
+nstfout                = 0          ; don't save forces to .trr
+
+nstxout-compressed     = 1000       ; xtc trajectory output every 1000 steps
+compressed-x-precision = 1000
+nstlog                 = 1000       ; update log file every 1000 steps
+nstenergy              = 1000       ; save energies every 1000 steps
+nstcalcenergy          = 100
+
+; NEIGHBOR SEARCHING
+;----------------------------------------------------
+cutoff-scheme          = Verlet
+ns-type                = grid
+nstlist                = 1
+rlist                  = {cutoff}
+
+; BONDS
+;----------------------------------------------------
+constraints            = none
+
+; ELECTROSTATICS
+;----------------------------------------------------
+coulombtype            = PME
+coulomb-modifier       = Potential-shift-Verlet
+rcoulomb               = {cutoff}
+pme-order              = 4
+fourierspacing         = 0.12
+ewald-rtol             = 1e-5
+
+; VDW
+;----------------------------------------------------
+vdw-type                = Cut-off
+vdw-modifier            = Potential-shift-Verlet
+verlet-buffer-tolerance = 0.005
+rvdw                    = {cutoff}
+DispCorr                = EnerPres
+
+; TEMPERATURE & PRESSURE COUPL
+;----------------------------------------------------
+Tcoupl              = no
+Pcoupl              = no
+gen_vel             = no
+'''
+
+mdps['npt-restr'] = ''';====================================================
+; Posres equilibration
+;====================================================
+
+; RUN CONTROL
+;----------------------------------------------------
+define       = -DPOSRES      ; use position restraints
+integrator   = md            ; leap-frog integrator
+nsteps       = {nsteps}      ; number of integration steps
+dt           = 0.002         ; 2 fs
+comm-mode    = Linear        ; remove center of mass translation
+nstcomm      = 100           ; frequency for center of mass motion removal
+
+; OUTPUT CONTROL
+;----------------------------------------------------
+nstxout          = 0         ; do not save coordinates to .trr
+nstvout          = 0         ; do not save velocities to .trr
+nstfout          = 0         ; do not save forces to .trr
+nstxtcout        = 50000     ; xtc compressed trajectory output every 100 ps
+xtc-precision    = 1000      ; precision with which to write to the compressed trajectory file
+nstlog           = 10000     ; update log file every 20 ps
+nstenergy        = 10000     ; save energies every 20 ps
+nstcalcenergy    = 100       ; calculate energies every 100 steps (default=100)
+
+; BONDS
+;----------------------------------------------------
+constraint_algorithm   = lincs      ; holonomic constraints
+constraints            = all-bonds  ; constrain all bonds (you need this with the pmx setup)
+lincs-iter             = 2          ; accuracy of LINCS (1 is default)
+lincs-order            = 6          ; also related to accuracy (4 is default)
+lincs-warnangle        = 30         ; maximum angle that a bond can rotate before LINCS will complain (30 is default)
+continuation           = no         ; formerly known as 'unconstrained-start' - useful for exact continuations and reruns
+
+; NEIGHBOR SEARCHING
+;----------------------------------------------------
+cutoff-scheme         = Verlet ; group or Verlet
+ns-type               = grid   ; search neighboring grid cells
+nstlist               = 10     ; 20 fs (default is 10)
+rlist                 = {cutoff}    ; short-range neighborlist cutoff (in nm)
+pbc                   = xyz    ; 3D PBC
+
+; ELECTROSTATICS & EWALD
+;----------------------------------------------------
+coulombtype      = PME                       ; Particle Mesh Ewald for long-range electrostatics
+coulomb-modifier = Potential-shift-Verlet
+rcoulomb         = {cutoff}                       ; short-range electrostatic cutoff (in nm)
+ewald-geometry   = 3d                        ; Ewald sum is performed in all three dimensions
+pme-order        = 4                         ; interpolation order for PME (default is 4)
+fourierspacing   = 0.12                      ; grid spacing for FFT
+ewald-rtol       = 1e-5                      ; relative strength of the Ewald-shifted direct potential at rcoulomb
+optimize-fft     = no                        ; don't calculate the optimal FFT plan for the grid at startup.
+
+; VAN DER WAALS
+;----------------------------------------------------
+vdw-type          = Cut-off      ; potential switched off at rvdw-switch to reach zero at rvdw
+vdw-modifier      = Potential-shift-Verlet
+rvdw              = {cutoff}          ; van der Waals cutoff (in nm)
+DispCorr          = EnerPres     ; apply analytical long range dispersion corrections for Energy and Pressure
+
+; TEMPERATURE COUPLING (Langevin)
+;----------------------------------------------------
+tcoupl            = v-rescale
+tc-grps           = System
+tau-t             = 0.1
+ref-t             = {T:.2f}
+gen-vel           = yes           ; Velocity generation (if gen-vel is 'yes', continuation should be 'no')
+gen-temp          = {T:.2f}
+gen-seed          = -1
+
+; PRESSURE COUPLING
+;----------------------------------------------------
+pcoupl           = Berendsen
+pcoupltype       = isotropic            ; uniform scaling of box vectors
+tau_p            = 0.5                  ; time constant (ps)
+ref_p            = 1.0                  ; reference pressure (bar)
+compressibility  = 4.5e-05              ; isothermal compressibility of water (bar^-1)
+refcoord-scaling = com
+'''
+
+mdps['npt'] = ''';====================================================
+; Equilibrium Simulations
+;====================================================
+
+; RUN CONTROL
+;----------------------------------------------------
+integrator   = md            ; stochastic leap-frog integrator
+nsteps       = {nsteps}      ; number of integration steps
+dt           = 0.002         ; 2 fs
+comm-mode    = Linear        ; remove center of mass translation
+nstcomm      = 100           ; frequency for center of mass motion removal
+
+; OUTPUT CONTROL
+;----------------------------------------------------
+nstxout          = 0         ; do not save coordinates to .trr
+nstvout          = 0         ; do not save velocities to .trr
+nstfout          = 0         ; do not save forces to .trr
+nstxtcout        = 50000     ; xtc compressed trajectory output every 100 ps
+xtc-precision    = 1000      ; precision with which to write to the compressed trajectory file
+nstlog           = 50000     ; update log file every 100 ps
+nstenergy        = 50000     ; save energies every 100 ps
+nstcalcenergy    = 100       ; calculate energies every 100 steps (default=100)
+
+; BONDS
+;----------------------------------------------------
+constraint_algorithm   = lincs      ; holonomic constraints
+constraints            = all-bonds  ; constrain all bonds (you need this with the pmx setup)
+lincs-iter             = 2          ; accuracy of LINCS (1 is default)
+lincs-order            = 6          ; also related to accuracy (4 is default)
+lincs-warnangle        = 30         ; maximum angle that a bond can rotate before LINCS will complain (30 is default)
+continuation           = yes        ; formerly known as 'unconstrained-start' - useful for exact continuations and reruns
+
+; NEIGHBOR SEARCHING
+;----------------------------------------------------
+cutoff-scheme         = Verlet ; group or Verlet
+ns-type               = grid   ; search neighboring grid cells
+nstlist               = 10     ; 20 fs (default is 10)
+rlist                 = {cutoff}    ; short-range neighborlist cutoff (in nm)
+pbc                   = xyz    ; 3D PBC
+
+; ELECTROSTATICS & EWALD
+;----------------------------------------------------
+coulombtype      = PME                       ; Particle Mesh Ewald for long-range electrostatics
+coulomb-modifier = Potential-shift-Verlet
+rcoulomb         = {cutoff}                       ; short-range electrostatic cutoff (in nm)
+ewald-geometry   = 3d                        ; Ewald sum is performed in all three dimensions
+pme-order        = 4                         ; interpolation order for PME (default is 4)
+fourierspacing   = 0.12                      ; grid spacing for FFT
+ewald-rtol       = 1e-5                      ; relative strength of the Ewald-shifted direct potential at rcoulomb
+optimize-fft     = no                        ; don't calculate the optimal FFT plan for the grid at startup.
+
+; VAN DER WAALS
+;----------------------------------------------------
+vdw-type          = Cut-off      ; potential switched off at rvdw-switch to reach zero at rvdw
+vdw-modifier      = Potential-shift-Verlet
+rvdw              = {cutoff}          ; van der Waals cutoff (in nm)
+DispCorr          = EnerPres     ; apply analytical long range dispersion corrections for Energy and Pressure
+
+; TEMPERATURE COUPLING (Langevin)
+;----------------------------------------------------
+tcoupl            = v-rescale
+tc-grps           = System
+tau-t             = 0.1
+ref-t             = {T:.2f}
+gen-vel           = no           ; Velocity generation (if gen-vel is 'yes', continuation should be 'no')
+gen-temp          = {T:.2f}
+gen-seed          = -1
+
+; PRESSURE COUPLING
+;----------------------------------------------------
+pcoupl           = Parrinello-Rahman
+pcoupltype       = isotropic            ; uniform scaling of box vectors
+tau_p            = 2.0                  ; time constant (ps)
+ref_p            = 1.0                  ; reference pressure (bar)
+compressibility  = 4.5e-05              ; isothermal compressibility of water (bar^-1)
+refcoord-scaling = no
+'''
