@@ -65,6 +65,19 @@ class PmxCli:
         set_gmxlib.entry_point()
 
 
+def check_unknown_cmd(unknowns):
+    '''Checks unknown command line arguments are raises a warning if unexpected
+    commands are found.
+    '''
+    expected = ['pmx', 'analyse', 'mutate', 'doublebox', 'gentop', 'gmxlib',
+                'genlib']
+
+    for cmd in unknowns:
+        if cmd not in expected:
+            print('Unknown command found in your command line: "{}". '
+                  'This command will be ignored'.format(cmd))
+
+
 def entry_point():
     PmxCli()
 

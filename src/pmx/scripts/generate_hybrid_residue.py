@@ -13,6 +13,7 @@ from pmx.geometry import Rotation
 from pmx.ffparser import RTPParser, NBParser
 from pmx.parser import kickOutComments, readSection, parseList
 from pmx.utils import list2file, get_pmxdata, natural_sort, initialise_logger
+from .cli import check_unknown_cmd
 
 
 # ==============================================================================
@@ -2035,6 +2036,7 @@ written to new files.
                         default='info')
 
     args, unknown = parser.parse_known_args()
+    check_unknown_cmd(unknown)
     return args
 
 

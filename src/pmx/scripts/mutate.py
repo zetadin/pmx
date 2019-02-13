@@ -34,7 +34,7 @@
 free energy simulations.
 """
 
-from __future__ import print_function
+from __future__ import print_function, division, absolute_import
 import sys
 import argparse
 from builtins import input
@@ -43,6 +43,7 @@ from pmx.model import Model
 from pmx.parser import read_and_format
 from pmx.utils import get_ff_path, ff_selection
 from pmx.alchemy import mutate
+from .cli import check_unknown_cmd
 
 # resinfo
 dna_one_letter = {'A': 'adenosine',
@@ -426,6 +427,7 @@ different protonation states. Use the --resinfo flag to print the dictionary.
                         action='store_true')
 
     args, unknown = parser.parse_known_args()
+    check_unknown_cmd(unknown)
 
     # ------------------
     # residue dictionary

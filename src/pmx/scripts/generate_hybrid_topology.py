@@ -29,12 +29,14 @@
 # CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 # ----------------------------------------------------------------------
 
+from __future__ import print_function, division, absolute_import
 import os
 import argparse
 from pmx.forcefield import Topology
 from pmx.utils import ff_selection
 from pmx.utils import multiple_replace
 from pmx.alchemy import gen_hybrid_top, write_split_top
+from .cli import check_unknown_cmd
 
 
 def _change_outfile_format(filename, ext):
@@ -103,6 +105,7 @@ mutate, and after having passed that mutated structure through pdb2gmx.
                         action='store_false')
 
     args, unknown = parser.parse_known_args()
+    check_unknown_cmd(unknown)
 
     # ff selection is required if file provided is an itp
     if args.intop.split('.')[-1] == 'itp' and args.ff is None:

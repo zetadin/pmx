@@ -248,6 +248,9 @@ def _check_topology_has_all_ff_info(top):
     return good
 
 
-if __name__ == '__main__':
+def entry_point():
     args = parse_options()
     main(args)
+
+if __name__ == '__main__':
+    entry_point()

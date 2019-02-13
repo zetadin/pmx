@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-from __future__ import print_function, division
+from __future__ import print_function, division, absolute_import
 import argparse
 from pmx.model import Model, double_box
 from .cli import check_unknown_cmd

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from __future__ import print_function, division
+from __future__ import print_function, division, absolute_import
 from pmx.parser import read_and_format
 from pmx.estimators import Jarz, JarzGauss, Crooks, BAR
 from pmx.analysis import read_dgdl_files, plot_work_dist, ks_norm_test
@@ -13,6 +13,7 @@ import numpy as np
 import pickle
 import argparse
 import warnings
+from .cli import check_unknown_cmd
 
 # Constants
 kb = 0.00831447215   # kJ/(K*mol)
@@ -266,6 +267,7 @@ def parse_options():
                         action='store_true')
 
     args, unknown = parser.parse_known_args()
+    check_unknown_cmd(unknown)
 
     return args
 
