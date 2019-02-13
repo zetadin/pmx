@@ -88,7 +88,6 @@ from . import chain
 from .atomselection import Atomselection
 from .molecule import Molecule
 from .atom import Atom
-from string import digits
 
 
 __all__ = ['Model']
@@ -886,7 +885,7 @@ def double_box(m1, m2, r=2.5, d=1.5, bLongestAxis=False, verbose=False):
             a.x[2] = a.x[2] + fact*v[2]
 
     def _get_mass(a):
-        aname = a.name.translate(str.maketrans('', '', digits))
+        aname = ''.join(i for i in a.name if not i.isdigit())
         if aname.startswith('Br') or aname.startswith('BR'):
             return(library._atommass['BR'])
         elif aname.startswith('Cl') or aname.startswith('CL'):
