@@ -81,12 +81,14 @@ Some useful methods:
 from __future__ import absolute_import, print_function, division
 import sys
 import copy
+import numpy as np
 from . import _pmx as _p
 from . import library
 from . import chain
 from .atomselection import Atomselection
 from .molecule import Molecule
 from .atom import Atom
+from string import digits
 
 
 __all__ = ['Model']
@@ -846,3 +848,302 @@ def assign_masses_to_model(model, topology):
             raise ValueError('mismatch of atom names between Model and '
                              'Topology objects provided')
         ma.m = ta.m
+
+
+def double_box(m1, m2, r=2.5, d=1.5, bLongestAxis=False, verbose=False):
+    '''Places two structures (two Model objects) into a single box.
+    The box is a rectangular cuboid in which the two structures are placed in
+    such a way to minimise the box volume.
+
+    Parameters
+    ----------
+    m1 : Model
+        first structure.
+    m2 : Model
+        first structure.
+    r : float
+        distance between the two structures (nm).
+    d : float
+        distance to the box wall (nm).
+    bLongestAxis : bool
+        whether to just place structures along the
+        longest axis, rather then optimising the placement and minimising
+        the volume.
+    verbose : bool
+        whether to print out information about the new box or not.
+
+    Returns
+    -------
+    mout : Model
+        new Model object where the two input structures are placed within a
+        single box.
+    '''
+
+    def _translate(m, v, fact=1.0):
+        for a in m.atoms:
+            a.x[0] = a.x[0] + fact*v[0]
+            a.x[1] = a.x[1] + fact*v[1]
+            a.x[2] = a.x[2] + fact*v[2]
+
+    def _get_mass(a):
+        aname = a.name.translate(str.maketrans('', '', digits))
+        if aname.startswith('Br') or aname.startswith('BR'):
+            return(library._atommass['BR'])
+        elif aname.startswith('Cl') or aname.startswith('CL'):
+            return(library._atommass['CL'])
+        elif aname.startswith('D'):
+            return(library._atommass[aname[1]])
+        else:
+            return(library._atommass[aname[0]])
+        return(1.0)
+
+    def _principal_axes(m):
+        tensor = np.matrix([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+        for a in m.atoms:
+            if ('HOH' in a.resname) or ('SOL' in a.resname) or ('WAT' in a.resname):
+                continue
+            mass = _get_mass(a)
+            tensor[0,0] += mass*(np.power(a.x[1], 2) + np.power(a.x[2], 2))
+            tensor[1,1] += mass*(np.power(a.x[0], 2) + np.power(a.x[2], 2))
+            tensor[2,2] += mass*(np.power(a.x[0], 2) + np.power(a.x[1], 2))
+            tensor[0,1] -= mass*a.x[0]*a.x[1]
+            tensor[1,0] = tensor[0, 1]
+            tensor[0,2] -= mass*a.x[0]*a.x[2]
+            tensor[2,0] = tensor[0, 2]
+            tensor[1,2] -= mass*a.x[1]*a.x[2]
+            tensor[2,1] = tensor[1, 2]
+        evals, evecs = np.linalg.eig(tensor)
+        idx = evals.argsort()[::1] # sort descending, because later the rotation matrix will be calculated as transpose
+        evals = evals[idx]
+        evecs = evecs[:, idx]
+        # check if one axis needs to be flipped
+        crossprod = np.cross(np.transpose(evecs[:,0]), np.transpose(evecs[:,1]))
+        dotprod = np.dot(np.transpose(evecs[:,2]), np.transpose(crossprod))
+        if dotprod < 0.0:
+            evecs[:,2] *= -1.0
+        rotmat = np.transpose(evecs)
+        return(rotmat)
+
+    def _rotate(atoms, R):
+        for atom in atoms:
+            x_old = list(map(lambda x: x, atom.x))
+            for i in range(3):
+                atom.x[i] = 0.0
+                for j in range(3):
+                    atom.x[i] += x_old[j]*R[i,j]
+
+    def _get_com_radius(m):
+        com = [0.0, 0.0, 0.0]
+        radius = 0.0
+        mass = 0.0
+
+        # com
+        for a in m.atoms:
+            a.a2nm()
+            if ('HOH' in a.resname) or ('SOL' in a.resname) or ('WAT' in a.resname):
+                continue
+            aname = a.name[0]
+            if aname.isdigit():
+                aname = a.name[1]
+            amass = _get_mass(a)
+
+            com[0] += a.x[0]*amass
+            com[1] += a.x[1]*amass
+            com[2] += a.x[2]*amass
+            mass += amass
+
+        com[0] /= mass
+        com[1] /= mass
+        com[2] /= mass
+
+        # radius
+        for a in m.atoms:
+            if ('HOH' in a.resname) or ('SOL' in a.resname) or ('WAT' in a.resname):
+                continue
+            foo = (a.x[0]-com[0])**2 + (a.x[1]-com[1])**2 + (a.x[2]-com[2])**2
+            if foo > radius:
+                radius = foo
+        radius = np.sqrt(radius)
+
+        return(com, radius)
+
+    def _get_rect_dist(m):
+        minx = 9999.999
+        maxx = -9999.999
+        miny = 9999.999
+        maxy = -9999.999
+        minz = 9999.999
+        maxz = -9999.999
+        for a in m.atoms:
+            if ('HOH' in a.resname) or ('SOL' in a.resname) or ('WAT' in a.resname):
+                continue
+            if a.x[0] < minx:
+                minx = a.x[0]
+            if a.x[0] > maxx:
+                maxx = a.x[0]
+            if a.x[1] < miny:
+                miny = a.x[1]
+            if a.x[1] > maxy:
+                maxy = a.x[1]
+            if a.x[2] < minz:
+                minz = a.x[2]
+            if a.x[2] > maxz:
+                maxz = a.x[2]
+        a = maxx-minx
+        b = maxy-miny
+        c = maxz-minz
+        return (a, b, c)
+
+    def _get_extr(m, i=0):
+        minx = 9999.999
+        maxx = -9999.999
+        for a in m.atoms:
+            if ('HOH' in a.resname) or ('SOL' in a.resname) or ('WAT' in a.resname):
+                continue
+            if a.x[i] < minx:
+                minx = a.x[i]
+            if a.x[i] > maxx:
+                maxx = a.x[i]
+        return(minx, maxx)
+
+    def _translate_sticking_out(m, l, i=0):
+        minx = 0.0
+        maxx = 0.0
+        for a in m.atoms:
+            if ('HOH' in a.resname) or ('SOL' in a.resname) or ('WAT' in a.resname):
+                continue
+            if a.x[i] < minx:
+                minx = a.x[i]
+            if (a.x[i]-l) > maxx:
+                maxx = a.x[i]-l
+        return(-1.0*(minx+maxx))
+
+    # ====
+    # Main
+    # ====
+
+    # com and radii
+    com1, rad1 = _get_com_radius(m1)
+    com2, rad2 = _get_com_radius(m2)
+
+    # remove COM from the systems
+    _translate(m1, com1, fact=-1.0)
+    _translate(m2, com2, fact=-1.0)
+
+    # if needed, calculate principal axes
+    if bLongestAxis:
+        princRot1 = _principal_axes(m1)
+        princRot2 = _principal_axes(m2)
+        _rotate(m1.atoms, princRot1)
+        _rotate(m2.atoms, princRot2)
+        a_rect1, b_rect1, c_rect1 = _get_rect_dist(m1)
+        a_rect2, b_rect2, c_rect2 = _get_rect_dist(m2)
+
+    # estimate cube's edge for the larger structure
+    a_cube = 0.0
+    if rad1 > rad2:
+        a_cube = 2*rad1+2*d
+    else:
+        a_cube = 2*rad2+2*d
+    if bLongestAxis is True:
+        a_rect = a_rect1 + a_rect2 + r + 2.0*d
+        b_rect = b_rect1 + b_rect2 + 2.0*d
+        c_rect = c_rect1 + c_rect2 + 2.0*d
+        if verbose is True:
+            print("Cuboid dimensions (nm): ", np.round(a_rect), np.round(b_rect), np.round(c_rect, 2))
+    else:
+        if verbose is True:
+            print("Cube's edge (nm): ", np.round(a_cube, 2))
+
+    # cube's diagonal
+    if bLongestAxis is True:
+        d_cube = np.sqrt(np.power(a_rect, 2) + np.power(b_rect, 2) + np.power(c_rect, 2))
+        if verbose is True:
+            print("Cuboid's diagonal (nm): ", np.round(d_cube, 2))
+    else:
+        d_cube = a_cube*np.sqrt(3.0)
+        if verbose is True:
+            print("Cube's diagonal (nm): ", np.round(d_cube, 2))
+
+    # check if cube is enough
+    if bLongestAxis is True:
+        a_box = a_rect
+        b_box = b_rect
+        c_box = c_rect
+    else:
+        dist_cube = d_cube - 2.0*rad1 - 2.0*rad2 - r - 2.0*d
+        a_box = a_cube
+        b_box = a_cube
+        c_box = a_cube
+        if dist_cube > 0.0:
+            if verbose is True:
+                print("Having a cube with the diagonal ", np.round(d_cube, 2), "nm is good enough")
+        else:
+            if verbose is True:
+                print("Need to extend the cube")
+            d_rect = 2.0*rad1 + 2.0*rad2 + r + 2.0*d
+            delta_a_cube = -a_cube + np.sqrt(d_rect**2 - 2.0*a_cube**2)
+            a_box = a_cube + delta_a_cube
+            if verbose is True:
+                print("Rectangle's edge (nm): ", np.round(a_box, 2))
+
+    # translate the larger structure to the middle of the box
+    if rad1 > rad2:
+        # translate smaller to (0,b/2,c/2) and larger to (maxx2+dist+abs(minx2),b/2,c/2)
+        if bLongestAxis is True:
+            _translate(m2, [0.0, b_box/2.0, c_box/2.0])
+            minx1, maxx1 = _get_extr(m1, 0)
+            minx2, maxx2 = _get_extr(m2, 0)
+            _translate(m1, [maxx2+r+abs(minx1), b_box/2.0, c_box/2.0])
+        else:
+            _translate(m1, [a_box/2.0, b_box/2.0, c_box/2.0])
+    else:
+        if bLongestAxis is True:
+            _translate(m1, [0.0, b_box/2.0, c_box/2.0])
+            minx1, maxx1 = _get_extr(m1, 0)
+            minx2, maxx2 = _get_extr(m2, 0)
+            _translate(m2, [maxx1 + r + abs(minx2), b_box/2.0, c_box/2.0])
+        else:
+            _translate(m2, [a_box/2.0, b_box/2.0, c_box/2.0])
+
+    # create an output
+    mout = m1
+    chainList = []
+    for ch in m1.chains:
+        if ch.id not in chainList:
+            chainList.append(ch.id)
+    chainIDstring = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    chainIDchanges = {}
+    for ch in m2.chains:
+        if ch.id in chainList:
+            # pick a new chain ID
+            bFound = False
+            while bFound is False:
+                foo = chainIDstring[0]
+                chainIDstring = chainIDstring.lstrip(chainIDstring[0])
+                if foo not in chainList:
+                    bFound = True
+            chainList.append(foo)
+            chainIDchanges[ch.id] = foo
+    for a in m2.atoms:
+        chID = a.chain_id
+        if chID in chainIDchanges:
+            a.chain_id = chainIDchanges[chID]
+    mout.atoms.extend(m2.atoms)
+
+    # create the box
+    mout.box = [[a_box,0.0,0.0], [0.0,b_box,0.0], [0.0,0.0,c_box]]
+
+    # determine translation exactly by checking how much the atoms are sticking out
+    xtransl = _translate_sticking_out(mout, a_box, 0)
+    ytransl = _translate_sticking_out(mout, b_box, 1)
+    ztransl = _translate_sticking_out(mout, c_box, 2)
+    # increase translation by a factor 1.01 to move a bit further from walls
+    _translate(mout, [1.01*xtransl, 1.01*ytransl, 1.01*ztransl])
+
+    # volume
+    V = a_box*b_box*c_box
+    if verbose is True:
+        print("Volume: ", np.round(V, 2), "nm^3")
+
+    return mout
