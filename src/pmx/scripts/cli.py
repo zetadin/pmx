@@ -17,12 +17,14 @@ class PmxCli:
     ------------------------
 
     Available commands are:
-        mutate     Mutate protein or DNA/RNA
-        gentop     Fill hybrid topology with B states
-        analyse    Estimate free energy from Gromacs xvg files
+        mutate       Mutate protein or DNA/RNA
+        gentop       Fill hybrid topology with B states
+        analyse      Estimate free energy from Gromacs xvg files
 
-        genlib     Generate pmx ff library
-        gmxlib     Show/set GMXLIB path''',
+        doublebox    Place two input structures into a single box
+
+        genlib       Generate pmx ff library
+        gmxlib       Show/set GMXLIB path''',
             formatter_class=RawTextHelpFormatter)
 
         parser.add_argument('-v', '--version', action='version',
@@ -49,6 +51,10 @@ class PmxCli:
     def analyse(self):
         from . import analyze_dhdl
         analyze_dhdl.entry_point()
+
+    def doublebox(self):
+        from . import make_double_box
+        make_double_box.entry_point()
 
     def genlib(self):
         from . import generate_hybrid_residue
