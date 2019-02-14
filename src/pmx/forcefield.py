@@ -669,16 +669,25 @@ class TopolBase:
         """Finds additional itp files included to in topology, and identifies
         the forcefield if it is included.
         """
-        inc_lines = [l.strip() for l in lines if l[:8] == '#include']
-        # exclude standard include statemets
         inc = []
-        for line in inc_lines:
-            if (('posre' not in line) and ('.ff' not in line)):
-                f = line.split()[1].strip('"')
-                inc.append(f)
-            if 'forcefield.itp' in line:
-                ff = line.split()[1].strip('"').split('/')[0].split('.')[0]
-                self.forcefield = ff
+        # we need to separate the itps included before/after the moleculetype
+        # in the topology file, if present, to maintain the correct order of
+        # molecules. At the moment, the most complex topology we can deal with
+        # has include_mol1/moltype2/include_mol3.
+        where = 'top'
+        for line in lines:
+            if line.strip()[:8] == '#include':
+                # exclude standard include statemets
+                if (('posre' not in line) and ('.ff' not in line)):
+                    f = line.split()[1].strip('"')
+                    itp = (f, where)
+                    inc.append(itp)
+                if 'forcefield.itp' in line:
+                    ff = line.split()[1].strip('"').split('/')[0].split('.')[0]
+                    self.forcefield = ff
+
+            if line.strip().replace(' ', '') == '[moleculetype]':
+                where = 'bottom'
 
         if len(inc) > 0:
             self.has_include_itps = True
@@ -763,9 +772,12 @@ class TopolBase:
         if self.atomtypes and write_atypes is True:
             self.write_atomtypes(fp)
 
-        # write the rest of the header (the include statements) without the
+        # write the rest of the header without the
         # line that imports the forcefield
         self.write_header(fp, write_ff=False)
+
+        # write itps included at top of the file
+        self.write_include_itps(fp, which='top')
 
         # write the molecule section, if there are atoms
         if self.atoms:
@@ -791,6 +803,11 @@ class TopolBase:
                 self.write_vsites4(fp)
             if self.has_posre:
                 self.write_posre(fp, ifdef=posre_ifdef, use_include=posre_include)
+
+        # NOTE: the footer also includes included itp files at the bottom of
+        # the file. These could be writte by write_include_itps and allow
+        # a more flexible handling of the info at the bottom of the top file
+        # TODO: create a more sophisticated footer parser
         self.write_footer(fp)
         if not self.is_itp:
             self.write_system(fp)
@@ -813,6 +830,8 @@ class TopolBase:
 
         Parameters
         ----------
+        fp : file
+            handle for output file.
         write_ff : bool
             whether to write also the line that includes the forcefield
             parameters or not.
@@ -828,6 +847,25 @@ class TopolBase:
                 continue
             else:
                 print(line, file=fp)
+
+    def write_include_itps(self, fp, which='top'):
+        '''Writes the include statemets at the top and bottom of the topology
+        file.
+
+        Parameters
+        ----------
+        fp : file
+            handle for output file.
+        which : top | bottom
+            which include statements to write. "top" are the include statementes
+            included before any [ moleculetype ], while "bottom" are the ones
+            after other moleculetypes.
+        '''
+
+        print('', file=fp)
+        for itp, where in self.include_itps:
+            if where == which:
+                print('#include "{}"'.format(itp), file=fp)
 
     def write_footer(self, fp):
         print('', file=fp)

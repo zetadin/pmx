@@ -282,7 +282,7 @@ def gen_hybrid_top(topol, recursive=True, verbose=False):
     itps = topol.include_itps
     pmx_itps = []
     if recursive is True and len(itps) > 0:
-        for itp in itps:
+        for itp, where in itps:
             if verbose is True:
                 print('\nlog_> Reading input itp file "%s""' % (itp))
             itp_path = os.path.dirname(os.path.relpath(topol.filename))
