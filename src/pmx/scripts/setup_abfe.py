@@ -153,9 +153,9 @@ def main(args):
             print('Skipping system building ...')
             sleep(3)
 
-        # ----------------
+        # ================
         # single-box setup
-        # ----------------
+        # ================
         if args.singlebox is True and goodtogo is True:
 
             # create double-system single-box
@@ -166,12 +166,14 @@ def main(args):
             mout.write('singlebox.gro')
 
             # create ligand topology with B-state
+            # ------------------------------------
             ligtopAB = deepcopy(ligtop)
             decouple_mol(ligtopAB)
             ligtopAB.write('ligandAB.itp', stateBonded='A', stateTypes='AB', stateQ='AB',
                            write_atypes=False, posre_include=True)
 
             # create second ligand topology with B-state
+            # ------------------------------------------
             ligtopBA = deepcopy(ligtop)
             couple_mol(ligtopBA)
             ligtopBA.name = '{}2'.format(ligtopBA.name)
@@ -179,6 +181,7 @@ def main(args):
                            write_atypes=False, posre_include=True)
 
             # create system topology
+            # ----------------------
             doubletop = deepcopy(comtop)
             doubletop.include_itps = [('ligandAB.itp', 'top'), ('ligandBA.itp', 'top')]
             doubletop.molecules.insert(1, [ligtopBA.name, 1])
@@ -189,9 +192,16 @@ def main(args):
             # save topology
             doubletop.write('singlebox.top', stateBonded='A')
 
-        # ----------------------------------
+            # run gromacs setup
+            # -----------------
+            gmx.solvate(cp='singlebox.gro', cs='spc216.gro', p='singlebox.top', o='solvate.gro')
+            gmx.write_mdp(mdp='enmin', fout='genion.mdp')
+            gmx.grompp(f='genion.mdp', c='solvate.gro', p='singlebox.top', o='genion.tpr', maxwarn=1)
+            gmx.genion(s='genion.tpr', p='singlebox.top', o='genion.gro', conc=0.15, neutral=True)
+
+        # ==================================
         # standard setup with separate boxes
-        # ----------------------------------
+        # ==================================
         elif args.singlebox is False and goodtogo is True:
 
             # Setup complex
@@ -286,7 +296,7 @@ def _check_topology_has_all_ff_info(top):
               'Without this information it is not possible '
               'to setup the system in Gromacs.\n'.format(top.filename))
 
-    return goog
+    return good
 
 
 def entry_point():
