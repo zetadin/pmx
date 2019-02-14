@@ -106,6 +106,7 @@ class TopolBase:
         self.defaults = ''
         self.header = []
         self.atomtypes = []
+        self.nonbond_params = []
         self.atoms = []
         self.residues = []
         self.name = ''
@@ -150,6 +151,7 @@ class TopolBase:
         self.read_moleculetype(lines)
         if self.name:  # atoms, bonds, ... section
             self.read_atomtypes(lines)
+            self.read_nonbond_params(lines)
             self.read_atoms(lines)
             self.read_bonds(lines)
             self.read_constraints(lines)
@@ -299,6 +301,22 @@ class TopolBase:
             else:
                 raise ValueError('format of atomtypes section not recognised')
 
+    def read_nonbond_params(self, lines):
+        lst = readSection(lines, '[ nonbond_params ]', '[')
+        for line in lst:
+            param = dict()
+            elements = line.split()
+
+            if len(elements) == 5:
+                param['a1'] = str(elements[0])
+                param['a2'] = str(elements[1])
+                param['func'] = int(elements[2])
+                param['sigma'] = float(elements[3])
+                param['epsilon'] = float(elements[4])
+                self.nonbond_params.append(param)
+            else:
+                raise ValueError('format of nonbond_params section not recognised')
+
     def read_atoms(self, lines):
         lst = readSection(lines, '[ atoms ]', '[')
         self.atoms = []
@@ -307,6 +325,11 @@ class TopolBase:
             self.atoms.append(a)
 
     def read_bonds(self, lines):
+        # filter out intermolecular_interactions section
+        idx = [i for i, l in enumerate(lines) if 'intermolecular_interactions' in l]
+        if len(idx) == 1:
+            lines = lines[:idx[0]]
+
         lst = readSection(lines, '[ bonds ]', '[')
         self.bonds = []
         for line in lst:
@@ -351,6 +374,11 @@ class TopolBase:
             self.have_constraints = True
 
     def read_angles(self, lines):
+        # filter out intermolecular_interactions section
+        idx = [i for i, l in enumerate(lines) if 'intermolecular_interactions' in l]
+        if len(idx) == 1:
+            lines = lines[:idx[0]]
+
         lst = readSection(lines, '[ angles ]', '[')
         for line in lst:
             entries = line.split()
@@ -402,10 +430,13 @@ class TopolBase:
                                     [idx[3], lB1, kB1, lB2, kB2]])
 
     def read_dihedrals(self, lines):
+        # filter out intermolecular_interactions section
+        idx = [i for i, l in enumerate(lines) if 'intermolecular_interactions' in l]
+        if len(idx) == 1:
+            lines = lines[:idx[0]]
+
         starts = []
         for i, line in enumerate(lines):
-            if 'intermolecular_interactions' in line:
-                break
             if line.strip().startswith('[ dihedrals ]'):
                 starts.append(i)
         for s in starts:
@@ -771,6 +802,10 @@ class TopolBase:
         if self.atomtypes and write_atypes is True:
             self.write_atomtypes(fp)
 
+        # write nonbonded params section if present
+        if self.nonbond_params:
+            self.write_nonbond_params(fp)
+
         # write the rest of the header without the
         # line that imports the forcefield
         self.write_header(fp, write_ff=False)
@@ -900,6 +935,11 @@ class TopolBase:
                 print('{name:>10}{bond_type:>10}{anum:>5}{mass:>10.4f}{charge:>10.4f}'
                       '{ptype:>5}{sigma:>20.5e}{epsilon:>20.5e}'.format(**at),
                       file=fp)
+
+    def write_nonbond_params(self, fp):
+        print('\n[ nonbond_params ]\n; i  j    func  sigma           epsilon', file=fp)
+        for param in self.nonbond_params:
+            print('{a1:>10}{a2:>10}{func:>5}{sigma:>20.5e}{epsilon:>20.5e}'.format(**param), file=fp)
 
     def write_atoms(self, fp, charges='AB', atomtypes='AB', dummy_qA='on',
                     dummy_qB='on', scale_mass=True, target_qB=[],
@@ -1626,6 +1666,31 @@ class Topology(TopolBase):
                     sys.exit(1)
                 del self.dihedrals[i][-1]
                 self.dihedrals[i].append(param[1:])
+
+    def make_nonbond_params(self, rule=2):
+        '''Create nonbonded params needed to keep LJ intramolecular interactions
+        when decoupling a ligand.
+
+        Params
+        ------
+        rule : int
+            combination rule to use, following notation in the Gromacs manual
+            in section 5.3.2.
+        '''
+
+        for i, a1 in enumerate(self.atomtypes):
+            for j, a2 in enumerate(self.atomtypes):
+                if i >= j:
+                    param = {}
+                    param['a1'] = a1['name']
+                    param['a2'] = a2['name']
+                    param['func'] = 1
+                    if rule == 2:
+                        param['sigma'] = (a1['sigma'] + a2['sigma'])/2.0
+                        param['epsilon'] = (a1['epsilon'] + a2['epsilon'])**0.5
+                    else:
+                        raise ValueError('combination rule not yet supported')
+                    self.nonbond_params.append(param)
 
     def make_posre(self, heavy=True, k=1000):
         '''Generate position restraints for the atoms in Topology.
