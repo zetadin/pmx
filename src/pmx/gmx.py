@@ -28,7 +28,7 @@ def set_gmxlib():
     path = os.path.abspath(__file__)
     dir_path = os.path.dirname(path)
     gmxlib = os.path.join(dir_path, 'data/mutff')
-    call('export GMXLIB={}'.format(gmxlib), shell=True)
+    os.environ['GMXLIB'] = gmxlib
 
 
 def editconf(f, o='editconf.gro', bt='cubic', d=1.2, other_flags=''):

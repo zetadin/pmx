@@ -65,7 +65,6 @@ def cpp_parse_file(fn,  itp=False, ffpath=None, cpp_defs=[],
     cpp_path : list, optional
         paths to force fields library
     """
-
     defs = []
     incs = []
     for d in cpp_defs:
@@ -1540,7 +1539,9 @@ class Topology(TopolBase):
             self.ffpath = get_ff_path(self.forcefield)
             # read ff files and assign types
             fulltop = cpp_parse_file(self.filename, itp=self.is_itp,
-                                     ffpath=self.ffpath)
+                                     ffpath=self.ffpath,
+                                     cpp_path=[os.environ.get('GMXLIB'),
+                                               '%s/top' % os.environ.get('GMXDATA')])
             fulltop = kickOutComments(fulltop, '#')
             fulltop = kickOutComments(fulltop, ';')
             self.BondedParams = BondedParser(fulltop)
