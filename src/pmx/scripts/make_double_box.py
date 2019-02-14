@@ -47,7 +47,8 @@ to help in the setup of a calculation using the single-box double-system approac
     parser.add_argument('--longest_axis',
                         dest='longest_axis',
                         help='Whether to just place structures along the '
-                        'longest axis, rather then minimising the volume',
+                        'longest axis, rather then minimising the volume. '
+                        'Default is False.',
                         default=False,
                         action='store_true')
 

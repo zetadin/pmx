@@ -72,6 +72,14 @@ describe...
                         'setup.',
                         default=False,
                         action='store_true')
+    parser.add_argument('--longest_axis',
+                        dest='longest_axis',
+                        help='Whether to just place structures along the '
+                        'longest axis, rather then minimising the volume. '
+                        'This option is relevant only when using '
+                        '--singlebox. Default is False.',
+                        default=False,
+                        action='store_true')
     parser.add_argument('--seed',
                         metavar='int',
                         dest='seed',
@@ -163,7 +171,7 @@ def main(args):
             # the second ligand (lig) is inserted before the complex in the
             # output gro file (easier to modify topology this way atm)
             mout = double_box(m1=lig, m2=com, r=2.5, d=1.5,
-                              bLongestAxis=False, verbose=False)
+                              bLongestAxis=args.longest_axis, verbose=False)
             mout.write('singlebox.gro')
 
             # identify an atom to restrain: this will be used in both ligands to
