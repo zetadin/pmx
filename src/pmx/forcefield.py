@@ -1441,17 +1441,23 @@ class Topology(TopolBase):
     ----------
     filename : str
         topology file
-    is_itp : bool, optional
+    is_itp : bool
         whether the topology provided is an ``itp`` file. If not provided,
         this is automatically determined by the file extension (``.itp`` vs
         ``.top``).
-    assign_types : bool, optional
+    assign_types : bool
         whether to assign types for the atoms in the Topology. Default is True.
+    self_contained : bool
+        Whether the file contains all bonded and non-bonded parameters needed
+        to simulate the system. This can be the case for some small-molecule
+        topologies. If this is set to true, atomtypes are assigned to each
+        atom without looking for a forcefield file.
     ff : str, optional
         force field to use. If not provided, it is determined based on the
         forcefield.itp include statement in the ``top`` file. If you are providing
-        an ``itp`` file without a reference to the force field, and assign_types is
-        set to True, then you also need to provide a force field name.
+        an ``itp`` file without a reference to the force field, assign_types is
+        True, and self_contained is False, then you have to provide a force field
+        name, so that pmx will know where to look to assign atom and bond types.
     version : str?
         what is version? is it still needed?
 
@@ -1513,7 +1519,7 @@ class Topology(TopolBase):
     """
 
     def __init__(self, filename, is_itp=None, ff=None,
-                 assign_types=True, version='new'):
+                 assign_types=True, self_contained=False, version='new'):
         TopolBase.__init__(self, filename, version)
 
         # is_itp is already an attribute of TopolBase that is assigned at init
@@ -1527,7 +1533,7 @@ class Topology(TopolBase):
         if ff is not None:
             self.forcefield = ff
 
-        if assign_types:
+        if assign_types is True and self_contained is False:
             if self.forcefield == '':
                 raise ValueError('The topology file provided does not contain an '
                                  'include statement pointing towards a forcefield'
@@ -1547,6 +1553,21 @@ class Topology(TopolBase):
             self.BondedParams = BondedParser(fulltop)
             self.NBParams = NBParser(fulltop, version, ff=self.forcefield)
             self.assign_fftypes()
+
+        # no need to get ff files - all info is within the itp/top
+        elif assign_types is True and self_contained is True:
+            if not self.atomtypes:
+                raise ValueError('The topology file provided does not contain '
+                                 'atomtypes despite "self_contained" being "True".')
+            # assign non-bonded types
+            for atom in self.atoms:
+                atype = next(i for i in self.atomtypes if i["name"] == atom.atomtype)
+                atom.type = atype['name']
+                if atom.atomtypeB is not None:
+                    atypeB = next(i for i in self.atomtypes if i["name"] == atom.atomtypeB)
+                    atom.typeB = atypeB['name']
+                else:
+                    atom.typeB = atom.type
 
     def set_molecule(self, molname, n):
         mol_exists = False
