@@ -287,6 +287,9 @@ def main(args):
                              '#endif',
                              '#include "{ff}.ff/ions.itp"'.format(ff=ligtop.forcefield)]
 
+            # add system and molecules
+            ligtop.system = 'ligand'
+            ligtop.molecules = [[ligtop.name, 1]]
             ligtop.write('ligand.top', stateBonded='A', write_atypes=True,
                          posre_include=True)
 
