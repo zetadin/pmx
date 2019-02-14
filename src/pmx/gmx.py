@@ -144,7 +144,7 @@ def grompp(f, c, p, o='grompp.tpr', maxwarn=0, other_flags=''):
     """
 
     gmx = get_gmx()
-    call('{gmx} grompp -f {f} -c {c} -p {p} -o {o} -maxwarn {maxwarn}'
+    call('{gmx} grompp -f {f} -c {c} -r {c} -p {p} -o {o} -maxwarn {maxwarn}'
          '{other_flags}'.format(gmx=gmx, f=f, c=c, p=p, o=o, maxwarn=maxwarn, other_flags=other_flags),
          shell=True)
 
