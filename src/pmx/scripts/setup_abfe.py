@@ -14,11 +14,11 @@ from time import sleep
 from cli import check_unknown_cmd
 
 
-# TODO: allow providing indices for restraint
 # TODO: build folder structure and mdp files for equil or nonequil calcs?
 
 """
-Script to setup absolute binding free energy calculations for ligands binding to proteins.
+Script to setup absolute binding free energy calculations for ligands binding to proteins,
+or host-guest systems.
 """
 
 
@@ -86,6 +86,22 @@ describe...
                         '--singlebox. Default is False.',
                         default=False,
                         action='store_true')
+    parser.add_argument('--lig_ids',
+                        metavar='',
+                        dest='lig_ids',
+                        help='Three atom indices. If provided, these will be '
+                        'used for the protein-ligand restraints. Otherwise '
+                        'they are chosen automatically.',
+                        default=None,
+                        nargs=3)
+    parser.add_argument('--pro_ids',
+                        metavar='',
+                        dest='pro_ids',
+                        help='Three atom indices. If provided, these will be '
+                        'used for the protein-ligand restraints. Otherwise '
+                        'they are chosen automatically.',
+                        default=None,
+                        nargs=3)
     parser.add_argument('--seed',
                         metavar='int',
                         dest='seed',
@@ -141,7 +157,9 @@ def main(args):
     # ------------------------------------------
     # figure out restraints (and save top entry)
     # ------------------------------------------
-    restraints = AbsRestraints(pro, lig, seed=args.seed)
+    restraints = AbsRestraints(protein=pro, ligand=lig,
+                               pro_ids=args.pro_ids, lig_ids=args.lig_ids,
+                               seed=args.seed)
 
     # write restraints info
     restraints.write_summary()
