@@ -1,24 +1,28 @@
 #! /usr/bin/env python
 
-from __future__ import print_function, division
+from __future__ import print_function, division, absolute_import
 import argparse
 import os
 import shutil
-from pmx.model import Model, merge_models, assign_masses_to_model
+from pmx.model import Model, merge_models, assign_masses_to_model, double_box
 from pmx.alchemy import AbsRestraints
 from pmx.forcefield import Topology, merge_atomtypes
 from pmx import gmx
 from copy import deepcopy
 from time import sleep
+from cli import check_unknown_cmd
 
 
 # TODO: allow providing indices for restraint
 # TODO: build systems with pmx.gmx
 # TODO: build folder structure and mdp files for equil or nonequil calcs
+# TODO: make optional keeping intramolinteractions with singlebox setup
+# TODO: singlebox allow using bLogestAxis
 
 """
 Script to setup absolute binding free energy calculations for ligands binding to proteins.
 """
+
 
 def parse_options():
     parser = argparse.ArgumentParser(description='''
@@ -35,7 +39,9 @@ describe...
                         metavar='ligtop',
                         dest='lig_top',
                         type=str,
-                        help='Input topology file for the ligand. '
+                        help='Input topology file for the ligand. It is '
+                        'expected that all params needed for the ligand '
+                        'are explicitly defined in this file. '
                         'Default is "ligand.itp".',
                         default='ligand.itp')
     parser.add_argument('-pc',
@@ -76,6 +82,7 @@ describe...
                         type=int)
 
     args, unknown = parser.parse_known_args()
+    check_unknown_cmd(unknown)
 
     return args
 
@@ -85,7 +92,7 @@ def main(args):
     # Import GRO and TOP files
     lig = Model(args.lig_crd, renumber_residues=False)
     pro = Model(args.pro_crd, renumber_residues=False)
-    ligtop = Topology(args.lig_top, is_itp=True, assign_types=False)
+    ligtop = Topology(args.lig_top, is_itp=True, assign_types=True, self_contained=True)
     protop = Topology(args.pro_top, assign_types=False)
 
     # check lig has only 1 residue
@@ -109,7 +116,7 @@ def main(args):
     # make topology of complex
     # ------------------------
     comtop = deepcopy(protop)
-    comtop.header.append('#include "ligand.itp"')
+    comtop.include_itps.append(("ligand.itp", "top"))
     comtop.system = 'Complex'
     comtop.molecules.insert(0, [ligtop.name, 1])
 
@@ -150,7 +157,37 @@ def main(args):
         # single-box setup
         # ----------------
         if args.singlebox is True and goodtogo is True:
-            pass
+
+            # create double-system single-box
+            # the second ligand (lig) is inserted before the complex in the
+            # output gro file (easier to modify topology this way atm)
+            mout = double_box(m1=lig, m2=com, r=2.5, d=1.5,
+                              bLongestAxis=False, verbose=False)
+            mout.write('singlebox.gro')
+
+            # create ligand topology with B-state
+            ligtopAB = deepcopy(ligtop)
+            decouple_mol(ligtopAB)
+            ligtopAB.write('ligandAB.itp', stateBonded='A', stateTypes='AB', stateQ='AB',
+                           write_atypes=False, posre_include=True)
+
+            # create second ligand topology with B-state
+            ligtopBA = deepcopy(ligtop)
+            couple_mol(ligtopBA)
+            ligtopBA.name = '{}2'.format(ligtopBA.name)
+            ligtopBA.write('ligandBA.itp', stateBonded='A', stateTypes='AB', stateQ='AB',
+                           write_atypes=False, posre_include=True)
+
+            # create system topology
+            doubletop = deepcopy(comtop)
+            doubletop.include_itps = [('ligandAB.itp', 'top'), ('ligandBA.itp', 'top')]
+            doubletop.molecules.insert(1, [ligtopBA.name, 1])
+            # merge atomtypes (basically add the dummies)
+            doubletop.atomtypes = merge_atomtypes(doubletop.atomtypes, ligtopAB.atomtypes)
+            # keep intramolecular interactions
+            doubletop.make_nonbond_params(rule=2)
+            # save topology
+            doubletop.write('singlebox.top', stateBonded='A')
 
         # ----------------------------------
         # standard setup with separate boxes
@@ -213,6 +250,10 @@ def main(args):
 
 
 def _check_topology_has_all_ff_info(top):
+    '''This is needed in particular for host-guest systems where the host has
+    not passed through pdb2gmx, and might not contain the ff info needed for
+    solvate/genion/grompp (i.e. water/ion params to use).
+    '''
     good = True
 
     if top.forcefield == '':
@@ -248,9 +289,65 @@ def _check_topology_has_all_ff_info(top):
     return good
 
 
+def decouple_mol(top):
+    """
+    """
+
+    for atom in top.atoms:
+        atom.qB = 0.0
+        atom.mB = atom.m
+        atom.typeB = 'dum'
+        atom.atomtypeB = 'dum'
+
+
+    # create the dummy atomtype
+    dummy = {}
+    dummy['name'] = 'dum'
+    dummy['bond_type'] = 'dum'
+    dummy['mass'] = 0.0
+    dummy['charge'] = 0.0
+    dummy['ptype'] = 'A'
+    dummy['sigma'] = 0.0
+    dummy['epsilon'] = 0.0
+
+    # add the dummy to the topology atomtypes
+    top.atomtypes.append(dummy)
+
+
+def couple_mol(top):
+    """
+    """
+
+    for atom in top.atoms:
+        atom.qB = atom.q
+        atom.q = 0.0
+        atom.mB = atom.m
+        atom.typeB = atom.type
+        atom.atomtypeB = atom.type
+        atom.type = 'dum'
+        atom.atomtype = 'dum'
+
+    # create the dummy atomtype
+    dummy = {}
+    dummy['name'] = 'dum'
+    dummy['bond_type'] = 'dum'
+    dummy['mass'] = 0.0
+    dummy['charge'] = 0.0
+    dummy['ptype'] = 'A'
+    dummy['sigma'] = 0.0
+    dummy['epsilon'] = 0.0
+
+    # add the dummy to the topology atomtypes
+    top.atomtypes.append(dummy)
+
+
+
+
+
 def entry_point():
     args = parse_options()
     main(args)
+
 
 if __name__ == '__main__':
     entry_point()
