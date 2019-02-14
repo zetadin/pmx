@@ -15,10 +15,7 @@ from cli import check_unknown_cmd
 
 
 # TODO: allow providing indices for restraint
-# TODO: build systems with pmx.gmx
-# TODO: build folder structure and mdp files for equil or nonequil calcs
-# TODO: make optional keeping intramolinteractions with singlebox setup
-# TODO: singlebox allow using bLogestAxis
+# TODO: build folder structure and mdp files for equil or nonequil calcs?
 
 """
 Script to setup absolute binding free energy calculations for ligands binding to proteins.
@@ -69,13 +66,22 @@ describe...
     parser.add_argument('--singlebox',
                         dest='singlebox',
                         help='Whether to use the double-system single-box '
-                        'setup.',
+                        'setup. This is useful for charged ligands. '
+                        'Default is False.',
                         default=False,
                         action='store_true')
     parser.add_argument('--longest_axis',
                         dest='longest_axis',
                         help='Whether to just place structures along the '
                         'longest axis, rather then minimising the volume. '
+                        'This option is relevant only when using '
+                        '--singlebox. Default is False.',
+                        default=False,
+                        action='store_true')
+    parser.add_argument('--keep_intra',
+                        dest='keep_intra',
+                        help='Whether to keep the LJ intramolecular '
+                        'interactions when the ligand is decoupled. '
                         'This option is relevant only when using '
                         '--singlebox. Default is False.',
                         default=False,
@@ -206,8 +212,9 @@ def main(args):
             doubletop.molecules.insert(1, [ligtopBA.name, 1])
             # merge atomtypes (basically add the dummies)
             doubletop.atomtypes = merge_atomtypes(doubletop.atomtypes, ligtopAB.atomtypes)
-            # keep intramolecular interactions
-            doubletop.make_nonbond_params(rule=2)
+            # keep intramolecular interactions?
+            if args.keep_intra is True:
+                doubletop.make_nonbond_params(rule=2)
             # save topology
             doubletop.write('singlebox.top', stateBonded='A')
 
