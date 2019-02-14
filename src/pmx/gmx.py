@@ -5,6 +5,7 @@ tools.
 """
 
 from __future__ import absolute_import, division, print_function
+import os
 from .utils import which
 from subprocess import call
 from .library import mdps
@@ -18,6 +19,16 @@ def get_gmx():
         return gmx
     else:
         raise EnvironmentError('gmx executable not found')
+
+
+def set_gmxlib():
+    """Sets the environment variable GMXLIB to the default/expected pmx
+    location.
+    """
+    path = os.path.abspath(__file__)
+    dir_path = os.path.dirname(path)
+    gmxlib = os.path.join(dir_path, 'data/mutff')
+    os.environ['GMXLIB'] = gmxlib
 
 
 def editconf(f, o='editconf.gro', bt='cubic', d=1.2, other_flags=''):
