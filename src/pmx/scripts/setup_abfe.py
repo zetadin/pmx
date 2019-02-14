@@ -5,7 +5,7 @@ import argparse
 import os
 import shutil
 from pmx.model import Model, merge_models, assign_masses_to_model, double_box
-from pmx.alchemy import AbsRestraints
+from pmx.alchemy import AbsRestraints, couple_mol, decouple_mol
 from pmx.forcefield import Topology, merge_atomtypes
 from pmx import gmx
 from copy import deepcopy
@@ -286,62 +286,7 @@ def _check_topology_has_all_ff_info(top):
               'Without this information it is not possible '
               'to setup the system in Gromacs.\n'.format(top.filename))
 
-    return good
-
-
-def decouple_mol(top):
-    """
-    """
-
-    for atom in top.atoms:
-        atom.qB = 0.0
-        atom.mB = atom.m
-        atom.typeB = 'dum'
-        atom.atomtypeB = 'dum'
-
-
-    # create the dummy atomtype
-    dummy = {}
-    dummy['name'] = 'dum'
-    dummy['bond_type'] = 'dum'
-    dummy['mass'] = 0.0
-    dummy['charge'] = 0.0
-    dummy['ptype'] = 'A'
-    dummy['sigma'] = 0.0
-    dummy['epsilon'] = 0.0
-
-    # add the dummy to the topology atomtypes
-    top.atomtypes.append(dummy)
-
-
-def couple_mol(top):
-    """
-    """
-
-    for atom in top.atoms:
-        atom.qB = atom.q
-        atom.q = 0.0
-        atom.mB = atom.m
-        atom.typeB = atom.type
-        atom.atomtypeB = atom.type
-        atom.type = 'dum'
-        atom.atomtype = 'dum'
-
-    # create the dummy atomtype
-    dummy = {}
-    dummy['name'] = 'dum'
-    dummy['bond_type'] = 'dum'
-    dummy['mass'] = 0.0
-    dummy['charge'] = 0.0
-    dummy['ptype'] = 'A'
-    dummy['sigma'] = 0.0
-    dummy['epsilon'] = 0.0
-
-    # add the dummy to the topology atomtypes
-    top.atomtypes.append(dummy)
-
-
-
+    return goog
 
 
 def entry_point():

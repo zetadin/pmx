@@ -363,6 +363,78 @@ def write_split_top(pmxtop, outfile='pmxtop.top', scale_mass=False,
         print('------------------------------------------------------')
 
 
+def decouple_mol(top):
+    """Setup topology for decoupling a small molecule. The nonbonded
+    interactions are on in state A and are off in state B.
+
+    Params
+    ------
+    top : Topology
+        topology object that will be modified
+
+    Returns
+    -------
+    None
+    """
+
+    for atom in top.atoms:
+        atom.qB = 0.0
+        atom.mB = atom.m
+        atom.typeB = 'dum'
+        atom.atomtypeB = 'dum'
+
+
+    # create the dummy atomtype
+    dummy = {}
+    dummy['name'] = 'dum'
+    dummy['bond_type'] = 'dum'
+    dummy['mass'] = 0.0
+    dummy['charge'] = 0.0
+    dummy['ptype'] = 'A'
+    dummy['sigma'] = 0.0
+    dummy['epsilon'] = 0.0
+
+    # add the dummy to the topology atomtypes
+    top.atomtypes.append(dummy)
+
+
+def couple_mol(top):
+    """Setup topology for coupling a small molecule. The nonbonded
+    interactions are off in state A and are on in state B.
+
+    Params
+    ------
+    top : Topology
+        topology object that will be modified
+
+    Returns
+    -------
+    None
+    """
+
+    for atom in top.atoms:
+        atom.qB = atom.q
+        atom.q = 0.0
+        atom.mB = atom.m
+        atom.typeB = atom.type
+        atom.atomtypeB = atom.type
+        atom.type = 'dum'
+        atom.atomtype = 'dum'
+
+    # create the dummy atomtype
+    dummy = {}
+    dummy['name'] = 'dum'
+    dummy['bond_type'] = 'dum'
+    dummy['mass'] = 0.0
+    dummy['charge'] = 0.0
+    dummy['ptype'] = 'A'
+    dummy['sigma'] = 0.0
+    dummy['epsilon'] = 0.0
+
+    # add the dummy to the topology atomtypes
+    top.atomtypes.append(dummy)
+
+
 # ===============
 # HelperFunctions
 # ===============
