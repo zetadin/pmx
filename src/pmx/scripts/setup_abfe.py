@@ -4,6 +4,7 @@ from __future__ import print_function, division, absolute_import
 import argparse
 import os
 import shutil
+import numpy as np
 from pmx.model import Model, merge_models, assign_masses_to_model, double_box
 from pmx.alchemy import AbsRestraints, couple_mol, decouple_mol
 from pmx.forcefield import Topology, merge_atomtypes
@@ -165,10 +166,19 @@ def main(args):
                               bLongestAxis=False, verbose=False)
             mout.write('singlebox.gro')
 
+            # identify an atom to restrain: this will be used in both ligands to
+            # keep ligand and complex apart
+
+            # reload because indices have changed after lig was merged into complex
+            lig = Model(args.lig_crd, renumber_residues=False)
+            assign_masses_to_model(lig, ligtop)
+            posre_idx = _find_atom_near_com(lig)
+
             # create ligand topology with B-state
             # ------------------------------------
             ligtopAB = deepcopy(ligtop)
             decouple_mol(ligtopAB)
+            _add_fixed_posre(top=ligtopAB, n=posre_idx)
             ligtopAB.write('ligandAB.itp', stateBonded='A', stateTypes='AB', stateQ='AB',
                            write_atypes=False, posre_include=True)
 
@@ -176,6 +186,7 @@ def main(args):
             # ------------------------------------------
             ligtopBA = deepcopy(ligtop)
             couple_mol(ligtopBA)
+            _add_fixed_posre(top=ligtopBA, n=posre_idx)
             ligtopBA.name = '{}2'.format(ligtopBA.name)
             ligtopBA.write('ligandBA.itp', stateBonded='A', stateTypes='AB', stateQ='AB',
                            write_atypes=False, posre_include=True)
@@ -297,6 +308,27 @@ def _check_topology_has_all_ff_info(top):
               'to setup the system in Gromacs.\n'.format(top.filename))
 
     return good
+
+
+def _add_fixed_posre(top, n):
+    ''' n : index of atom to restrain
+    '''
+    posre = ['[ position_restraints ]',
+             ';  ai    funct            c0            c1          c2',
+             '   {n}      1      1000   1000   1000'.format(n=n)]
+
+    top.footer = posre + top.footer
+
+
+def _find_atom_near_com(m):
+    # get com
+    com = np.array(m.com(vector_only=True))
+    coords = [np.array(a.x) for a in m.atoms]
+    # get all distances
+    distances = [np.linalg.norm(c-com) for c in coords]
+    # get index of atom closest to com. Add 1 since gromacs uses idx from 1
+    com_idx = np.argmin(distances)+1
+    return com_idx
 
 
 def entry_point():
