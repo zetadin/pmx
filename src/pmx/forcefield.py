@@ -262,6 +262,7 @@ class TopolBase:
                 break
 
     def read_footer(self, lines):
+        # read all lines in between #ifdef and [ system ]
         for line in lines:
             if line.strip().startswith('#ifdef POSRES'):
                 idx = lines.index(line)
@@ -836,14 +837,20 @@ class TopolBase:
             if self.has_vsites4:
                 self.write_vsites4(fp)
             if self.has_posre:
+                # NOTE: posre are dealt with in 2 ways: via specific posre
+                # readers/writers and via the footer. This may cause issues
+                # at some point. Ideally, all posre should be written with this
+                # function, and no posre as part of the footer
                 self.write_posre(fp, ifdef=posre_ifdef, use_include=posre_include)
 
-        # NOTE: the footer also includes included itp files at the bottom of
-        # the file. These could be writte by write_include_itps and allow
-        # a more flexible handling of the info at the bottom of the top file
-        # TODO: create a more sophisticated footer parser
-        self.write_footer(fp)
-        if not self.is_itp:
+        # write posre section if present in original top
+        self.write_footer(fp, what=['posre'])
+        # write additional itps that one wants to included
+        self.write_include_itps(fp, which='bottom')
+
+        if self.is_itp is False:
+            # write posre section if present in original top
+            self.write_footer(fp, what=['water', 'posre_water', 'ions'])
             self.write_system(fp)
             self.write_molecules(fp)
         # write intermolecular interactions if present
@@ -891,7 +898,7 @@ class TopolBase:
         fp : file
             handle for output file.
         which : top | bottom
-            which include statements to write. "top" are the include statementes
+            which include statements to write. "top" are the include statements
             included before any [ moleculetype ], while "bottom" are the ones
             after other moleculetypes.
         '''
@@ -901,13 +908,101 @@ class TopolBase:
             if where == which:
                 print('#include "{}"'.format(itp), file=fp)
 
-    def write_footer(self, fp):
+    def write_footer(self, fp, what=['all']):
+        '''Writes bottom part of topology file. After all moleculetype info
+        and before [ system ].
+
+        The argument "what" takes a list of keywords that will be used to write
+        elements of the footer in a certain order. The available keywords are
+        the following:
+
+            "posre"       : write #ifdef POSRES section
+            "water"       : write #include for water parameters
+            "posre_water" : write #ifdef POSRES_WATER section
+            "ions"        : write #include for ion parameters
+            "all"         : write all lines present in the footer
+
+        Parameters
+        ----------
+        fp : file
+            handle for output file.
+        what : list
+            list of keywords corresponsding to the sections you want to write.
+            The order of the sections will reflect the order of keywords in
+            this list.
+        '''
+
+        def _write_foot_section(fp, keyword):
+            '''writes only specific lines/sections of footer.
+            '''
+            if keyword == 'all':
+                for line in self.footer:
+                    print(line, file=fp)
+
+            # posre for molecule
+            elif keyword == 'posre':
+                # exclude POSRES_WATER lines
+                lines = []
+                copy = True
+                for line in self.footer:
+                    if 'POSRES_WATER' in line:
+                        copy = False
+                    if copy is True:
+                        lines.append(line)
+                    if copy is False and '#endif' in line:
+                        copy = True
+
+                write = False
+                ifdef = False
+                for line in lines:
+                    if write is True and ifdef is False:
+                        if len(line.split()) != 5:
+                            write = False
+
+                    if line.strip() == '#ifdef POSRES':
+                        write = True
+                        ifdef = True
+                    if 'position_restraints' in line.strip():
+                        write = True
+
+                    if write is True:
+                        print(line, file=fp)
+
+                    if line.strip() == '#endif':
+                        write = False
+
+            # water params
+            elif keyword == 'water':
+                for line in self.footer:
+                    if 'ff' in line and ('tip' in line or 'spc' in line):
+                        print(line, file=fp)
+
+            # posre for water
+            elif keyword == 'posre_water':
+                write = False
+                for line in self.footer:
+                    if line.strip() == '#ifdef POSRES_WATER':
+                        write = True
+
+                    if write is True:
+                        print(line, file=fp)
+
+                    if line.strip() == '#endif':
+                        write = False
+
+            # ion params
+            elif keyword == 'ions':
+                for line in self.footer:
+                    if 'ff' in line and 'ion' in line:
+                        print(line, file=fp)
+
+            else:
+                raise ValueError('keyword does not exists/not implemented')
+
+        # write all sections
         print('', file=fp)
-        try:
-            for line in self.footer:
-                print(line, file=fp)
-        except:
-            print("INFO: No POSRE footer present in topology\n")
+        for key in what:
+            _write_foot_section(fp=fp, keyword=key)
 
     def write_moleculetype(self, fp):
         print('\n[ moleculetype ]', file=fp)
