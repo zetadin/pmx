@@ -11,20 +11,22 @@ from pmx.forcefield import Topology, merge_atomtypes
 from pmx import gmx
 from copy import deepcopy
 from time import sleep
-from cli import check_unknown_cmd
+from .cli import check_unknown_cmd
 
 
 # TODO: build folder structure and mdp files for equil or nonequil calcs?
 
-"""
-Script to setup absolute binding free energy calculations for ligands binding to proteins,
-or host-guest systems.
-"""
-
 
 def parse_options():
     parser = argparse.ArgumentParser(description='''
-describe...
+This scripts helps to setup an absolute binding free energy calculation.
+As a minimal input, you need to provide a structure and topology file for both
+the protein (or host) and ligand (or guest) molecule.
+
+The topology is setup so to contain restraints as defined by Boresch et al. (2003)
+J Phys Chem B 107(35); these include one distance, two angles, and three dihedrals
+between ligand and protein. You can either provide explicitly the atoms to be
+included in the restraints, or let the script choose them automatically.
 ''')
     parser.add_argument('-pt',
                         metavar='protop',
@@ -365,6 +367,10 @@ def _find_atom_near_com(m):
     # get index of atom closest to com. Add 1 since gromacs uses idx from 1
     com_idx = np.argmin(distances)+1
     return com_idx
+
+
+def _setup_sample_files(nonequil=False, singlebox=False):
+    pass
 
 
 def entry_point():

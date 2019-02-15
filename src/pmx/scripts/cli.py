@@ -22,6 +22,7 @@ class PmxCli:
         analyse      Estimate free energy from Gromacs xvg files
 
         doublebox    Place two input structures into a single box
+        abfe         Setup files for an ABFE calculation
 
         genlib       Generate pmx ff library
         gmxlib       Show/set GMXLIB path''',
@@ -55,6 +56,10 @@ class PmxCli:
     def doublebox(self):
         from . import make_double_box
         make_double_box.entry_point()
+
+    def abfe(self):
+        from . import setup_abfe
+        setup_abfe.entry_point()
 
     def genlib(self):
         from . import generate_hybrid_residue
