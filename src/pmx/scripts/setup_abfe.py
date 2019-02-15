@@ -65,8 +65,8 @@ included in the restraints, or let the script choose them automatically.
                         '(top, gro) are ready.',
                         default=False,
                         action='store_true')
-    parser.add_argument('--singlebox',
-                        dest='singlebox',
+    parser.add_argument('--doublebox',
+                        dest='doublebox',
                         help='Whether to use the double-system single-box '
                         'setup. This is useful for charged ligands. '
                         'Default is False.',
@@ -77,7 +77,7 @@ included in the restraints, or let the script choose them automatically.
                         help='Whether to just place structures along the '
                         'longest axis, rather then minimising the volume. '
                         'This option is relevant only when using '
-                        '--singlebox. Default is False.',
+                        '--doublebox. Default is False.',
                         default=False,
                         action='store_true')
     parser.add_argument('--keep_intra',
@@ -85,7 +85,7 @@ included in the restraints, or let the script choose them automatically.
                         help='Whether to keep the LJ intramolecular '
                         'interactions when the ligand is decoupled. '
                         'This option is relevant only when using '
-                        '--singlebox. Default is False.',
+                        '--doublebox. Default is False.',
                         default=False,
                         action='store_true')
     parser.add_argument('--lig_ids',
@@ -200,14 +200,14 @@ def main(args):
         # ================
         # single-box setup
         # ================
-        if args.singlebox is True and goodtogo is True:
+        if args.doublebox is True and goodtogo is True:
 
             # create double-system single-box
             # the second ligand (lig) is inserted before the complex in the
             # output gro file (easier to modify topology this way atm)
             mout = double_box(m1=com, m2=lig, r=2.5, d=1.5,
                               bLongestAxis=args.longest_axis, verbose=False)
-            mout.write('singlebox.gro')
+            mout.write('doublebox.gro')
 
             # identify an atom to position restrain: this will be used in both
             # ligands to keep ligand and complex apart
@@ -249,7 +249,7 @@ def main(args):
 
             # run gromacs setup
             # -----------------
-            gmx.solvate(cp='singlebox.gro', cs='spc216.gro', p='doublebox.top', o='solvate.gro')
+            gmx.solvate(cp='doublebox.gro', cs='spc216.gro', p='doublebox.top', o='solvate.gro')
             gmx.write_mdp(mdp='enmin', fout='genion.mdp')
             gmx.grompp(f='genion.mdp', c='solvate.gro', p='doublebox.top', o='genion.tpr', maxwarn=1)
             gmx.genion(s='genion.tpr', p='doublebox.top', o='genion.gro', conc=0.15, neutral=True)
@@ -263,7 +263,7 @@ def main(args):
         # ==================================
         # standard setup with separate boxes
         # ==================================
-        elif args.singlebox is False and goodtogo is True:
+        elif args.doublebox is False and goodtogo is True:
 
             # Setup complex
             # -------------
@@ -322,7 +322,7 @@ def main(args):
 
 
     print('\n\n          ********** Setup Completed **********\n\n')
-    if args.build is True and args.singlebox is False and goodtogo is True:
+    if args.build is True and args.doublebox is False and goodtogo is True:
         print('The input files for the simulations of the complex are:')
         print('    complex/complex.top')
         print('    complex/genion.gro')
@@ -333,7 +333,7 @@ def main(args):
         print('')
         print('Information about the restraints are in:')
         print('    restraints.info')
-    elif args.build is True and args.singlebox is True and goodtogo is True:
+    elif args.build is True and args.doublebox is True and goodtogo is True:
         print('The input files for the simulations are:')
         print('    doublebox.top')
         print('    genion.gro')
