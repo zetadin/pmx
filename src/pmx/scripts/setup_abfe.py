@@ -244,9 +244,6 @@ def main(args):
             if args.keep_intra is True:
                 doubletop.make_nonbond_params(rule=2)
 
-            # add restraints
-            #doubletop.ii = restraints.make_ii(switch_on=args.restr_switch_on,
-            #                                  ligand_first=True)
             # save topology
             doubletop.write('doublebox.top', stateBonded='A')
 
@@ -256,6 +253,12 @@ def main(args):
             gmx.write_mdp(mdp='enmin', fout='genion.mdp')
             gmx.grompp(f='genion.mdp', c='solvate.gro', p='doublebox.top', o='genion.tpr', maxwarn=1)
             gmx.genion(s='genion.tpr', p='doublebox.top', o='genion.gro', conc=0.15, neutral=True)
+
+            # add restraints to topology
+            doubletop = Topology('doublebox.top', assign_types=False)
+            doubletop.ii = restraints.make_ii(switch_on=args.restr_switch_on,
+                                              ligand_first=True)
+            doubletop.write('doublebox.top', stateBonded='A')
 
         # ==================================
         # standard setup with separate boxes
