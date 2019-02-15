@@ -104,6 +104,14 @@ included in the restraints, or let the script choose them automatically.
                         'they are chosen automatically.',
                         default=None,
                         nargs=3)
+    parser.add_argument('--restr_switch_on',
+                        dest='restr_switch_on',
+                        help='Whether to switch the restraints on or off, '
+                        'where "on" means no restraints in stateA, and "off" '
+                        'means no restraints in state B. '
+                        'Default is True (switch on).',
+                        default=True,
+                        action='store_false')
     parser.add_argument('--seed',
                         metavar='int',
                         dest='seed',
@@ -170,7 +178,8 @@ def main(args):
         # write restraints section only if we are not setting up the system
         # solvate/genion do not work well with topologies that contain
         # this restraints section
-        comtop.ii = restraints.make_ii()
+        comtop.ii = restraints.make_ii(switch_on=args.restr_switch_on,
+                                       ligand_first=True)
 
     # -------------------------------
     # save coordinates/topology files
@@ -196,13 +205,12 @@ def main(args):
             # create double-system single-box
             # the second ligand (lig) is inserted before the complex in the
             # output gro file (easier to modify topology this way atm)
-            mout = double_box(m1=lig, m2=com, r=2.5, d=1.5,
+            mout = double_box(m1=com, m2=lig, r=2.5, d=1.5,
                               bLongestAxis=args.longest_axis, verbose=False)
             mout.write('singlebox.gro')
 
-            # identify an atom to restrain: this will be used in both ligands to
-            # keep ligand and complex apart
-
+            # identify an atom to position restrain: this will be used in both
+            # ligands to keep ligand and complex apart
             # reload because indices have changed after lig was merged into complex
             lig = Model(args.lig_crd, renumber_residues=False)
             assign_masses_to_model(lig, ligtop)
@@ -228,22 +236,26 @@ def main(args):
             # create system topology
             # ----------------------
             doubletop = deepcopy(comtop)
-            doubletop.include_itps = [('ligandAB.itp', 'top'), ('ligandBA.itp', 'top')]
-            doubletop.molecules.insert(1, [ligtopBA.name, 1])
+            doubletop.include_itps = [('ligandAB.itp', 'top'), ('ligandBA.itp', 'bottom')]
+            doubletop.molecules.append([ligtopBA.name, 1])
             # merge atomtypes (basically add the dummies)
             doubletop.atomtypes = merge_atomtypes(doubletop.atomtypes, ligtopAB.atomtypes)
             # keep intramolecular interactions?
             if args.keep_intra is True:
                 doubletop.make_nonbond_params(rule=2)
+
+            # add restraints
+            #doubletop.ii = restraints.make_ii(switch_on=args.restr_switch_on,
+            #                                  ligand_first=True)
             # save topology
-            doubletop.write('singlebox.top', stateBonded='A')
+            doubletop.write('doublebox.top', stateBonded='A')
 
             # run gromacs setup
             # -----------------
-            gmx.solvate(cp='singlebox.gro', cs='spc216.gro', p='singlebox.top', o='solvate.gro')
+            gmx.solvate(cp='singlebox.gro', cs='spc216.gro', p='doublebox.top', o='solvate.gro')
             gmx.write_mdp(mdp='enmin', fout='genion.mdp')
-            gmx.grompp(f='genion.mdp', c='solvate.gro', p='singlebox.top', o='genion.tpr', maxwarn=1)
-            gmx.genion(s='genion.tpr', p='singlebox.top', o='genion.gro', conc=0.15, neutral=True)
+            gmx.grompp(f='genion.mdp', c='solvate.gro', p='doublebox.top', o='genion.tpr', maxwarn=1)
+            gmx.genion(s='genion.tpr', p='doublebox.top', o='genion.gro', conc=0.15, neutral=True)
 
         # ==================================
         # standard setup with separate boxes
@@ -267,7 +279,8 @@ def main(args):
 
             # add restraints to topology
             comtop = Topology('complex.top', assign_types=False)
-            comtop.ii = restraints.make_ii()
+            comtop.ii = restraints.make_ii(switch_on=args.restr_switch_on,
+                                           ligand_first=True)
             comtop.write('complex.top', stateBonded='A')
 
             os.chdir('../')
@@ -306,6 +319,24 @@ def main(args):
 
 
     print('\n\n          ********** Setup Completed **********\n\n')
+    if args.build is True and args.singlebox is False and goodtogo is True:
+        print('The input files for the simulations of the complex are:')
+        print('    complex/complex.top')
+        print('    complex/genion.gro')
+        print('')
+        print('The input files for the simulations of the ligand are:')
+        print('    ligand/ligand.top')
+        print('    ligand/genion.gro')
+        print('')
+        print('Information about the restraints are in:')
+        print('    restraints.info')
+    elif args.build is True and args.singlebox is True and goodtogo is True:
+        print('The input files for the simulations are:')
+        print('    doublebox.top')
+        print('    genion.gro')
+        print('')
+        print('Information about the restraints are in:')
+        print('    restraints.info')
 
 
 def _check_topology_has_all_ff_info(top):
@@ -352,7 +383,6 @@ def _add_fixed_posre(top, n):
     ''' n : index of atom to restrain
     '''
     posre = ['[ position_restraints ]',
-             ';  ai    funct            c0            c1          c2',
              '   {n}      1      1000   1000   1000'.format(n=n)]
 
     top.footer = posre + top.footer
@@ -367,10 +397,6 @@ def _find_atom_near_com(m):
     # get index of atom closest to com. Add 1 since gromacs uses idx from 1
     com_idx = np.argmin(distances)+1
     return com_idx
-
-
-def _setup_sample_files(nonequil=False, singlebox=False):
-    pass
 
 
 def entry_point():

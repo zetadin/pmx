@@ -75,7 +75,7 @@ def check_unknown_cmd(unknowns):
     commands are found.
     '''
     expected = ['pmx', 'analyse', 'mutate', 'doublebox', 'gentop', 'gmxlib',
-                'genlib']
+                'genlib', 'abfe']
 
     for cmd in unknowns:
         if cmd not in expected:
