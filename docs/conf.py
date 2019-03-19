@@ -20,11 +20,11 @@
 # -- Project information -----------------------------------------------------
 
 project = u'pmx'
-copyright = u'2018, The Authors'
+copyright = u'2019, The Authors'
 author = u'Daniel Seeliger, Vytas Gapsys, Matteo Aldeghi'
 
 # The short X.Y version
-version = u'2.0dev'
+version = u'3.0dev'
 # The full version, including alpha/beta/rc tags
 release = u''
 
