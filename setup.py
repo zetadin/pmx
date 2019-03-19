@@ -99,5 +99,5 @@ setup(name='pmx',
                   ('pmx/data', ['data/blosum62_new.mat'])
                   ],
       ext_modules=extensions,
-      install_requires=['numpy', 'scipy', 'matplotlib']
+      install_requires=['numpy>=1.14', 'scipy>=1.1', 'matplotlib>=2.2']
       )
