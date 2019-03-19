@@ -34,10 +34,8 @@
 free energy simulations.
 """
 
-from __future__ import print_function, division, absolute_import
 import sys
 import argparse
-from builtins import input
 from pmx import library
 from pmx.model import Model
 from pmx.parser import read_and_format

@@ -35,8 +35,6 @@ that are inherited to the Molecule, Chain and Model classes.
 Take a look there for details...
 """
 
-from __future__ import absolute_import, print_function, division
-from builtins import map
 import sys
 import random
 import copy as cp

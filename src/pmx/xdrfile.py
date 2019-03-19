@@ -30,7 +30,6 @@
 #  Adapted by Daniel Seeliger for use in the pmx package (Aug 2015)
 #
 
-from __future__ import absolute_import, print_function, division
 import numpy as np
 from ctypes import *
 import os.path

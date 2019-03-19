@@ -50,8 +50,6 @@ Geometric measurements:
 
 """
 
-from __future__ import absolute_import, print_function, division
-from builtins import map
 import copy
 from numpy import pi
 from . import library

@@ -1,11 +1,9 @@
-from __future__ import absolute_import, print_function, division
 import sys
 import numpy as np
 from scipy.integrate import simps
 from matplotlib import pyplot as plt
 from copy import deepcopy
 from scipy.special import erf
-from builtins import map, filter, range
 from .utils import data2gauss, gauss_func
 
 __all__ = ['read_dgdl_files', 'integrate_dgdl',

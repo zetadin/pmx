@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function, division, absolute_import
 from pmx.parser import read_and_format
 from pmx.estimators import Jarz, JarzGauss, Crooks, BAR
 from pmx.analysis import read_dgdl_files, plot_work_dist, ks_norm_test

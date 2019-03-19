@@ -33,7 +33,6 @@
 """This module contains classes used in the custom pmx commandline parsing.
 """
 
-from __future__ import absolute_import, print_function, division
 import sys
 import os
 from pmx import __version__

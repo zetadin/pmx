@@ -29,7 +29,6 @@
 # CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 # ----------------------------------------------------------------------
 
-from __future__ import print_function, division, absolute_import
 import os
 import argparse
 from pmx.forcefield import Topology

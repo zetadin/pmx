@@ -55,7 +55,6 @@ Some methods:
 
 """
 
-from __future__ import absolute_import, print_function, division
 import copy
 from numpy import array, linalg, pi, dot, arccos, cross
 from . import library

@@ -34,7 +34,6 @@
 This module contains classes and functions to read gromacs forcefield files.
 """
 
-from __future__ import absolute_import, print_function, division
 import sys
 import os
 from collections import OrderedDict

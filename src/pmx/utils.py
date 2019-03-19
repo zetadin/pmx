@@ -33,14 +33,12 @@
 """Various utility functions and classes
 """
 
-from __future__ import absolute_import, print_function, division
 import os
 import sys
 import types
 import numpy as np
 import re
 import logging
-from builtins import input
 from glob import glob
 
 

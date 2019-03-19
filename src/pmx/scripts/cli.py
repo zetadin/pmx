@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 # simple interface to the available scripts
-from __future__ import print_function, absolute_import
 from argparse import ArgumentParser, RawTextHelpFormatter, SUPPRESS
 import sys
 from pmx import __version__

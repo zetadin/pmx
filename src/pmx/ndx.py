@@ -33,8 +33,6 @@
 """Module containing fuctions dealing with Gromacs index files.
 """
 
-from __future__ import absolute_import, print_function, division
-from builtins import map
 import re
 import sys
 from .parser import readSection

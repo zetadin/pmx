@@ -33,7 +33,6 @@
 """This file contains stuff to deal with the Dunbrack rotamer
 library"""
 
-from __future__ import absolute_import, print_function, division
 from .library import pmx_data_file, _aacids_dic
 from .geometry import fit
 try:

@@ -44,8 +44,6 @@ Examples
 
 """
 
-from __future__ import absolute_import, print_function, division
-from builtins import map
 from numpy import array, linalg, arccos, inner
 from . import _pmx as _p
 

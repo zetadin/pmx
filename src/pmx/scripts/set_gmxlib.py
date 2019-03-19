@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-from __future__ import absolute_import, print_function, division
 import os
 from pmx import model
 from subprocess import call
-from builtins import input
 
 
 def main():

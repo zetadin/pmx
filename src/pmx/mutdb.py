@@ -33,7 +33,6 @@
 """Functions to read the mutation database
 """
 
-from __future__ import absolute_import, print_function, division
 from .model import Model
 from .atom import Atom
 from .molecule import Molecule

@@ -46,7 +46,6 @@ Usage:
     build chain with defined dihedral angles
 """
 
-from __future__ import absolute_import, print_function, division
 import sys
 from numpy import array, pi, linalg, cross
 from . import library

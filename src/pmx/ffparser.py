@@ -33,7 +33,6 @@
 """docs to be added
 """
 
-from __future__ import absolute_import, print_function, division
 import sys
 from .library import _aliases, pmx_data_file
 from .parser import parseList, kickOutComments, readSection
