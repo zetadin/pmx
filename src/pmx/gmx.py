@@ -277,10 +277,8 @@ def write_mdp(mdp, fout='mdpfile.mdp', nsteps=10000, cutoff=1.0, T=300):
     """Writes a few standard mdp files.
 
     With the argument ``mdp`` you can choose from a few standard predefined
-    mdp file:
-        - enmin :energy minimisation;
-        - npt : simulation in NPT ensemble;
-        - npt-restr : simulation in NPT ensemble with -DPOSRES defined;
+    mdp file: "enmin" (energy minimisation); "npt" (simulation in NPT ensemble);
+    "npt-restr" (simulation in NPT ensemble with -DPOSRES defined).
 
     Parameters
     ----------

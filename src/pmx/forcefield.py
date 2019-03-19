@@ -1765,8 +1765,8 @@ class Topology(TopolBase):
         '''Create nonbonded params needed to keep LJ intramolecular interactions
         when decoupling a ligand.
 
-        Params
-        ------
+        Parameters
+        ----------
         rule : int
             combination rule to use, following notation in the Gromacs manual
             in section 5.3.2.
