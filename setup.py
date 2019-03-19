@@ -28,16 +28,8 @@
 # CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 # ----------------------------------------------------------------------
 
-from distutils.core import setup, Extension
-from distutils.command.install_data import install_data
+from setuptools import setup, Extension
 import versioneer
-
-
-class install_data_files(install_data):
-    def run(self):
-        install_cmd = self.get_finalized_command('install')
-        self.install_dir = getattr(install_cmd, 'install_lib')
-        return install_data.run(self)
 
 
 def readme():
@@ -45,7 +37,10 @@ def readme():
         return f.read()
 
 
-pmx = Extension('pmx/_pmx',
+# ----------
+# Extensions
+# ----------
+pmx = Extension('pmx._pmx',
                 libraries=['m'],
                 include_dirs=['src/pmx'],
                 sources=['src/pmx/Geometry.c',
@@ -54,7 +49,7 @@ pmx = Extension('pmx/_pmx',
                          'src/pmx/Energy.c']
                 )
 
-xdrio = Extension('pmx/_xdrio',
+xdrio = Extension('pmx._xdrio',
                   libraries=['m'],
                   include_dirs=['src/xdr'],
                   sources=['src/xdr/xdrfile.c',
@@ -63,22 +58,14 @@ xdrio = Extension('pmx/_xdrio',
                   )
 extensions = [pmx, xdrio]
 
-def merge_two_dicts(x, y):
-    z = x.copy()
-    z.update(y)
-    return z
-
-installdata_cmdclass = {'install_data': install_data_files}
-versioneer_cmdclass = versioneer.get_cmdclass()
-mycmdclass = merge_two_dicts(installdata_cmdclass, versioneer_cmdclass)
-
 # -----
 # Setup
 # -----
 setup(name='pmx',
       version=versioneer.get_version(),
-      cmdclass=mycmdclass,
+      cmdclass=versioneer.get_cmdclass(),
       description='Python Toolbox structure file editing and writing simulation setup/analysis tools',
+      long_description=readme(),
       classifiers=[
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: GNU General Public License (GPL)',
@@ -88,16 +75,19 @@ setup(name='pmx',
                   ],
       author='Daniel Seeliger',
       author_email='seeliger.biosoft@gmail.de',
-      url='https://github.com/dseeliger/pmx/',
-      long_description=readme(),
+      url='https://github.com/deGrootLab/pmx',
+      license='GPL 3',
       packages=['pmx'],
-      data_files=[('pmx/data', ['data/bbdep.pkl']),
-                  ('pmx/data', ['data/bp.pkl']),
-                  ('pmx/data', ['data/ffamber99sb.rtp']),
-                  ('pmx/data', ['data/ffamber99sbbon.itp']),
-                  ('pmx/data', ['data/ffamber99sbnb.itp']),
-                  ('pmx/data', ['data/blosum62_new.mat'])
-                  ],
+      include_package_data=True,
+      package_data={'data': ['bbdep.pkl',
+                             'bp.pkl',
+                             'ffamber99sb.rtp',
+                             'ffamber99sbbon.itp',
+                             'ffamber99sbnb.itp',
+                             'blosum62_new.mat'],
+                    },
+      zip_safe=False,
       ext_modules=extensions,
+      python_requires=">=2.7, <3",
       install_requires=['numpy>=1.14', 'scipy>=1.1', 'matplotlib>=2.2']
       )
