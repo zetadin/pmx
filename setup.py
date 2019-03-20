@@ -42,19 +42,19 @@ def readme():
 # ----------
 pmx = Extension('pmx._pmx',
                 libraries=['m'],
-                include_dirs=['src/pmx'],
-                sources=['src/pmx/Geometry.c',
-                         'src/pmx/wrap_Geometry.c',
-                         'src/pmx/init.c',
-                         'src/pmx/Energy.c']
+                include_dirs=['pmx/extensions/pmx'],
+                sources=['pmx/extensions/pmx/Geometry.c',
+                         'pmx/extensions/pmx/wrap_Geometry.c',
+                         'pmx/extensions/pmx/init.c',
+                         'pmx/extensions/pmx/Energy.c']
                 )
 
 xdrio = Extension('pmx._xdrio',
                   libraries=['m'],
-                  include_dirs=['src/xdr'],
-                  sources=['src/xdr/xdrfile.c',
-                           'src/xdr/xdrfile_trr.c',
-                           'src/xdr/xdrfile_xtc.c']
+                  include_dirs=['pmx/extensions/xdr'],
+                  sources=['pmx/extensions/xdr/xdrfile.c',
+                           'pmx/extensions/xdr/xdrfile_trr.c',
+                           'pmx/extensions/xdr/xdrfile_xtc.c']
                   )
 extensions = [pmx, xdrio]
 
@@ -79,15 +79,8 @@ setup(name='pmx',
       license='GPL 3',
       packages=['pmx'],
       include_package_data=True,
-      package_data={'data': ['bbdep.pkl',
-                             'bp.pkl',
-                             'ffamber99sb.rtp',
-                             'ffamber99sbbon.itp',
-                             'ffamber99sbnb.itp',
-                             'blosum62_new.mat'],
-                    },
       zip_safe=False,
       ext_modules=extensions,
       python_requires=">=2.7, <3",
-      install_requires=['numpy>=1.14', 'scipy>=1.1', 'matplotlib>=2.2']
+      install_requires=['numpy>=1.14', 'scipy>=1.1', 'matplotlib>=2.0']
       )

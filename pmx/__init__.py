@@ -38,6 +38,10 @@ functionality. Take a look at the example scripts.
 
 """
 
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
+
 import os
 from atom import *
 from molecule import *
@@ -49,9 +53,3 @@ from options import *
 XX       =  0
 YY       =  1
 ZZ       =  2
-
-
-from ._version import get_versions
-__version__ = get_versions()['version']
-PMX_VERSION = __version__
-del get_versions

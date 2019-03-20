@@ -1,5 +1,4 @@
 graft pmx
-graft src
 include versioneer.py
 include pmx/_version.py
 include README.md
