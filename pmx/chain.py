@@ -339,7 +339,7 @@ class Chain(Atomselection):
             changed = False
         self.cbuild('GLY')
         m = self.cterminus() # new terminus
-        
+
         try: # try deleting from the model
             fooID = m['O'].id
             foo = self.model.fetch_atoms(fooID,"byid")
@@ -361,7 +361,6 @@ class Chain(Atomselection):
         m.set_resname('NME')
         if changed:
             self.a2nm()
-
         
         
     def attach_chain(self, newchain, phi = -139., psi = 135.):
@@ -388,8 +387,13 @@ class Chain(Atomselection):
                     h1 = nterm.fetch('1H')[0] # will become H
                     h1.name = 'H'
                 except:
-                    h1 = nterm.fetch('H1')[0] # will become H
-                    h1.name = 'H'
+                    try:
+                        h1 = nterm.fetch('H1')[0] # will become H
+                        h1.name = 'H'
+                    except:
+                        h1 = nterm.fetch('HN')[0] # will become H
+                        h1.name = 'H'
+                
             else:
                 try:
                     del nterm['H1']

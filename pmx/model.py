@@ -83,7 +83,7 @@ ZZ       =  2
 class Model(Atomselection):
 
     def __init__(self, filename = None, pdbline = None, renumber_atoms=True,
-                 renumber_residues = True, bPDBTER= False, bNoNewID=True, **kwargs):
+                 renumber_residues = True, bPDBTER= False, bNoNewID=True, bPDBGAP=False, **kwargs):
         
         Atomselection.__init__(self)
         self.title = 'PMX MODEL'
@@ -100,7 +100,7 @@ class Model(Atomselection):
             setattr(self,key,val)
 
         if filename is not None:
-            self.read(filename,bPDBTER,bNoNewID)
+            self.read(filename,bPDBTER,bNoNewID,bPDBGAP)
         if pdbline is not None:
             self.__readPDB(pdbline = pdbline)
         if self.atoms:
@@ -327,8 +327,18 @@ class Model(Atomselection):
         self.make_residues()
         self.unity  = 'A'
         return self
-    
-    def __readPDBTER(self,fname=None, pdbline=None, bNoNewID=True):
+   
+    def __check_if_gap( self, atC, atN ):
+        if atC==None:
+            return(False)
+        if atN.name != 'N':
+            return(False)
+        d = atC - atN
+        if d > 1.7: # bond 
+            return(True)
+        return(False)
+ 
+    def __readPDBTER(self,fname=None, pdbline=None, bNoNewID=True, bPDBGAP=False):
         if pdbline:
             l = pdbline.split('\n')
         else:
@@ -343,6 +353,7 @@ class Model(Atomselection):
         prevResName = ' '
         usedChainIDs = ''
         atomcount = 1
+        prevCatom = None
         for line in l:
 	    if 'TER' in line:
 		bNewChain = True
@@ -352,6 +363,8 @@ class Model(Atomselection):
 #		if (a.chain_id != prevID) and (a.chain_id != ' '): # identify chain change by ID (when no TER is there)
 		if (a.chain_id != prevID): # identify chain change by ID (when no TER is there)
 		    bNewChain = True
+                if (self.__check_if_gap( prevCatom,a )==True and bPDBGAP==True):
+                    bNewChain = True
                 if (a.resnr != prevResID):
                     try:
                         if a.resnr != prevResID+1:
@@ -366,6 +379,8 @@ class Model(Atomselection):
                 prevResID = a.resnr
                 prevAtomName = a.name
                 prevResName = a.resname
+                if a.name == 'C':
+                    prevCatom = a
 		if bNewChain==True:
 		    if (a.chain_id==' ') or (a.chain_id==chainID) or (a.chain_id in usedChainIDs):
 			# find a new chain id
@@ -451,11 +466,11 @@ class Model(Atomselection):
         self.unity = 'nm'
         return self
 
-    def read(self, filename, bPDBTER=False, bNoNewID=True ):
+    def read(self, filename, bPDBTER=False, bNoNewID=True, bPDBGAP=False ):
         ext = filename.split('.')[-1]
         if ext == 'pdb':
 	    if bPDBTER:
-                return self.__readPDBTER( filename, None, bNoNewID )
+                return self.__readPDBTER( filename, None, bNoNewID, bPDBGAP )
 	    else:
                 return self.__readPDB( filename )
         elif ext == 'gro':
