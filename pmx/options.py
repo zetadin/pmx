@@ -282,7 +282,7 @@ class FileOption(OptionBase):
 
 class Commandline:
     """ Class for commandline parsing """
-    def __init__(self, cmdline, options = [], fileoptions = [], program_desc = [] , check_for_existing_files = False, version = "1.0"):
+    def __init__(self, cmdline, options = [], fileoptions = [], program_desc = [] , check_for_existing_files = False, version = __version__):
 
         self.opt = {}
         self.cmdline = cmdline
@@ -368,7 +368,7 @@ class Commandline:
 
     def __str__(self):
         s = '---------------------------------------------------------------------------------------------------------\n'
-        s+= ' Program: %s (v. %s) | pmx version %s\n' % (self.prog_name, self.version, __version__)
+        s+= ' Program: %s | pmx version %s\n' % (self.prog_name, __version__)
         s += '---------------------------------------------------------------------------------------------------------\n'
         s += '     %-20s  | %-15s | %-20s   | %s \n' %( "File Options", "Type(s)|Mode", "File(s)", "Description")
         s += '---------------------------------------------------------------------------------------------------------\n'
