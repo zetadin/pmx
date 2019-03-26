@@ -637,10 +637,8 @@ def main(args):
         if args.slice is not None:
             first = args.slice[0]
             last = args.slice[1]
-            _tee(out, ' First trajectories read: %s and %s'
-                 % (filesAB[first], filesBA[first]))
-            _tee(out, ' Last trajectories  read: %s and %s'
-                 % (filesAB[last-1], filesBA[last-1]))
+            _tee(out, ' First trajectory read: %s' % first )
+            _tee(out, ' Last trajectory read: %s' % last )
             _tee(out, '')
             filesAB = filesAB[first:last]
             filesBA = filesBA[first:last]
