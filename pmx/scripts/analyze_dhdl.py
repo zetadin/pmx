@@ -685,10 +685,18 @@ def main(args):
     elif args.iA is not None and args.iB is not None:
         res_ab = []
         res_ba = []
-        print('\t\tReading integrated values (A->B) from', args.iA)
+        print('  Reading integrated values (A->B) from', args.iA)
         res_ab.extend(_data_from_file(args.iA))
-        print('\t\tReading integrated values (B->A) from', args.iB)
+        print('  Reading integrated values (B->A) from', args.iB)
         res_ba.extend(_data_from_file(args.iB))
+        # If slice values provided, select the files needed.
+        if args.slice is not None:
+            first = args.slice[0]
+            last = args.slice[1]
+            _tee(out, '  Keeping work values from %i to %i.' % (first, last))
+            _tee(out, '')
+            res_ab = res_ab[first:last]
+            res_ba = res_ba[first:last]
     else:
         exit('\nERROR: you need to provide either none of both sets of '
              'integrated work values.')
