@@ -33,7 +33,7 @@ __doc__ = """Classes for commandline parsing"""
 
 #======================================================
 import sys, os
-from pmx import PMX_VERSION
+from pmx import __version__
 
 class OptionBase:
     """ base container for a commandline option """
@@ -48,7 +48,7 @@ class OptionBase:
         self.filenames = []
         self._n_output_lines = 1
         self._longest_list = None
-        
+
     def _make_text(self):
         """ Formating functions. Splits a long text line into blocks """
         if len(self.desc[0]) > 25:
@@ -60,7 +60,7 @@ class OptionBase:
                     line+= text.pop(0)+' '
                 new_text.append( line )
             self.desc =  new_text
-            
+
     def _get_number_of_lines(self):
         if len(self.filenames) > len(self.desc):
             self._n_output_lines = len(self.filenames)
@@ -68,7 +68,7 @@ class OptionBase:
         else:
             self._n_output_lines = len(self.desc)
             self._longest_list = 'desc'
-        
+
 
 
 class Option(OptionBase):
@@ -83,7 +83,7 @@ class Option(OptionBase):
         self.desc = [desc]
         self.is_set = False
         self.parsed_opts = []
-        
+
     def __error(self, arg):
         print >>sys.stderr,"Error: Option \"%s\" (%s) is not compatible with argument ->" % (self.flag, self.type), arg
         sys.exit(1)
@@ -92,7 +92,7 @@ class Option(OptionBase):
         if self.type in ['rvec','ivec','svec']:
             if len( arg ) != 3:
                 self.__error(arg)
-            self.value = []            
+            self.value = []
 
         if self.type == 'int':
             try:
@@ -106,7 +106,7 @@ class Option(OptionBase):
                 self.__error(arg)
         elif self.type == 'string':
             self.value = arg
-            
+
         elif self.type == 'rvec':
             for x in arg:
                 try:
@@ -122,8 +122,8 @@ class Option(OptionBase):
         elif self.type == 'svec':
             for x in arg:
                 self.value.append( x )
-                
-        
+
+
     def __str__(self):
         if self.type == 'bool':
             flag = '-[no]'+self.flag[1:]
@@ -131,21 +131,21 @@ class Option(OptionBase):
             flag = self.flag
         if self._n_output_lines == 1:
             if self.is_set:
-                s = '     %-20s  | %-15s | %-20s   | %s ' %( flag+' !', self.type, self.value, self.desc[0])    
+                s = '     %-20s  | %-15s | %-20s   | %s ' %( flag+' !', self.type, self.value, self.desc[0])
             else:
                 s = '     %-20s  | %-15s | %-20s   | %s ' %( flag, self.type, self.value, self.desc[0])
         else:
             if self.is_set:
-                s = '     %-20s  | %-15s | %-20s   | %s \n' %( flag+' !', self.type, self.value, self.desc[0])    
+                s = '     %-20s  | %-15s | %-20s   | %s \n' %( flag+' !', self.type, self.value, self.desc[0])
             else:
                 s = '     %-20s  | %-15s | %-20s   | %s \n' %( flag, self.type, self.value, self.desc[0])
             for i in range(1, len(self.desc)-1 ):
-                s += '     %-20s  | %-15s | %-20s   | %s \n' %( "", "", "", self.desc[i])    
-            s += '     %-20s  | %-15s | %-20s   | %s' %( "", "", "", self.desc[-1])    
-        
+                s += '     %-20s  | %-15s | %-20s   | %s \n' %( "", "", "", self.desc[i])
+            s += '     %-20s  | %-15s | %-20s   | %s' %( "", "", "", self.desc[-1])
+
         return s
 
-        
+
     def parse(self,  cmdline, flag_list ):
 
         # check no-bools
@@ -172,7 +172,7 @@ class Option(OptionBase):
                                 self.__get_arg(argument)
                                 self.parsed_opts.append(i)
                                 self.parsed_opts.append(i+1)
-                            
+
                     elif self.type in ['rvec','ivec','svec']:
                         if len(cmdline) > i-3:
                             argument = cmdline[i+1:i+4]
@@ -185,12 +185,12 @@ class Option(OptionBase):
                             self.__error()
         self._make_text()
         self._get_number_of_lines()
-                        
+
 
 class FileOption(OptionBase):
     """ container for file option """
     def __init__(self, flag, mode, ftypes, default, desc):
-        
+
         OptionBase.__init__(self)
         self.flag = flag
         self.mode = mode
@@ -202,14 +202,14 @@ class FileOption(OptionBase):
         self.is_set = False
         self.parsed_opts = []
         self.__add_file_extension()
-            
+
     def __get_arg(self, filename_or_list ):
         if hasattr( filename_or_list, "append"): # list
             self.filenames = filename_or_list
         else:
             self.filenames = [filename_or_list]
         self.__add_file_extension()
-        
+
     def __add_file_extension(self):
         new_file_list = []
         if self.types[0] != 'dir':
@@ -221,7 +221,7 @@ class FileOption(OptionBase):
                 else:
                     new_file_list.append( f )
             self.filenames = new_file_list
-        
+
     def parse(self, cmdline, flag_list):
 
         for i, arg in enumerate(cmdline):
@@ -231,7 +231,7 @@ class FileOption(OptionBase):
                 file_lst = []
                 if 'm' in self.mode.split('/'):
 #                if self.mode[-1] == 'm': # multiple files
-                    
+
                     for k, f in enumerate(cmdline[i+1:]):
                         if f not in flag_list:
                             file_lst.append( f )
@@ -254,35 +254,35 @@ class FileOption(OptionBase):
         if self._n_output_lines == 1:
             filename = self.filenames[0]
             if self.is_set:
-                s = '     %-20s  | %-15s | %-20s   | %s ' %( self.flag+' !', ','.join(self.types)+"|"+self.mode, filename, self.desc[0])    
+                s = '     %-20s  | %-15s | %-20s   | %s ' %( self.flag+' !', ','.join(self.types)+"|"+self.mode, filename, self.desc[0])
             else:
                 s = '     %-20s  | %-15s | %-20s   | %s ' %( self.flag, ','.join(self.types)+"|"+self.mode, filename, self.desc[0])
         else:
             filename = self.filenames[0]
             if self.is_set:
-                s = '     %-20s  | %-15s | %-20s   | %s \n' %( self.flag+' !', ','.join(self.types)+"|"+self.mode, filename, self.desc[0])    
+                s = '     %-20s  | %-15s | %-20s   | %s \n' %( self.flag+' !', ','.join(self.types)+"|"+self.mode, filename, self.desc[0])
             else:
                 s = '     %-20s  | %-15s | %-20s   | %s \n' %( self.flag, ','.join(self.types)+"|"+self.mode, filename, self.desc[0])
-            
+
             if self._longest_list == 'files':
                 for i in range(1, len(self.desc) ):
-                    s += '     %-20s  | %-15s | %-20s   | %s \n' %( "", "", self.filenames[i], self.desc[i])    
+                    s += '     %-20s  | %-15s | %-20s   | %s \n' %( "", "", self.filenames[i], self.desc[i])
                 for i in range(len(self.desc), len(self.filenames)-1 ):
-                    s += '     %-20s  | %-15s | %-20s   | %s \n' %( "", "", self.filenames[i], "")    
-                s += '     %-20s  | %-15s | %-20s   | %s ' %( "", "", self.filenames[-1], "")    
+                    s += '     %-20s  | %-15s | %-20s   | %s \n' %( "", "", self.filenames[i], "")
+                s += '     %-20s  | %-15s | %-20s   | %s ' %( "", "", self.filenames[-1], "")
 
             elif self._longest_list == 'desc':
                 for i in range(1, len(self.filenames) ):
-                    s += '     %-20s  | %-15s | %-20s   | %s \n' %( "", "", self.filenames[i], self.desc[i])    
+                    s += '     %-20s  | %-15s | %-20s   | %s \n' %( "", "", self.filenames[i], self.desc[i])
                 for i in range(len(self.filenames), len(self.desc)-1 ):
-                    s += '     %-20s  | %-15s | %-20s   | %s \n' %( "", "", "", self.desc[i])    
-                s += '     %-20s  | %-15s | %-20s   | %s ' %( "", "", "", self.desc[-1])    
+                    s += '     %-20s  | %-15s | %-20s   | %s \n' %( "", "", "", self.desc[i])
+                s += '     %-20s  | %-15s | %-20s   | %s ' %( "", "", "", self.desc[-1])
         return s
 
-                        
+
 class Commandline:
     """ Class for commandline parsing """
-    def __init__(self, cmdline, options = [], fileoptions = [], program_desc = [] , check_for_existing_files = False, version = "1.0"):
+    def __init__(self, cmdline, options = [], fileoptions = [], program_desc = [] , check_for_existing_files = False, version = __version__):
 
         self.opt = {}
         self.cmdline = cmdline
@@ -305,10 +305,10 @@ class Commandline:
         print self
         if self.opt['-h'].value == True:
             sys.exit(0)
-        self.__check_for_unparsed_args()            
+        self.__check_for_unparsed_args()
         if check_for_existing_files:
             self.__check_if_files_exist()
-        
+
 
     def __print_program_descr(self):
         print
@@ -331,7 +331,7 @@ class Commandline:
                 return opt.filenames
             else:
                 return opt.filename
-            
+
     def __add_default_help_option( self ):
         h_opt = Option('-h','bool', False, "Show help message and quit")
         self.options.insert(0, h_opt)
@@ -343,7 +343,7 @@ class Commandline:
                 print >>sys.stderr, "Error: Option flag \"%s\" defined multiple times" % opt.flag
                 sys.exit(1)
             olist.append( opt.flag )
-        
+
     def parse_options( self):
         for o in self.options:
             o.parse( self.cmdline, self.flag_list )
@@ -354,9 +354,9 @@ class Commandline:
         for fo in self.fileoptions:
             fo.parse( self.cmdline, self.flag_list)
             self.parsed_opts.extend( fo.parsed_opts )
-            
 
-            
+
+
     def __get_flags(self):
         for arg in self.cmdline:
             if arg[0] == '-':
@@ -368,20 +368,20 @@ class Commandline:
 
     def __str__(self):
         s = '---------------------------------------------------------------------------------------------------------\n'
-        s+= ' Program: %s (v. %s) | pmx version %s\n' % (self.prog_name, self.version, PMX_VERSION)
+        s+= ' Program: %s | pmx version %s\n' % (self.prog_name, __version__)
         s += '---------------------------------------------------------------------------------------------------------\n'
         s += '     %-20s  | %-15s | %-20s   | %s \n' %( "File Options", "Type(s)|Mode", "File(s)", "Description")
         s += '---------------------------------------------------------------------------------------------------------\n'
         for o in self.fileoptions:
             s+=str(o)+'\n'
         s += '---------------------------------------------------------------------------------------------------------\n'
-        s += '     %-20s  | %-15s | %-20s   | %s \n' %( "Options", "Type", "Value", "Description")   
+        s += '     %-20s  | %-15s | %-20s   | %s \n' %( "Options", "Type", "Value", "Description")
         s += '---------------------------------------------------------------------------------------------------------\n'
         for o in self.options:
             s+=str(o)+'\n'
         s += '---------------------------------------------------------------------------------------------------------\n'
         return s
-                    
+
 
     def __check_flags(self):
         for flag in self.flag_list:
@@ -389,7 +389,7 @@ class Commandline:
             if n != 1:
                 print >>sys.stderr,"Error: Flag \"%s\" appears %d times in commandline" %(flag, n)
                 sys.exit(1)
-            
+
     def __check_for_unparsed_args(self):
         error_occured = False
         for i, arg in enumerate(self.cmdline):
@@ -398,8 +398,8 @@ class Commandline:
                 error_occured = True
         if error_occured:
             sys.exit(1)
-                
-            
+
+
     def __check_if_files_exist( self ):
         error_occured = False
         for o in self.fileoptions:
@@ -414,29 +414,27 @@ class Commandline:
 
 
 
-if __name__=='__main__':          
-    
+if __name__=='__main__':
+
     options = [
         Option( "-s", "string", "lalala", "some string"),
         Option( "-r", "rvec", [1,2,3], "some string"),
         Option( "-b", "bool", True, "bool"),
         Option( "-r2", "rvec", [1,2,3], "some vector that does wonderful things and returns always segfaults")
         ]
-    
+
     files = [
         FileOption("-pdb", "r",["pdb"],"xx.pdb", "pdb file with many other things we do not care about at the moment. but anyway... nice"),
         FileOption("-pdb2", "r/m",["pdb"],"xx.pdb", "pdb file"),
         FileOption("-pdb3", "w",["pdb"],"xx.pdb", "pdb file")
         ]
-    
+
     help_text = ['does a lot of useful stuff',
                  'most of the time'
                  ]
-    
+
     cmdl = Commandline( sys.argv, options = options, fileoptions = files, program_desc = help_text, check_for_existing_files = False )
-    
-    
+
+
     print cmdl['-pdb']
     print cmdl['-pdb2']
-
-

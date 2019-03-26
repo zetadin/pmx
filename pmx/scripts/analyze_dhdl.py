@@ -41,6 +41,7 @@ import numpy as np
 from scipy.integrate import simps
 import pickle
 import argparse
+from cli import check_unknown_cmd
 
 # Constants
 kb = 0.00831447215   # kJ/(K*mol)
@@ -292,9 +293,9 @@ def plot_work_dist(wf, wr, fname='Wdist.png', nbins=20, dG=None, dGerr=None,
         val.set_lw(2)
     plt.subplot(1, 2, 2)
     plt.hist(wf, bins=nbins, orientation='horizontal', facecolor='green',
-             alpha=.75, normed=True)
+             alpha=.75, density=True)
     plt.hist(wr, bins=nbins, orientation='horizontal', facecolor='blue',
-             alpha=.75, normed=True)
+             alpha=.75, density=True)
 
     x = np.arange(mini, maxi, .5)
 
@@ -559,7 +560,8 @@ def parse_options():
                         help='Resolution of the plot. Default is 300.',
                         default=300)
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
+    check_unknown_cmd(unknown)
 
     from pmx import __version__
     args.pmx_version = __version__
@@ -883,6 +885,10 @@ def main(args):
     print("   Execution time = %02d:%02d:%02d\n" % (h, m, s))
 
 
-if __name__ == '__main__':
+def entry_point():
     args = parse_options()
     main(args)
+
+
+if __name__ == '__main__':
+    entry_point()

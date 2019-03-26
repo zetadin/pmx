@@ -19,18 +19,30 @@ I mostly use pmx to write short scripts which perform some changes in pdb files,
 
 Checkout the source code and run the usual python installation
 ```
-git clone https://github.com/dseeliger/pmx/ pmx
-cd pmx 
-sudo python setup.py install
+git clone https://github.com/deGrootLab/pmx pmx
+cd pmx
+```
+For installation type the command:
+```
+python setup.py install
+```
+or
+```
+  pip install .
 ```
 
 ## Software Requirements ##
 
   * [numpy](http://numpy.scipy.org/)
   * [scipy](http://www.scipy.org/)
-  * [matplotlib](http://matplotlib.org/) ( for analysis scripts )
+  * [matplotlib](http://matplotlib.org/)
 
 ## Getting Started ##
+
+Once installed, you can access the scripts via the command line tool ``pmx``.
+Type ``pmx -h`` to view the help message. The command ``pmx gmxlib`` will help
+you locate the pmx force field libraries, which are placed in the data folder
+where pmx was installed.
 
 pmx stores structure data in Python classes. The "Model" class is the uppermost class
 which contains severals lists of Atoms, Molecules and Chains.

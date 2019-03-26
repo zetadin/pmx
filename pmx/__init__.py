@@ -37,9 +37,10 @@ Quite fancy is the interface to the GROMACS command line parsing
 functionality. Take a look at the example scripts.
 
 """
-__version__ = '1.1.0dev'
 
-PMX_VERSION = __version__
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
 
 import os
 from atom import *
@@ -49,9 +50,6 @@ from model import *
 from options import *
 
 
-XX       =  0             
-YY       =  1             
+XX       =  0
+YY       =  1
 ZZ       =  2
-
-
-
