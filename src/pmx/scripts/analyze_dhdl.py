@@ -344,10 +344,8 @@ def main(args):
         if args.slice is not None:
             first = args.slice[0]
             last = args.slice[1]
-            _tee(out, ' First trajectories read: %s and %s'
-                 % (filesAB[first], filesBA[first]), quiet=quiet)
-            _tee(out, ' Last trajectories  read: %s and %s'
-                 % (filesAB[last-1], filesBA[last-1]), quiet=quiet)
+            _tee(out, ' First trajectory read: %i' % first, quiet=quiet)
+            _tee(out, ' Last trajectory read: %i' % last, quiet=quiet)
             _tee(out, '', quiet=quiet)
             filesAB = filesAB[first:last]
             filesBA = filesBA[first:last]
@@ -397,10 +395,18 @@ def main(args):
     elif args.iA is not None and args.iB is not None:
         res_ab = []
         res_ba = []
-        print('\t\tReading integrated values (A->B) from', args.iA)
+        print('  Reading integrated values (A->B) from', args.iA)
         res_ab.extend(_data_from_file(args.iA))
-        print('\t\tReading integrated values (B->A) from', args.iB)
+        print('  Reading integrated values (B->A) from', args.iB)
         res_ba.extend(_data_from_file(args.iB))
+        # If slice values provided, select the files needed.
+        if args.slice is not None:
+            first = args.slice[0]
+            last = args.slice[1]
+            _tee(out, '  Keeping work values from %i to %i.' % (first, last))
+            _tee(out, '')
+            res_ab = res_ab[first:last]
+            res_ba = res_ba[first:last]
 
     # If a mix of dhdl.xvg files and integrated work values are given
     # ---------------------------------------------------------------
