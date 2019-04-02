@@ -37,8 +37,8 @@ class PmxCli:
         getattr(self, args.command)()
 
     def mutate(self):
-        import mutate_v2
-        mutate_v2.entry_point()
+        import mutate
+        mutate.entry_point()
 
     def gentop(self):
         import generate_hybrid_topology
