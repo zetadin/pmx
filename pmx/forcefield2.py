@@ -766,17 +766,26 @@ class TopolBase:
 #		    print ang[0].id, ang[1].id, ang[2].id
 #		    print state
 #	            print ang
+#                   print len(ang)
 		    #MS check type here, for charmm its different, Urey-Bradley
 		    if ang[3]==1 :
-                        print >>fp, '%6d %6d %6d %6d %14.6f %14.6f %14.6f %14.6f ; %s %s %s' % \
-                          (ang[0].id, ang[1].id, ang[2].id,ang[3], ang[4][1], \
-                           ang[4][2], ang[5][1], ang[5][2], ang[0].name, ang[1].name, ang[2].name)
+                        # two possibilities: angle actually has a B-state or there is A state only
+                        if(len(ang)>5): # B-state exists
+                            print >>fp, '%6d %6d %6d %6d %14.6f %14.6f %14.6f %14.6f ; %s %s %s' % \
+                              (ang[0].id, ang[1].id, ang[2].id,ang[3], ang[4][1], \
+                               ang[4][2], ang[5][1], ang[5][2], ang[0].name, ang[1].name, ang[2].name)
+                        else: # A-state only
+                            print >>fp, '%6d %6d %6d %6d %14.6f %14.6f' % (ang[0].id, ang[1].id, ang[2].id,ang[3], ang[4][0], ang[4][1])
 	            elif ang[3]==5:
-                        print >>fp, '%6d %6d %6d %6d %14.6f %14.6f %14.6f %14.6f %14.6f %14.6f %14.6f %14.6f ; %s %s %s' % \
-                          (ang[0].id, ang[1].id, ang[2].id,ang[3], ang[4][1], \
-                           ang[4][2], ang[4][3], ang[4][4], ang[5][1], \
-			   ang[5][2], ang[5][3], ang[5][4], \
-			   ang[0].name, ang[1].name, ang[2].name)
+                        # two possibilities: angle actually has a B-state or there is A state only
+                        if(len(ang)>5): # B-state exists
+                            print >>fp, '%6d %6d %6d %6d %14.6f %14.6f %14.6f %14.6f %14.6f %14.6f %14.6f %14.6f ; %s %s %s' % \
+                              (ang[0].id, ang[1].id, ang[2].id,ang[3], ang[4][1], \
+                               ang[4][2], ang[4][3], ang[4][4], ang[5][1], \
+                               ang[5][2], ang[5][3], ang[5][4], \
+                               ang[0].name, ang[1].name, ang[2].name)
+                        else: # A-state only
+                            print >>fp, '%6d %6d %6d %6d %14.6f %14.6f %14.6f %14.6f' % (ang[0].id, ang[1].id, ang[2].id,ang[3], ang[4][1],ang[4][2], ang[4][3], ang[4][4] )
 		    else :
 		        print "Don't know how to print angletype %d" % ang[3]
 		        exit()
