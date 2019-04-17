@@ -521,7 +521,12 @@ class TopolBase:
               full_morphe = True):
 
         fp = open(outfile,'w')
-        if not self.is_itp:
+        # determine if outfile is .itp
+        is_out_itp = False
+        if os.path.splitext( outfile )[1] == '.itp':
+            is_out_itp = True
+
+        if not is_out_itp:
             self.write_header(fp)
         if self.atoms:
             if self.has_atomtypes:
@@ -545,8 +550,8 @@ class TopolBase:
                 self.write_vsites4(fp)
 	    if self.has_posre:
 		self.write_posre(fp)
-        self.write_footer(fp)
-        if not self.is_itp:
+        if not is_out_itp:
+            self.write_footer(fp)
             self.write_system(fp)
             self.write_molecules(fp)
         if self.atoms:
@@ -766,7 +771,6 @@ class TopolBase:
 #		    print ang[0].id, ang[1].id, ang[2].id
 #		    print state
 #	            print ang
-#                   print len(ang)
 		    #MS check type here, for charmm its different, Urey-Bradley
 		    if ang[3]==1 :
                         # two possibilities: angle actually has a B-state or there is A state only
@@ -776,14 +780,15 @@ class TopolBase:
                                ang[4][2], ang[5][1], ang[5][2], ang[0].name, ang[1].name, ang[2].name)
                         else: # A-state only
                             print >>fp, '%6d %6d %6d %6d %14.6f %14.6f' % (ang[0].id, ang[1].id, ang[2].id,ang[3], ang[4][0], ang[4][1])
+	
 	            elif ang[3]==5:
                         # two possibilities: angle actually has a B-state or there is A state only
                         if(len(ang)>5): # B-state exists
                             print >>fp, '%6d %6d %6d %6d %14.6f %14.6f %14.6f %14.6f %14.6f %14.6f %14.6f %14.6f ; %s %s %s' % \
                               (ang[0].id, ang[1].id, ang[2].id,ang[3], ang[4][1], \
                                ang[4][2], ang[4][3], ang[4][4], ang[5][1], \
-                               ang[5][2], ang[5][3], ang[5][4], \
-                               ang[0].name, ang[1].name, ang[2].name)
+	    		       ang[5][2], ang[5][3], ang[5][4], \
+			       ang[0].name, ang[1].name, ang[2].name)
                         else: # A-state only
                             print >>fp, '%6d %6d %6d %6d %14.6f %14.6f %14.6f %14.6f' % (ang[0].id, ang[1].id, ang[2].id,ang[3], ang[4][1],ang[4][2], ang[4][3], ang[4][4] )
 		    else :
