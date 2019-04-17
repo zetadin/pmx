@@ -31,7 +31,7 @@
 
 from __future__ import print_function, division
 from pmx.parser import read_and_format
-from pmx.estimators import Jarz, Crooks, BAR, data2gauss, ks_norm_test
+from pmx.estimators import Jarz, JarzGauss, Crooks, BAR, data2gauss, ks_norm_test
 import sys
 import os
 import time
@@ -211,7 +211,7 @@ def _data_from_file(fn):
 # Plotting functions
 # ------------------
 def plot_work_dist(wf, wr, fname='Wdist.png', nbins=20, dG=None, dGerr=None,
-                   units='kJ/mol', dpi=300):
+                   units='kJ/mol', dpi=300, statesProvided='AB'):
     '''Plots forward and reverse work distributions. Optionally, it adds the
     estimate of the free energy change and its uncertainty on the plot.
 
@@ -233,6 +233,8 @@ def plot_work_dist(wf, wr, fname='Wdist.png', nbins=20, dG=None, dGerr=None,
         the units of dG and dGerr. Default is 'kJ/mol'.
     dpi : int
         resolution of the saved image file.
+    statesProvided: str
+        work values for two states or only one
 
     Returns
     -------
@@ -263,25 +265,44 @@ def plot_work_dist(wf, wr, fname='Wdist.png', nbins=20, dG=None, dGerr=None,
         return y[window_len-1:-window_len+1]
 
     plt.figure(figsize=(8, 6))
-    x1 = range(len(wf))
-    x2 = range(len(wr))
+    plt.subplot(1, 2, 1)
+    x1 = 0
+    x2 = 0
+    if 'A' in statesProvided:
+        x1 = range(len(wf))
+    if 'B' in statesProvided:
+        x2 = range(len(wr))
     if x1 > x2:
         x = x1
     else:
         x = x2
-    mf, devf, Af = data2gauss(wf)
-    mb, devb, Ab = data2gauss(wr)
+    if 'A' in statesProvided:
+        mf, devf, Af = data2gauss(wf)
+    if 'B' in statesProvided:
+        mb, devb, Ab = data2gauss(wr)
 
-    maxi = max(wf+wr)
-    mini = min(wf+wr)
+    if 'AB' in statesProvided: 
+        mini = min(wf+wr)
+        maxi = max(wf+wr)
+        sm1 = smooth(np.array(wf))
+        sm2 = smooth(np.array(wr))
+        plt.plot(x1, wf, 'g-', linewidth=2, label="Forward (0->1)", alpha=.3)
+        plt.plot(x1, sm1, 'g-', linewidth=3)
+        plt.plot(x2, wr, 'b-', linewidth=2, label="Backward (1->0)", alpha=.3)
+        plt.plot(x2, sm2, 'b-', linewidth=3)
+    elif 'A' in statesProvided:
+        maxi = max(wf)
+        mini = min(wf)
+        sm1 = smooth(np.array(wf))
+        plt.plot(x1, wf, 'g-', linewidth=2, label="Forward (0->1)", alpha=.3)
+        plt.plot(x1, sm1, 'g-', linewidth=3)
+    elif 'B' in statesProvided:
+        maxi = max(wr)
+        mini = min(wr)
+        sm2 = smooth(np.array(wr))
+        plt.plot(x2, wr, 'b-', linewidth=2, label="Backward (1->0)", alpha=.3)
+        plt.plot(x2, sm2, 'b-', linewidth=3)
 
-    sm1 = smooth(np.array(wf))
-    sm2 = smooth(np.array(wr))
-    plt.subplot(1, 2, 1)
-    plt.plot(x1, wf, 'g-', linewidth=2, label="Forward (0->1)", alpha=.3)
-    plt.plot(x1, sm1, 'g-', linewidth=3)
-    plt.plot(x2, wr, 'b-', linewidth=2, label="Backward (1->0)", alpha=.3)
-    plt.plot(x2, sm2, 'b-', linewidth=3)
     plt.legend(shadow=True, fancybox=True, loc='upper center',
                prop={'size': 12})
     plt.ylabel(r'W [kJ/mol]', fontsize=20)
@@ -299,12 +320,21 @@ def plot_work_dist(wf, wr, fname='Wdist.png', nbins=20, dG=None, dGerr=None,
 
     x = np.arange(mini, maxi, .5)
 
-    y1 = gauss_func(Af, mf, devf, x)
-    y2 = gauss_func(Ab, mb, devb, x)
+    if 'AB' in statesProvided:
+        y1 = gauss_func(Af, mf, devf, x)
+        y2 = gauss_func(Ab, mb, devb, x)
+        plt.plot(y1, x, 'g--', linewidth=2)
+        plt.plot(y2, x, 'b--', linewidth=2)
+        size = max([max(y1), max(y2)])
+    elif 'A' in statesProvided:
+        y1 = gauss_func(Af, mf, devf, x)
+        plt.plot(y1, x, 'g--', linewidth=2)
+        size = max(y1)
+    elif 'B' in statesProvided:
+        y2 = gauss_func(Ab, mb, devb, x)
+        plt.plot(y2, x, 'b--', linewidth=2)
+        size = max(y2)
 
-    plt.plot(y1, x, 'g--', linewidth=2)
-    plt.plot(y2, x, 'b--', linewidth=2)
-    size = max([max(y1), max(y2)])
     res_x = [dG, dG]
     res_y = [0, size*1.2]
     if dG is not None and dGerr is not None:
@@ -359,7 +389,8 @@ def parse_options():
             'Available methods for free energy estimation: '
             'Crooks Gaussian Intersection (CGI); '
             'Benett Acceptance Ratio (BAR); '
-            'Jarzinski equality (JARZ).')
+            'Jarzinski equality (JARZ);'
+            'Jarzinski with a Gaussian approximatiuon (JARZ_Gauss).',)
 
     exclus = parser.add_mutually_exclusive_group()
 
@@ -582,12 +613,28 @@ def main(args):
     stime = time.time()
 
     # input arguments
+    statesProvided = 'AB'
     out = open(args.outfn, 'w')
     if (args.iA is None) and (args.iB is None):
-        if (args.filesAB is None) or (args.filesBA is None):
+        if (args.filesAB is None) and (args.filesBA is None):
             exit('Need to provide dhdl.xvg files or integrated work values')
-        filesAB = natural_sort(args.filesAB)
-        filesBA = natural_sort(args.filesBA)
+        elif args.filesAB is None:
+                statesProvided = 'B'
+                _tee(out, 'Only one directional Jarzynski estimator will be used')
+                filesBA = natural_sort(args.filesBA)
+        elif args.filesBA is None: 
+                statesProvided = 'A'
+                _tee(out, 'Only one directional Jarzynski estimator will be used')
+                filesAB = natural_sort(args.filesAB)
+        else:
+            filesAB = natural_sort(args.filesAB)
+            filesBA = natural_sort(args.filesBA)
+    elif (args.iA is None) or (args.iB is None):
+        if args.iA is None:
+            statesProvided = 'B'
+        else:
+            statesProvided = 'A'
+        _tee(out, 'Only one directional Jarzynski estimator will be used')
     T = args.temperature
     skip = args.skip
     prec = args.precision
@@ -682,21 +729,25 @@ def main(args):
         _dump_integ_file(args.oB, filesBA, res_ba)
 
     # If work values are given as input instead, read those
-    elif args.iA is not None and args.iB is not None:
+    elif args.iA is not None or args.iB is not None:
         res_ab = []
         res_ba = []
-        print('  Reading integrated values (A->B) from', args.iA)
-        res_ab.extend(_data_from_file(args.iA))
-        print('  Reading integrated values (B->A) from', args.iB)
-        res_ba.extend(_data_from_file(args.iB))
+        if 'A' in statesProvided:
+            print('  Reading integrated values (A->B) from', args.iA)
+            res_ab.extend(_data_from_file(args.iA))
+        if 'B' in statesProvided:
+            print('  Reading integrated values (B->A) from', args.iB)
+            res_ba.extend(_data_from_file(args.iB))
         # If slice values provided, select the files needed.
         if args.slice is not None:
             first = args.slice[0]
             last = args.slice[1]
             _tee(out, '  Keeping work values from %i to %i.' % (first, last))
             _tee(out, '')
-            res_ab = res_ab[first:last]
-            res_ba = res_ba[first:last]
+            if 'A' in statesProvided:
+                res_ab = res_ab[first:last]
+            if 'B' in statesProvided:
+                res_ba = res_ba[first:last]
     else:
         exit('\nERROR: you need to provide either none of both sets of '
              'integrated work values.')
@@ -713,14 +764,16 @@ def main(args):
     _tee(out, ' ========================================================')
     _tee(out, '                       ANALYSIS')
     _tee(out, ' ========================================================')
-    _tee(out, '  Number of forward (0->1) trajectories: %d' % len(res_ab))
-    _tee(out, '  Number of reverse (1->0) trajectories: %d' % len(res_ba))
+    if 'A' in statesProvided:
+        _tee(out, '  Number of forward (0->1) trajectories: %d' % len(res_ab))
+    if 'B' in statesProvided:
+        _tee(out, '  Number of reverse (1->0) trajectories: %d' % len(res_ba))
     _tee(out, '  Temperature : %.2f K' % T)
 
     # ============================
     # Crooks Gaussian Intersection
     # ============================
-    if 'cgi' in methods:
+    if 'cgi' in methods and 'AB' in statesProvided:
         _tee(out, '\n --------------------------------------------------------')
         _tee(out, '             Crooks Gaussian Intersection     ')
         _tee(out, ' --------------------------------------------------------')
@@ -759,7 +812,7 @@ def main(args):
     # --------------
     # Normality test
     # --------------
-    if do_ks_test:
+    if do_ks_test and 'AB' in statesProvided:
         print('\n  Running KS-test...')
         q0, lam00, check0, bOk0 = ks_norm_test(res_ab)
         q1, lam01, check1, bOk1 = ks_norm_test(res_ba)
@@ -780,7 +833,7 @@ def main(args):
     # ========================
     # Bennett Acceptance Ratio
     # ========================
-    if 'bar' in methods:
+    if 'bar' in methods and 'AB' in statesProvided:
         _tee(out, '\n --------------------------------------------------------')
         _tee(out, '             Bennett Acceptance Ratio     ')
         _tee(out, ' --------------------------------------------------------')
@@ -807,33 +860,75 @@ def main(args):
     # =========
     # Jarzynski
     # =========
-    if 'jarz' in methods:
+    if 'jarz' in methods or 'AB' not in statesProvided:
         _tee(out, '\n --------------------------------------------------------')
         _tee(out, '             Jarzynski estimator     ')
         _tee(out, ' --------------------------------------------------------')
 
-        jarz = Jarz(wf=res_ab, wr=res_ba, T=T, nboots=nboots, nblocks=nblocks)
+        jarz = Jarz(wf=res_ab, wr=res_ba, T=T, nboots=nboots, nblocks=nblocks, statesProvided=statesProvided)
         if args.pickle:
             pickle.dump(jarz, open("jarz_results.pkl", "wb"))
 
-        _tee(out, '  JARZ: dG Forward = {dg:8.{p}f} {u}'.format(dg=jarz.dg_for*unit_fact,
+        if 'A' in statesProvided:
+            _tee(out, '  JARZ: dG Forward = {dg:8.{p}f} {u}'.format(dg=jarz.dg_for*unit_fact,
                                                                 p=prec, u=units))
-        _tee(out, '  JARZ: dG Reverse = {dg:8.{p}f} {u}'.format(dg=jarz.dg_rev*unit_fact,
+        if 'B' in statesProvided:
+            _tee(out, '  JARZ: dG Reverse = {dg:8.{p}f} {u}'.format(dg=jarz.dg_rev*unit_fact,
                                                                 p=prec, u=units))
-        _tee(out, '  JARZ: dG Mean    = {dg:8.{p}f} {u}'.format(dg=jarz.dg_mean*unit_fact,
+        if 'AB' in statesProvided:
+            _tee(out, '  JARZ: dG Mean    = {dg:8.{p}f} {u}'.format(dg=jarz.dg_mean*unit_fact,
                                                                 p=prec, u=units))
         if nboots > 0:
-            _tee(out, '  JARZ: Std Err Forward (bootstrap) = {e:8.{p}f} {u}'.format(e=jarz.err_boot_for*unit_fact,
+            if 'A' in statesProvided:
+                _tee(out, '  JARZ: Std Err Forward (bootstrap) = {e:8.{p}f} {u}'.format(e=jarz.err_boot_for*unit_fact,
                                                                                     p=prec, u=units))
-            _tee(out, '  JARZ: Std Err Reverse (bootstrap) = {e:8.{p}f} {u}'.format(e=jarz.err_boot_rev*unit_fact,
+            if 'B' in statesProvided:
+                _tee(out, '  JARZ: Std Err Reverse (bootstrap) = {e:8.{p}f} {u}'.format(e=jarz.err_boot_rev*unit_fact,
                                                                                     p=prec, u=units))
 
         if nblocks > 1:
-            _tee(out, '  JARZ: Std Err Forward (blocks) = {e:8.{p}f} {u}'.format(e=jarz.err_blocks_for*unit_fact,
+	    if 'A' in statesProvided:
+                _tee(out, '  JARZ: Std Err Forward (blocks) = {e:8.{p}f} {u}'.format(e=jarz.err_blocks_for*unit_fact,
                                                                                  p=prec, u=units))
-            _tee(out, '  JARZ: Std Err Reverse (blocks) = {e:8.{p}f} {u}'.format(e=jarz.err_blocks_rev*unit_fact,
+            if 'B' in statesProvided:
+                _tee(out, '  JARZ: Std Err Reverse (blocks) = {e:8.{p}f} {u}'.format(e=jarz.err_blocks_rev*unit_fact,
                                                                                  p=prec, u=units))
 
+
+        # -------------------------------------
+        # Jarzynski with Gaussian approximation
+        # -------------------------------------
+        print('Running Jarzynski Gaussian approximation analysis...')
+        jarzGauss = JarzGauss(wf=res_ab, wr=res_ba, T=T, nboots=nboots, nblocks=nblocks, statesProvided=statesProvided)
+        if args.pickle:
+            pickle.dump(jarzGauss, open("jarz_gauss_results.pkl", "wb"))
+
+	if 'A' in statesProvided:
+            _tee(out, '  JARZ_Gauss: dG Forward = {dg:8.{p}f} {u}'.format(dg=jarzGauss.dg_for*unit_fact,
+                                                                    p=prec, u=units))
+	if 'B' in statesProvided:
+            _tee(out, '  JARZ_Gauss: dG Reverse = {dg:8.{p}f} {u}'.format(dg=jarzGauss.dg_rev*unit_fact,
+                                                                    p=prec, u=units))
+	if 'AB' in statesProvided:
+            _tee(out, '  JARZ_Gauss: dG Mean    = {dg:8.{p}f} {u}'.format(dg=(jarzGauss.dg_for+jarzGauss.dg_rev)/2.0*unit_fact,
+                                                                    p=prec, u=units))
+	if 'A' in statesProvided:
+            _tee(out, '  JARZ_Gauss: Std Err (analytical) Forward = {dg:8.{p}f} {u}'.format(dg=jarzGauss.err_for*unit_fact,
+                                                                    p=prec, u=units))
+	if 'B' in statesProvided:
+            _tee(out, '  JARZ_Gauss: Std Err (analytical) Reverse = {dg:8.{p}f} {u}'.format(dg=jarzGauss.err_rev*unit_fact,
+                                                                    p=prec, u=units))
+        if nboots > 0:
+	    if 'A' in statesProvided:
+                _tee(out, '  JARZ_Gauss: Std Err Forward (bootstrap) = {e:8.{p}f} {u}'.format(e=jarzGauss.err_boot_for*unit_fact, p=prec, u=units))
+	    if 'B' in statesProvided:
+                _tee(out, '  JARZ_Gauss: Std Err Reverse (bootstrap) = {e:8.{p}f} {u}'.format(e=jarzGauss.err_boot_rev*unit_fact,p=prec, u=units))
+
+        if nblocks > 1:
+	    if 'A' in statesProvided:
+                _tee(out, '  JARZ_Gauss: Std Err Forward (blocks) = {e:8.{p}f} {u}'.format(e=jarzGauss.err_blocks_for*unit_fact,p=prec, u=units))
+            if 'B' in statesProvided:
+                _tee(out, '  JARZ_Gauss: Std Err Reverse (blocks) = {e:8.{p}f} {u}'.format(e=jarzGauss.err_blocks_rev*unit_fact,p=prec, u=units))
 
     _tee(out, ' ========================================================')
 
@@ -873,13 +968,17 @@ def main(args):
             # for the moment, show values only under specific circumstances
             if hasattr(jarz, 'dg_mean'):
                 show_dg = jarz.dg_mean * unit_fact
+            elif 'A' in statesProvided:
+                show_dg = jarz.dg_for
+            elif 'B' in statesProvided:
+                show_dg = jarz.dg_rev
             else:
                 show_dg = None
             show_err = None
             # plot
             plot_work_dist(fname=args.wplot, wf=res_ab, wr=res_ba, dG=show_dg,
                            dGerr=show_err, nbins=args.nbins, dpi=args.dpi,
-                           units=units)
+                           units=units,statesProvided=statesProvided)
 
     print('\n   ......done...........\n')
 

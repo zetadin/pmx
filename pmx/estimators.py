@@ -34,29 +34,38 @@ class Jarz(object):
 
     '''
 
-    def __init__(self, wf, wr, T, nboots=0, nblocks=1):
-        self.wf = np.array(wf)
-        self.wr = np.array(wr)
+    def __init__(self, wf, wr, T, nboots=0, nblocks=1, statesProvided='AB'):
+        if 'A' in statesProvided:
+            self.wf = np.array(wf)
+        if 'B' in statesProvided:
+            self.wr = np.array(wr)
         self.T = float(T)
         self.nboots = nboots
         self.nblocks = nblocks
 
         # Calculate all Jarz properties available
-        self.dg_for = self.calc_dg(w=self.wf, c=1.0, T=self.T)
-        self.dg_rev = -1.0 * self.calc_dg(w=self.wr, c=-1.0, T=self.T)
-        self.dg_mean = (self.dg_for + self.dg_rev) * 0.5
+        if 'A' in statesProvided:
+            self.dg_for = self.calc_dg(w=self.wf, c=1.0, T=self.T)
+        if 'B' in statesProvided:
+            self.dg_rev = -1.0 * self.calc_dg(w=self.wr, c=-1.0, T=self.T)
+        if 'AB' in statesProvided:
+            self.dg_mean = (self.dg_for + self.dg_rev) * 0.5
 
         if nboots > 0:
-            self.err_boot_for = self.calc_err_boot(w=self.wf, T=self.T,
+            if 'A' in statesProvided:
+                self.err_boot_for = self.calc_err_boot(w=self.wf, T=self.T,
                                                    c=1.0, nboots=nboots)
-            self.err_boot_rev = self.calc_err_boot(w=self.wr, T=self.T,
+            if 'B' in statesProvided:
+                self.err_boot_rev = self.calc_err_boot(w=self.wr, T=self.T,
                                                    c=-1.0, nboots=nboots)
 
         if nblocks > 1:
-            self.err_blocks_for = self.calc_err_blocks(w=self.wf, c=1.0,
+            if 'A' in statesProvided:
+                self.err_blocks_for = self.calc_err_blocks(w=self.wf, c=1.0,
                                                        T=self.T,
                                                        nblocks=nblocks)
-            self.err_blocks_rev = self.calc_err_blocks(w=self.wr, c=-1.0,
+            if 'B' in statesProvided:
+                self.err_blocks_rev = self.calc_err_blocks(w=self.wr, c=-1.0,
                                                        T=self.T,
                                                        nblocks=nblocks)
 
@@ -151,6 +160,238 @@ class Jarz(object):
         # calculate all dg
         for w_block in w_split:
             dg_block = -1.0 * Jarz.calc_dg(w_block, T, c)
+            dg_blocks.append(dg_block)
+
+        # get std err
+        err_blocks = scipy.stats.sem(dg_blocks, ddof=1)
+
+        return err_blocks
+
+
+class JarzGauss:
+    '''Jarzynski estimator using a Gaussian approximation. [6]_
+    Both the forward and reverse estimates.
+    The standard error is calculated using the analytical expression derived
+    by Hummer (2001). [6]_ When ``nboots``>0, the error is also calculated
+    by bootstrap. When  ``nblocks``>1, it is calculated by
+    separating the work values into blocks.
+    Parameters
+    ----------
+    wf : array_like
+        array of forward work values.
+    wr : array_like
+        array of reverse work values.
+    T : float, optional
+        temperature in Kelvin. Default is 298.15 K.
+    nboots : int, optional
+        how many bootstrap samples to draw for estimating the standard error.
+        Default is zero (do not estimate the error).
+    nblocks : int, optional
+        how many blocks to divide the input work values into for the estimation
+        of the standard error. Default is one (do not estimate the error).
+    statesProvided: str, optional
+        two directions or one
+    Examples
+    --------
+    >>> estimate = JarzGauss(wf, wr, T=300, nboots=1000, nblocks=10)
+    >>> dg_forward = estimate.dg_for
+    >>> dg_reverse = estimate.dg_rev
+    >>> dg_forward_err1 = estimate.err_for
+    >>> dg_forward_err2 = estimate.err_boot_for
+    >>> dg_forward_err3 = estimate.err_blocks_for
+    Attributes
+    ----------
+    dg_for : float
+        the forward free energy estimate.
+    dg_rev : float
+        the reverse free energy estimate.
+    err_for : float
+        analytical estimate of the standard error of the forward free energy
+        estimate.
+    err_rev : float
+        analytical estimate of the standard error of the reverse free energy
+        estimate.
+    err_boot_for : float
+        standard error of the forward free energy estimate calculated
+        via bootstrap.
+    err_boot_rev : float
+        standard error of the reverse free energy estimate calculated
+        via bootstrap.
+    err_blocks_for : float
+        standard error of the forward free energy estimate calculated by
+        separating the input work values into groups/blocks.
+    err_blocks_rev : float
+        standard error of the reverse free energy estimate calculated by
+        separating the input work values into groups/blocks.
+    '''
+
+    def __init__(self, wf, wr, T=298.15, nboots=0, nblocks=1, statesProvided='AB'):
+        if 'A' in statesProvided:
+            self.wf = np.array(wf)
+        if 'B' in statesProvided:
+            self.wr = np.array(wr)
+        self.T = float(T)
+        self.nboots = nboots
+        self.nblocks = nblocks
+
+        # Calculate all Jarz properties available
+        if 'A' in statesProvided:
+            self.dg_for = self.calc_dg(w=self.wf, T=self.T, bReverse=False)
+            self.err_for = self.calc_err(w=self.wf, T=self.T, bReverse=False)
+        if 'B' in statesProvided:
+            self.dg_rev = self.calc_dg(w=self.wr, T=self.T, bReverse=True)
+            self.err_rev = self.calc_err(w=self.wr, T=self.T, bReverse=True)
+
+        if nboots > 0:
+            if 'A' in statesProvided:
+                self.err_boot_for = self.calc_err_boot(w=self.wf, T=self.T,
+                                                       nboots=self.nboots,
+                                                       bReverse=False)
+            if 'B' in statesProvided:
+                self.err_boot_rev = self.calc_err_boot(w=self.wr, T=self.T,
+                                                       nboots=self.nboots,
+                                                       bReverse=True)
+
+        if nblocks > 1:
+            if 'A' in statesProvided:
+                self.err_blocks_for = self.calc_err_blocks(w=self.wf,
+                                                           T=self.T,
+                                                           nblocks=self.nblocks,
+                                                           bReverse=False)
+            if 'B' in statesProvided:
+                self.err_blocks_rev = self.calc_err_blocks(w=self.wr,
+                                                           T=self.T,
+                                                           nblocks=self.nblocks,
+                                                           bReverse=True)
+
+    @staticmethod
+    def calc_dg(w, T, bReverse=False):
+        '''Calculates the free energy difference using the Jarzynski estimator
+        with a Gaussian approximation. [6]_
+        Parameters
+        ----------
+        w : array_like
+            array of work values.
+        T : float
+            temperature in Kelvin.
+        bReverse : bool, optional
+            whether the work values provided are for the reverse transition.
+            Default if False. If they are for the reverse transition, set it to
+            True.
+        Returns
+        -------
+        dg : float
+            estimate of the free energy difference.
+        '''
+        beta = 1./(kb*T)
+        if bReverse is False:
+            c = 1.0
+        elif bReverse is True:
+            c = -1.0
+
+        dg = np.mean(c*w) - (beta * np.var(c*w, ddof=1)) * 0.5
+        return c * dg
+
+    @staticmethod
+    def calc_err(w, T, bReverse=False):
+        '''Calculates the standard error via an analytic expression.
+        The expression is derived by Hummer, 2001, JChemPhys. [6]_
+        Parameters
+        ----------
+        w : array_like
+            work values.
+        T : float
+            temperature.
+        bReverse : bool, optional
+            whether the work values provided are for the reverse transition.
+            Default if False. If they are for the reverse transition, set it to
+            True.
+        Returns
+        -------
+        err : float
+            standard deviation of the estimator.
+        '''
+
+        beta = 1./(kb*T)
+        w_var = np.var(w, ddof=1)
+        n = float(len(w))
+        dg_var = w_var/n + np.power(beta*w_var, 2) / (2.0 * (n-1.0))
+        dg_stderr = np.sqrt(dg_var)
+
+        return dg_stderr
+
+    @staticmethod
+    def calc_err_boot(w, T, nboots, bReverse=False):
+        '''Calculates the standard error via bootstrap. The work values are
+        resampled randomly with replacement multiple (nboots) times,
+        and the Gaussian approximation for Jarzinski free energy
+        is recalculated for each bootstrap samples.
+        The standard error of the estimate is returned as the standard d
+        eviation of the bootstrapped free energies.
+        Parameters
+        ----------
+        w : array_like
+            work values.
+        T : float
+            temperature.
+        nboots: int
+            number of bootstrap samples to use for the error estimate.
+        bReverse : bool, optional
+            whether the work values provided are for the reverse transition.
+            Default if False. If they are for the reverse transition, set it to
+            True.
+        Returns
+        -------
+        err : float
+            standard error of the mean.
+        '''
+        dg_boots = []
+        n = len(w)
+        for k in range(nboots):
+            sys.stdout.write('\r  Bootstrap (Std Err): iteration %s/%s'
+                             % (k+1, nboots))
+            sys.stdout.flush()
+
+            boot = np.random.choice(w, size=n, replace=True)
+            dg_boot = JarzGauss.calc_dg(boot, T, bReverse)
+            dg_boots.append(dg_boot)
+        sys.stdout.write('\n')
+        err = np.std(dg_boots)
+        return err
+
+    @staticmethod
+    def calc_err_blocks(w, T, nblocks, bReverse=False):
+        '''Calculates the standard error based on a number of blocks the
+        work values are divided into. It is useful when you run independent
+        equilibrium simulations, so that you can then use their respective
+        work values to compute the standard error based on the repeats.
+        Parameters
+        ----------
+        w : array_like
+            array of work values.
+        T : float
+            temperature.
+        nblocks: int
+            number of blocks to divide the data into. This can be for
+            instance the number of independent equilibrium simulations
+            you ran.
+        bReverse : bool, optional
+            whether the work values provided are for the reverse transition.
+            Default if False. If they are for the reverse transition, set it to
+            True.
+        Returns
+        -------
+        sderr : float
+            the standard error of the estimate.
+        '''
+
+        dg_blocks = []
+        # loosely split the arrays
+        w_split = np.array_split(w, nblocks)
+
+        # calculate all dg
+        for w_block in w_split:
+            dg_block = JarzGauss.calc_dg(w_block, T, bReverse)
             dg_blocks.append(dg_block)
 
         # get std err
