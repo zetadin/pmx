@@ -61,6 +61,32 @@ def gauss_func(A, mean, dev, x):
 # -------------
 # Files Parsing
 # -------------
+def _longest_dgdl_file( lst ):
+    '''Takes a list of dgdl.xvg files and returns the id (starting from 0) of 
+    of the longest file.
+
+    Parameters
+    ----------
+    lst : list
+        list containing the paths to the dgdl.xvg files.
+
+    Returns
+    -------
+    ind : int
+        index of the longest file
+    '''
+
+    ind = 0
+    maxlen = -9999
+    for idx, f in enumerate(lst[0:]):
+        fp = open(f)
+        lines = fp.readlines()
+        if len(lines)>maxlen:
+            maxlen = len(lines)
+            ind = idx 
+    return(ind)
+
+
 def parse_dgdl_files(lst, lambda0=0, invert_values=False):
     '''Takes a list of dgdl.xvg files and returns the integrated work values
 
@@ -85,11 +111,16 @@ def parse_dgdl_files(lst, lambda0=0, invert_values=False):
     # check lambda0 is either 0 or 1
     assert lambda0 in [0, 1]
 
-    _check_dgdl(lst[0], lambda0)
-    first_w, ndata = integrate_dgdl(lst[0], lambda0=lambda0,
+    # identify file with the most entries
+    imax = _longest_dgdl_file( lst )
+
+    _check_dgdl(lst[imax], lambda0)
+    first_w, ndata = integrate_dgdl(lst[imax], lambda0=lambda0,
                                     invert_values=invert_values)
     w_list = [first_w]
-    for idx, f in enumerate(lst[1:]):
+    for idx, f in enumerate(lst[0:]):
+        if idx==imax: # already processed
+            continue
         sys.stdout.write('\r    Reading %s' % f)
         sys.stdout.flush()
 
