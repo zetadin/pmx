@@ -70,8 +70,8 @@ ext_one_letter = {
     'CYS':'C',
     'CYS2':'C',
     'CYN':'C',
-    'CYX':'C',
-    'CYM':'C',
+    'CYX':'CX',
+    'CYM':'CM',
     'CYSH':'C',
     'GLU':'E',
     'GLUH':'J',
@@ -333,6 +333,7 @@ def ask_next():
 
 def convert_aa_name( aa ):
     if len(aa) == 1: return aa.upper()
+    elif len(aa)==2 and aa=='CM': return(aa) # special case for two letter code
     elif len(aa) == 3: return ext_one_letter[aa.upper()]
     elif len(aa) == 4: return ext_one_letter[aa.upper()]
     else: raise UnkownResidueError(aa)
@@ -455,6 +456,8 @@ def apply_aa_mutation(m, residue, new_aa_name, mtp_file, bStrB, infileB):
     hybrid_residue_name = olkey+'2'+new_aa_name
     if hybrid_residue_name in noncanonical_aa.keys():
         hybrid_residue_name = noncanonical_aa[hybrid_residue_name]
+#    if hybrid_residue_name in longname_aa.keys():
+#        hybrid_residue_name = longname_aa[hybrid_residue_name]
     print 'log_> Residue to mutate: %d | %s | %s ' % ( residue.id, residue.resname, residue.chain_id)
     print 'log_> Mutation to apply: %s->%s' % (olkey, new_aa_name)
     print 'log_> Hybrid residue name: %s' % hybrid_residue_name
