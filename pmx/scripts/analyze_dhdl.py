@@ -245,7 +245,7 @@ def _data_from_file(fn):
 # Plotting functions
 # ------------------
 def plot_work_dist(wf, wr, fname='Wdist.png', nbins=20, dG=None, dGerr=None,
-                   units='kJ/mol', dpi=300, statesProvided='AB'):
+                   units='kJ/mol', dpi=300, statesProvided='AB', window=11):
     '''Plots forward and reverse work distributions. Optionally, it adds the
     estimate of the free energy change and its uncertainty on the plot.
 
@@ -318,8 +318,8 @@ def plot_work_dist(wf, wr, fname='Wdist.png', nbins=20, dG=None, dGerr=None,
     if 'AB' in statesProvided: 
         mini = min(wf+wr)
         maxi = max(wf+wr)
-        sm1 = smooth(np.array(wf))
-        sm2 = smooth(np.array(wr))
+        sm1 = smooth(np.array(wf), window_len = window)
+        sm2 = smooth(np.array(wr), window_len = window)
         plt.plot(x1, wf, 'g-', linewidth=2, label="Forward (0->1)", alpha=.3)
         plt.plot(x1, sm1, 'g-', linewidth=3)
         plt.plot(x2, wr, 'b-', linewidth=2, label="Backward (1->0)", alpha=.3)
@@ -327,13 +327,13 @@ def plot_work_dist(wf, wr, fname='Wdist.png', nbins=20, dG=None, dGerr=None,
     elif 'A' in statesProvided:
         maxi = max(wf)
         mini = min(wf)
-        sm1 = smooth(np.array(wf))
+        sm1 = smooth(np.array(wf), window_len = window)
         plt.plot(x1, wf, 'g-', linewidth=2, label="Forward (0->1)", alpha=.3)
         plt.plot(x1, sm1, 'g-', linewidth=3)
     elif 'B' in statesProvided:
         maxi = max(wr)
         mini = min(wr)
-        sm2 = smooth(np.array(wr))
+        sm2 = smooth(np.array(wr), window_len = window)
         plt.plot(x2, wr, 'b-', linewidth=2, label="Backward (1->0)", alpha=.3)
         plt.plot(x2, sm2, 'b-', linewidth=3)
 
@@ -642,6 +642,12 @@ def parse_options():
                         type=int,
                         help='Resolution of the plot. Default is 300.',
                         default=300)
+    parser.add_argument('--win',
+                        metavar='',
+                        dest='win',
+                        type=int,
+                        help='Width of smoothing window for plotting. Default is 11 samples.',
+                        default=11)
 
     args, unknown = parser.parse_known_args()
     check_unknown_cmd(unknown)
@@ -1004,7 +1010,7 @@ def main(args):
             # plot
             plot_work_dist(fname=args.wplot, wf=res_ab, wr=res_ba, dG=show_dg,
                            dGerr=show_err, nbins=args.nbins, dpi=args.dpi,
-                           units=units)
+                           units=units, window=args.win)
         elif 'bar' not in locals() and 'cgi' in locals():
             show_dg = cgi.dg * unit_fact
             # hierarchy of error estimates : blocks > boots
@@ -1017,7 +1023,7 @@ def main(args):
             # plot
             plot_work_dist(fname=args.wplot, wf=res_ab, wr=res_ba, dG=show_dg,
                            dGerr=show_err, nbins=args.nbins, dpi=args.dpi,
-                           units=units)
+                           units=units, window=args.win)
         elif 'bar' not in locals() and 'cgi' not in locals() and 'jarz' in locals():
             # for the moment, show values only under specific circumstances
             if hasattr(jarz, 'dg_mean'):
@@ -1032,7 +1038,8 @@ def main(args):
             # plot
             plot_work_dist(fname=args.wplot, wf=res_ab, wr=res_ba, dG=show_dg,
                            dGerr=show_err, nbins=args.nbins, dpi=args.dpi,
-                           units=units,statesProvided=statesProvided)
+                           units=units,statesProvided=statesProvided,
+                           window=args.win)
 
     print('\n   ......done...........\n')
 
