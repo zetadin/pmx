@@ -37,6 +37,7 @@ import os
 import time
 import re
 from matplotlib import pyplot as plt
+plt.switch_backend('agg') # prevent wrong DISPLAY errors when run remotely
 import numpy as np
 from scipy.integrate import simps
 import pickle
@@ -87,7 +88,7 @@ def _longest_dgdl_file( lst ):
     return(ind)
 
 
-def parse_dgdl_files(lst, lambda0=0, invert_values=False):
+def parse_dgdl_files(lst, lambda0=0, lambda1=1, invert_values=False):
     '''Takes a list of dgdl.xvg files and returns the integrated work values
 
     Parameters
@@ -108,14 +109,16 @@ def parse_dgdl_files(lst, lambda0=0, invert_values=False):
         in w.
     '''
 
-    # check lambda0 is either 0 or 1
-    assert lambda0 in [0, 1]
+    # check lambda0 is between 0 and 1
+    assert (lambda0>=0 and lambda0<=1), "Incorrect initial lambda "
+    assert (lambda1>=0 and lambda1<=1), "Incorrect final lambda "
 
     # identify file with the most entries
     imax = _longest_dgdl_file( lst )
 
     _check_dgdl(lst[imax], lambda0)
     first_w, ndata = integrate_dgdl(lst[imax], lambda0=lambda0,
+                                    lambda1=lambda1,
                                     invert_values=invert_values)
     w_list = [first_w]
     for idx, f in enumerate(lst[0:]):
@@ -125,6 +128,7 @@ def parse_dgdl_files(lst, lambda0=0, invert_values=False):
         sys.stdout.flush()
 
         w, _ = integrate_dgdl(f, ndata=ndata, lambda0=lambda0,
+                              lambda1=lambda1,
                               invert_values=invert_values)
         if w is not None:
             w_list.append(w)
@@ -134,7 +138,7 @@ def parse_dgdl_files(lst, lambda0=0, invert_values=False):
     return w_list
 
 
-def integrate_dgdl(fn, ndata=-1, lambda0=0, invert_values=False):
+def integrate_dgdl(fn, ndata=-1, lambda0=0, lambda1=1, invert_values=False):
     '''Integrates the data in a dgdl.xvg file.
 
     Parameters
@@ -156,8 +160,9 @@ def integrate_dgdl(fn, ndata=-1, lambda0=0, invert_values=False):
         number of data points in the input file.
     '''
 
-    # check lambda0 is either 0 or 1
-    assert lambda0 in [0, 1]
+    # check lambdas are between 0 and 1
+    assert (lambda0>=0 and lambda0<=1), "Incorrect initial lambda "
+    assert (lambda1>=0 and lambda1<=1), "Incorrect final lambda "
 
     lines = open(fn).readlines()
     if not lines:
@@ -185,10 +190,8 @@ def integrate_dgdl(fn, ndata=-1, lambda0=0, invert_values=False):
         return None, None
     # convert time to lambda
     ndata = len(r)
-    dlambda = 1./float(ndata)
-    if lambda0 == 1:
-        dlambda *= -1
-
+    dlambda = (lambda1-lambda0)/float(ndata)
+    
     # arrays for the integration
     # --------------------------
     # array of lambda values
@@ -196,7 +199,7 @@ def integrate_dgdl(fn, ndata=-1, lambda0=0, invert_values=False):
     # array of dgdl
     y = r
 
-    if lambda0 == 1:
+    if lambda0 > lambda1:
         x.reverse()
         y.reverse()
 
@@ -522,6 +525,24 @@ def parse_options():
                         'for the reverse (B->A) tranformation. Default is '
                         '"integB.dat"',
                         default='integB.dat')
+    parser.add_argument('-lA',
+                        metavar='work input',
+                        dest='lA',
+                        type=float,
+                        help='Initial value of labmda in forward '
+                        '(A->B) transformation. '
+                        'Equal to the final value in the reverse '
+                        '(B->A) transformation.',
+                        default=0.0)
+    parser.add_argument('-lB',
+                        metavar='work input',
+                        dest='lB',
+                        type=float,
+                        help='Initial value of labmda in reverse '
+                        '(B->A) transformation. '
+                        'Equal to the final value in the forward '
+                        '(A->B) transformation.',
+                        default=1.0)
     parser.add_argument('--reverseB',
                         dest='reverseB',
                         help='Whether to reverse the work values for the '
@@ -750,10 +771,12 @@ def main(args):
         print('                   PROCESSING THE DATA')
         print(' ========================================================')
         print('  Forward Data')
-        res_ab = parse_dgdl_files(filesAB, lambda0=0,
+        res_ab = parse_dgdl_files(filesAB, lambda0=args.lA,
+                                  lambda1=args.lB,
                                   invert_values=False)
         print('  Reverse Data')
-        res_ba = parse_dgdl_files(filesBA, lambda0=1,
+        res_ba = parse_dgdl_files(filesBA, lambda0=args.lB,
+                                  lambda1=args.lA,
                                   invert_values=reverseB)
 
         _dump_integ_file(args.oA, filesAB, res_ab)
