@@ -264,6 +264,12 @@ def parse_options():
                         help='Minimal screen output.',
                         default=False,
                         action='store_true')
+    parser.add_argument('--sigmoid',
+                        metavar='',
+                        dest='sigmoid',
+                        type=float,
+                        help='Define a sigmoidal lambda path.',
+                        default=0.0)
 
     args, unknown = parser.parse_known_args()
     check_unknown_cmd(unknown)
@@ -289,6 +295,7 @@ def main(args):
     # input arguments
     out = open(args.outfn, 'w')
     T = args.temperature
+    sigmoid = args.sigmoid
     skip = args.skip
     prec = args.precision
     methods = args.methods
@@ -381,11 +388,11 @@ def main(args):
             print(' ========================================================')
             print('  Forward Data')
         res_ab = read_dgdl_files(filesAB, lambda0=0,
-                                 invert_values=False, verbose=not quiet)
+                                 invert_values=False, verbose=not quiet, sigmoid=sigmoid)
         if quiet is False:
             print('  Reverse Data')
         res_ba = read_dgdl_files(filesBA, lambda0=1,
-                                 invert_values=reverseB, verbose=not quiet)
+                                 invert_values=reverseB, verbose=not quiet, sigmoid=sigmoid)
 
         _dump_integ_file(args.oA, filesAB, res_ab)
         _dump_integ_file(args.oB, filesBA, res_ba)

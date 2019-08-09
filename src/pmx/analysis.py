@@ -10,7 +10,7 @@ __all__ = ['read_dgdl_files', 'integrate_dgdl',
            'ks_norm_test', 'plot_work_dist']
 
 
-def read_dgdl_files(lst, lambda0=0, invert_values=False, verbose=True):
+def read_dgdl_files(lst, lambda0=0, invert_values=False, verbose=True, sigmoid=0.0):
     '''Takes a list of dgdl.xvg files and returns the integrated work values.
 
     Parameters
@@ -36,7 +36,7 @@ def read_dgdl_files(lst, lambda0=0, invert_values=False, verbose=True):
 
     _check_dgdl(lst[0], lambda0, verbose=verbose)
     first_w, ndata = integrate_dgdl(lst[0], lambda0=lambda0,
-                                    invert_values=invert_values)
+                                    invert_values=invert_values, sigmoid=sigmoid)
     w_list = [first_w]
     for idx, f in enumerate(lst[1:]):
         if verbose is True:
@@ -44,7 +44,7 @@ def read_dgdl_files(lst, lambda0=0, invert_values=False, verbose=True):
             sys.stdout.flush()
 
         w, _ = integrate_dgdl(f, ndata=ndata, lambda0=lambda0,
-                              invert_values=invert_values)
+                              invert_values=invert_values, sigmoid=sigmoid)
         if w is not None:
             w_list.append(w)
 
@@ -53,7 +53,7 @@ def read_dgdl_files(lst, lambda0=0, invert_values=False, verbose=True):
     return w_list
 
 
-def integrate_dgdl(fn, ndata=-1, lambda0=0, invert_values=False):
+def integrate_dgdl(fn, ndata=-1, lambda0=0, invert_values=False, sigmoid=0.0):
     '''Integrates the data in a dgdl.xvg file.
 
     Parameters
@@ -106,6 +106,14 @@ def integrate_dgdl(fn, ndata=-1, lambda0=0, invert_values=False):
     # --------------------------
     # array of lambda values
     x = [lambda0+i*dlambda for i, dgdl in enumerate(r)]
+##### VG VG VG ####
+    if sigmoid != 0.0:
+        x = [1.0/(1.0+np.exp( -1.0*(lambda0+i*dlambda-0.5)*sigmoid ) ) for i, dgdl in enumerate(r)]
+        x[0] = lambda0
+        x[-1] = 1.0-lambda0
+#    for i in x:
+#        print(i)
+##### VG VG VG ####
     # array of dgdl
     y = r
 
