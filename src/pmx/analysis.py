@@ -37,11 +37,25 @@ def read_dgdl_files(lst, lambda0=0, lambda1=1, invert_values=False, verbose=True
     assert (lambda0>=0 and lambda0<=1), "Incorrect initial lambda "
     assert (lambda1>=0 and lambda1<=1), "Incorrect final lambda "
 
-    _check_dgdl(lst[0], lambda0=lambda0, lambda1=lambda1, verbose=verbose)
-    first_w, ndata = integrate_dgdl(lst[0], lambda0=lambda0, lambda1=lambda1,
-                                    invert_values=invert_values, sigmoid=sigmoid)
+    #find the first good file
+    good=False;
+    idx=0;
+    first_w=0;
+    ndata=0;
+    while(not good):
+        try:
+            _check_dgdl(lst[idx], lambda0=lambda0, lambda1=lambda1, verbose=verbose)
+            first_w, ndata = integrate_dgdl(lst[idx], lambda0=lambda0, lambda1=lambda1,
+                                        invert_values=invert_values, sigmoid=sigmoid)
+            good=True
+        except:
+            print(' !! Error in checking %s' % (lst[idx]))
+            good=False
+            idx+=1
+
+
     w_list = [first_w]
-    for idx, f in enumerate(lst[1:]):
+    for idx, f in enumerate(lst[idx+1:]):
         if verbose is True:
             sys.stdout.write('\r    Reading %s' % f)
             sys.stdout.flush()
@@ -93,7 +107,12 @@ def integrate_dgdl(fn, ndata=-1, lambda0=0, lambda1=1, invert_values=False, sigm
     # optional files integrity check before calling this integration func
 
     lines = [l for l in lines if l[0] not in '#@&']
-    r = list(map(lambda x: float(x.split()[1]), lines))
+    r=[]
+    try:
+        r = list(map(lambda x: float(x.split()[1]), lines))
+    except:
+        print(' !! Error in reading %s' % (fn))
+        return None, None
 
     if ndata != -1 and len(r) != ndata:
         try:
